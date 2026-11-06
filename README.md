@@ -17,7 +17,7 @@ QQ / 微信双端聊天 · 本地情感语音 · 桌面桌宠 · 模型路由 ·
 **安装** → 双击仓库根目录的 `install.bat`，按菜单勾选要装的能力（核心 / AstrBot / 插件 / NapCat / 微信桥 / 语音 / 桌宠）
 **许可** → AGPL-3.0。本项目是在多个上游开源项目上改造而来，署名、修改时间与再分发要求见 [NOTICE](NOTICE)
 
-只想先看看桌宠长什么样——一条命令装好（前提是本机已装 DeepSeek Harness）：
+只想看桌宠的话，一条命令装好（前提是本机已装 DeepSeek Harness）：
 
 ```powershell
 git clone https://github.com/newbiecraft-kaixin/dafeiyu-open.git
@@ -121,7 +121,7 @@ flowchart LR
 > 组合示例：只跑核心 = 一台轻量机器（或 NAS）跑 hub/model/store/brain；聊天插件装在另一台有微信/QQ 的机器上；桌宠装在平时用的电脑上。三包拆开部署互不依赖启动顺序，通过端口互通即可。
 > 远程访问**只穿透 `23408`**，`3000`、`6199`、`6099`、`6185` 一律留在内网，详见 [GETTING-STARTED 12.2](docs/GETTING-STARTED.md#122-樱花内网穿透sakurafrp)。
 >
-> **机器吃不消？** 逐项降级方案见 [docs/DEGRADED.md](docs/DEGRADED.md)：哪些能力可以整块不装、表情包怎么改成手动管库、没有显卡/没装 DSH 时损失什么。
+> 机器性能有限时，最小安装和逐项降级见 [docs/DEGRADED.md](docs/DEGRADED.md)：哪些能力可以整块不装、表情包怎么改成手动管库、没有显卡或没装 DSH 时少了什么。
 
 ## 目录
 

@@ -123,7 +123,7 @@ Running everything is demanding. The repo is organized into bundles — **the co
 > Example split: run the core (hub/model/store/brain) on a lightweight box or NAS, chat plugins on a machine with WeChat/QQ, and the pet on your daily desktop. The three bundles start independently and talk over ports.
 > For remote access, **tunnel only `23408`**. `3000`, `6199`, `6099`, `6185` must stay on the LAN — see [GETTING-STARTED §12.2](docs/GETTING-STARTED.md#122-樱花内网穿透sakurafrp) (Chinese).
 >
-> **Hardware too weak?** See [docs/DEGRADED.md](docs/DEGRADED.md) (Chinese): which capabilities you can drop entirely, how to manage the sticker library by hand instead of letting the AI collect images, and what you lose without a GPU or without DeepSeek Harness.
+> **On low-end hardware**, see [docs/DEGRADED.md](docs/DEGRADED.md) (Chinese): which capabilities can be dropped entirely, how to manage the sticker library by hand instead of letting the AI collect images, and what is missing without a GPU or without DeepSeek Harness.
 
 ## Layout
 
