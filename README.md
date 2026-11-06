@@ -98,8 +98,10 @@ docs/                架构与 Windows 部署说明
 
 ### ③ 桌宠
 
-1. 启动 `relay/pet-relay.js`（桌宠与大脑桥接，23334）与 `services/pet`。
-2. 按 `pet/dafeiyu-web` 的说明启动桌宠壳（Electron）；3D 场景在 `pet/dafeiyu3d`，低配机器可关闭 3D 只用 2D。
+1. **自行安装桌宠壳**：从 [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) 下载并安装（本仓库不分发壳本体）。
+2. **生成大肥鱼主题**：把素材放进 `%APPDATA%\clawd-on-desk\themes\dafeiyu`，可直接运行 `pet/tools/make_theme_assets.py`（抠图/生成主题资源）。不跑这步会显示桌宠壳的默认造型。
+3. 启动 `relay/pet-relay.js`（桌宠与大脑桥接，23334）与 `services/pet`。
+4. 启动 `pet/dafeiyu-web`：`dist/dafeiyu.iife.js` 已随仓库提供（预构建产物，无需 npm install / build），直接用 Electron 打开即可；3D 场景在 `pet/dafeiyu3d`，低配机器可关闭 3D 只用 2D。
 
 > 仓库里的启动脚本、配置中的路径均为占位符 `C:\path\to\dafeiyu`，需要替换成你的实际目录。
 

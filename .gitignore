@@ -63,3 +63,7 @@ astrbot-win/AstrBot-4.29.3/data/*
 !astrbot-win/AstrBot-4.29.3/data/local_tools/
 !astrbot-win/AstrBot-4.29.3/data/t2i_templates/
 !cosyvoice_ref/**/*.wav
+
+# 桌宠前端产物已预构建入库（index.html 直接引用 dist/dafeiyu.iife.js，仓库未提供构建脚本）
+!pet/dafeiyu-web/dist/
+!pet/dafeiyu-web/dist/**
