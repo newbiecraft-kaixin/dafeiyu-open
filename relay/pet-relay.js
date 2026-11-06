@@ -192,6 +192,13 @@ function isChatPayload(payload) {
   return (source === "qq" || source === "wechat") && Boolean(text);
 }
 
+/** 语音实际只念前 60 字；气泡发同一段，字幕/语音/动作才对得上。 */
+function speechSlice(raw) {
+  const text = stripIdNoise(raw).replace(/\s+/g, " ").trim();
+  if (text.length <= 60) return text;
+  return text.slice(0, 59) + "…";
+}
+
 /** 气泡显示完整正文（超长只做兜底截断）；语音侧会自己截到 60 字。 */
 function fitPetText(raw) {
   const text = stripIdNoise(raw).replace(/\s+/g, " ").trim();
@@ -539,12 +546,14 @@ function injectToPet(message) {
     const kind = CONFIG.petKind === "dsh-pet" || target.pathname.includes("/broadcast") ? "dsh-pet" : "dafeiyu3d";
     let body;
     if (kind === "dsh-pet") {
-      // dsh-pet 只认一个 text：气泡显示它的全文，语音也念它（超过 60 字会被语音侧截断）。
-      // 图片走 url（第三方完整地址），与 image（表情包池）互斥；时长随文本长度放宽。
-      const text = fitPetText(String(message.message || "").trim() || cleanLatest(message.detail || ""));
+      // 气泡、语音、时长对齐在同一段文本上：
+      // - 语音只念前 60 字，气泡也只发这 60 字，避免「字幕还没念完，动作先换下一个」；
+      // - anim 不发：桌宠自己选说话动作，发非法值反而会乱插一个跟内容无关的动作。
+      const raw = String(message.message || "").trim() || cleanLatest(message.detail || "");
+      const text = fitPetText(speechSlice(raw));
       const url = httpImage(message.url);
       const duration = Math.min(60000, Math.max(10000, text.length * 320 + (url ? 4000 : 0)));
-      body = JSON.stringify({ text, ...(url ? { url } : {}), duration, anim: false });
+      body = JSON.stringify({ text, ...(url ? { url } : {}), duration });
     } else {
       body = JSON.stringify({
         state: PET_STATE[message.state] || "idle",
