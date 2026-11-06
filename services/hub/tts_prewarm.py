@@ -12,14 +12,17 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-CONFIG = Path(r"C:\Users\KaiXin\.dsh\dsh-pet\main-config.jsonc")
-WEBM_DIR = Path(r"C:\Users\KaiXin\.dsh\profiles\web\node_modules\dsh-pet\assets\webm")
+# 默认取本机用户目录下的 .dsh；可用环境变量 DSH_HOME 覆盖
+_DSH_HOME = Path(os.environ.get("DSH_HOME") or (Path.home() / ".dsh"))
+CONFIG = _DSH_HOME / "dsh-pet" / "main-config.jsonc"
+WEBM_DIR = _DSH_HOME / "profiles" / "web" / "node_modules" / "dsh-pet" / "assets" / "webm"
 HUB_TTS = "http://127.0.0.1:23408/bot/tts"
 DEFAULT_VOICE = "小忆"
 

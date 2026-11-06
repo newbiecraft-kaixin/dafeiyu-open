@@ -1,1 +1,1 @@
-﻿C:\Users\KaiXin\dafeiyu\cosyvoice_ref\profiles\流萤\ft_model_10000.pth
+﻿cosyvoice_ref\profiles\流萤\ft_model_10000.pth

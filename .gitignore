@@ -64,6 +64,13 @@ astrbot-win/AstrBot-4.29.3/data/*
 !astrbot-win/AstrBot-4.29.3/data/t2i_templates/
 !cosyvoice_ref/**/*.wav
 
+# 表情包运行时目录：插件自动生成的预览缓存、审核暂存、删除回收站，不入库
+astrbot-win/AstrBot-4.29.3/data/stickers/_gif_preview/
+astrbot-win/AstrBot-4.29.3/data/stickers/_static_archive/
+astrbot-win/AstrBot-4.29.3/data/stickers/fav/_review/
+astrbot-win/AstrBot-4.29.3/data/stickers/*.bak*
+astrbot-win/AstrBot-4.29.3/data/stickers/*.broken
+
 # 桌宠前端产物已预构建入库（index.html 直接引用 dist/dafeiyu.iife.js，仓库未提供构建脚本）
 !pet/dafeiyu-web/dist/
 !pet/dafeiyu-web/dist/**
