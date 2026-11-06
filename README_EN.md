@@ -90,17 +90,19 @@ flowchart LR
     RELAY <--> BRAIN
 ```
 
-## Install by bundle: core / plugins / pet
+## Install by bundle: core / plugins / pet / remote access
 
-Running everything is demanding. The repo is organized into three bundles — **the core alone is enough to boot**, plugins and the pet are optional add-ons:
+Running everything is demanding. The repo is organized into bundles — **the core alone is enough to boot**, plugins, the pet and remote access are optional add-ons:
 
 | Bundle | Contents | When | Minimum specs |
 |---|---|---|---|
 | **① Core (required)** | `services/hub`, `services/model`, `services/store`, `services/brain`, `shared/infra`, `tools/windows/start-core.bat` | Brain / model routing / memory / console | Runs without a GPU (models via cloud APIs) |
 | **② Plugins (optional)** | `astrbot_plugins/*` + `services/io-wechat` (NapCat access) + `services/voice`, `audio`, `video`, `stickers`, `subtitle` + AstrBot / NapCat themselves | QQ/WeChat chat, voice, video | 8 GB RAM recommended; local voice needs an NVIDIA GPU (2–4 GB VRAM), otherwise auto-fallback to edge-tts |
 | **③ Pet (optional)** | `pet/dsh-pet` (same build as this machine, installer included) + `relay/pet-relay.js`, `services/pet`, `services/subtitle` | Desktop pet | dsh-pet is Electron — integrated graphics is fine |
+| **④ Remote access (optional)** | SakuraFrp client + one `TCP` tunnel → local `23408` | Check the console while away from home | Free tier is enough; works without a public IP |
 
 > Example split: run the core (hub/model/store/brain) on a lightweight box or NAS, chat plugins on a machine with WeChat/QQ, and the pet on your daily desktop. The three bundles start independently and talk over ports.
+> For remote access, **tunnel only `23408`**. `3000`, `6199`, `6099`, `6185` must stay on the LAN — see [GETTING-STARTED §12.2](docs/GETTING-STARTED.md#122-樱花内网穿透sakurafrp) (Chinese).
 
 ## Layout
 

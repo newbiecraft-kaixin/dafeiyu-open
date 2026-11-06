@@ -88,17 +88,19 @@ flowchart LR
     RELAY <--> BRAIN
 ```
 
-## 按需安装：核心 / 插件 / 桌宠
+## 按需安装：核心 / 插件 / 桌宠 / 远程访问
 
-整套全开对机器有要求。仓库按三个安装包组织，**可以只装核心**，插件和桌宠按需追加：
+整套全开对机器有要求。仓库按安装包组织，**可以只装核心**，插件、桌宠、远程访问按需追加：
 
 | 安装包 | 内容 | 什么时候装 | 最低配置 |
 |---|---|---|---|
 | **① 核心（必装）** | `services/hub`、`services/model`、`services/store`、`services/brain`、`shared/infra`、`tools/windows/start-core.bat` | 想跑大脑/模型路由/记忆/控制台 | 无 GPU 也能跑（模型走云端 API） |
 | **② 插件（可选）** | `astrbot_plugins/*` + `services/io-wechat`（NapCat 接入）+ `services/voice`、`audio`、`video`、`stickers`、`subtitle` + AstrBot / NapCat 本体 | 想要 QQ/微信聊天、语音、看视频等能力 | 建议双端聊天至少 8G 内存；本地语音需 NVIDIA GPU（2~4G 显存），无 GPU 自动回退 edge-tts |
 | **③ 桌宠（可选）** | `pet/dsh-pet`（本机同款，安装包已随仓库）+ `relay/pet-relay.js`、`services/pet`、`services/subtitle` | 想要桌面宠物 | dsh-pet 是 Electron，集显可跑 |
+| **④ 远程访问（可选）** | 樱花 SakuraFrp 客户端 + 一条 `TCP` 隧道 → 本机 `23408` | 人在外面也想看/操作控制台 | 免费额度够用；没有公网 IP 也能用 |
 
 > 组合示例：只跑核心 = 一台轻量机器（或 NAS）跑 hub/model/store/brain；聊天插件装在另一台有微信/QQ 的机器上；桌宠装在平时用的电脑上。三包拆开部署互不依赖启动顺序，通过端口互通即可。
+> 远程访问**只穿透 `23408`**，`3000`、`6199`、`6099`、`6185` 一律留在内网，详见 [GETTING-STARTED 12.2](docs/GETTING-STARTED.md#122-樱花内网穿透sakurafrp)。
 
 ## 目录
 
