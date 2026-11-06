@@ -284,6 +284,19 @@
   }
   .pet-card:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.08); }
   .pet-switches { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .pet-power {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px dashed var(--line);
+  }
+  .pet-power b { font-size: 12.5px; }
+  .pet-power .hint { flex: 1; min-width: 150px; }
+  .pet-power button {
+    padding: 6px 12px; font-size: 11.5px; border-radius: 8px; background: transparent;
+    color: var(--muted); border: 1px solid var(--line);
+  }
+  .pet-power button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-power button.on { color: #7ee2a8; border-color: rgba(70,220,130,.42); }
+  .pet-power button:disabled { opacity: .55; cursor: not-allowed; }
   .pet-sw label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
   .pet-sw input { accent-color: #6b8fff; width: 15px; height: 15px; }
   .pet-sw span { user-select: none; }
@@ -596,6 +609,11 @@
     </div>
 
     <div class="pet-card">
+      <div class="pet-power">
+        <b>桌宠运行</b>
+        <span class="hint" id="petPowerSub">读取中…</span>
+        <button type="button" id="petPowerBtn">关闭桌宠</button>
+      </div>
       <div class="pet-switches">
         <label class="pet-sw"><input type="checkbox" id="petVoiceOn" /><span>语音</span></label>
         <label class="pet-sw"><input type="checkbox" id="petClickOn" /><span>点击音效</span></label>
@@ -1542,6 +1560,44 @@
     }
   }
 
+  let petPowerOn = null;
+
+  // 桌宠开关：状态来自 /pet/power（Electron 进程 + 显示模式）
+  async function loadPetPower() {
+    try {
+      const payload = await (await fetch("/pet/power", { cache: "no-store" })).json();
+      if (!payload.ok) throw new Error(payload.error || "读取失败");
+      const data = payload.data || {};
+      petPowerOn = data.running === true;
+      const btn = $("petPowerBtn");
+      btn.textContent = petPowerOn ? "关闭桌宠" : "开启桌宠";
+      btn.classList.toggle("on", petPowerOn);
+      $("petPowerSub").textContent = petPowerOn
+        ? "运行中 · PID " + ((data.pids || []).join(", ") || "未知") + " · 显示 " + (data.display || "both")
+        : "已关闭 · 显示 " + (data.display || "none");
+    } catch (error) {
+      $("petPowerSub").textContent = "状态读取失败：" + error.message;
+    }
+  }
+
+  async function togglePetPower() {
+    const turningOff = petPowerOn !== false;
+    const btn = $("petPowerBtn");
+    btn.disabled = true;
+    $("petPowerSub").textContent = turningOff ? "正在关闭桌宠…" : "正在开启桌宠…";
+    try {
+      const data = await postJson("/pet/power", { action: turningOff ? "stop" : "start" });
+      botMsg(turningOff ? "桌宠已关闭" : "桌宠已开启");
+      petPowerOn = data.running === true;
+      await loadPetPower();
+    } catch (error) {
+      botMsg("桌宠开关失败：" + error.message, true);
+      await loadPetPower();
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   function savePetSwitch(key, label, el) {
     postJson("/pet/config", { [key]: el.checked })
       .then(() => {
@@ -1696,6 +1752,7 @@
     loadFriends();
     loadVoices();
     loadPet();
+    loadPetPower();
     loadRelay();
     loadWindows();
     loadHumanSim();
@@ -2357,6 +2414,7 @@
   });
 
   $("editRelay").addEventListener("click", openRelayForm);
+  $("petPowerBtn").addEventListener("click", togglePetPower);
   $("petApiSay").addEventListener("click", () => {
     const text = $("petApiText").value.trim();
     if (!text) { petLog("先写一句气泡内容", true); return; }
@@ -2466,6 +2524,7 @@
   loadBot();
   setInterval(refresh, 5000);
   setInterval(loadWindows, 5000);
+  setInterval(loadPetPower, 20000);
 </script>
 </body>
 </html>

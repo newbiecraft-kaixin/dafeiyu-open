@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
+import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 CONFIG_PATH = Path.home() / ".dsh" / "dsh-pet" / "main-config.jsonc"
 PROFILES = Path.home() / "dafeiyu" / "cosyvoice_ref" / "profiles"
@@ -540,3 +542,128 @@ def handle_control(req: Any) -> Any:
         return fail(str(error), 400)
     except (RuntimeError, OSError) as error:
         return fail(f"桌宠接口调用失败：{error}", 502)
+
+
+# ---------- 桌宠开关（关闭 / 开启） ----------
+# 关闭 = display 改 none + 关托盘 → 宿主重载后不再拉起 Electron（进程真的退出）。
+# 开启 = 恢复关闭前的 display / 托盘设置 → 重载后宿主重新拉起桌宠窗口。
+POWER_STATE = Path(__file__).resolve().parents[1] / "data" / "pet-power.json"
+_ELECTRON_CACHE: Dict[str, Any] = {"at": 0.0, "pids": []}
+
+
+def _electron_pids() -> List[int]:
+    """桌宠 Electron 进程（runtime/electron-helper/main.js）的 PID；查询结果缓存 3 秒。"""
+    now = time.time()
+    if now - float(_ELECTRON_CACHE.get("at") or 0) < 3:
+        return list(_ELECTRON_CACHE.get("pids") or [])
+    script = (
+        "Get-CimInstance Win32_Process -Filter \"Name='electron.exe'\" | "
+        "Where-Object { $_.CommandLine -match 'electron-helper' } | "
+        "ForEach-Object { $_.ProcessId }"
+    )
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True, text=True, timeout=15,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ).stdout
+        pids = sorted({int(line.strip()) for line in out.splitlines() if line.strip().isdigit()})
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return list(_ELECTRON_CACHE.get("pids") or [])
+    _ELECTRON_CACHE.update({"at": now, "pids": pids})
+    return pids
+
+
+def _read_power_state() -> Dict[str, Any]:
+    try:
+        data = json.loads(POWER_STATE.read_text("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_power_state(data: Dict[str, Any]) -> None:
+    POWER_STATE.parent.mkdir(parents=True, exist_ok=True)
+    POWER_STATE.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+
+
+def _reload_pet() -> None:
+    """让宿主立刻重读配置并重启桌面 Helper（/reload 只重载桌宠，不动宿主）。"""
+    from .http_client import http_call
+
+    status, body = http_call("POST", _pet_base() + "/reload", {}, timeout=10.0)
+    if status != 200 or not isinstance(body, dict) or body.get("ok") is False:
+        raise RuntimeError(_upstream_error(body))
+
+
+def power_status() -> Dict[str, Any]:
+    cfg = read_config()
+    pids = _electron_pids()
+    return {
+        "running": bool(pids),
+        "pids": pids,
+        "display": str(cfg.get("display") or "both"),
+        "trayEnabled": cfg.get("trayEnabled") is not False,
+    }
+
+
+def power(action: str) -> Dict[str, Any]:
+    action = str(action or "").strip().lower()
+    if action in {"", "status"}:
+        return power_status()
+
+    cfg = read_config()
+    display = str(cfg.get("display") or "both")
+
+    if action in {"stop", "off", "close"}:
+        state = _read_power_state()
+        if display != "none":
+            state["display"] = display
+        state["trayEnabled"] = cfg.get("trayEnabled") is not False
+        _write_power_state(state)
+        save_config({"display": "none", "trayEnabled": False})
+        _reload_pet()
+        deadline = time.time() + 15
+        while time.time() < deadline and _electron_pids():
+            time.sleep(0.4)
+        _ELECTRON_CACHE["at"] = 0.0
+        return {"action": "stop", **power_status()}
+
+    if action in {"start", "on", "open"}:
+        state = _read_power_state()
+        target = str(state.get("display") or "both")
+        if target == "none":
+            target = "both"
+        body: Dict[str, Any] = {"display": target}
+        if state.get("trayEnabled") is not None:
+            body["trayEnabled"] = bool(state["trayEnabled"])
+        save_config(body)
+        _reload_pet()
+        deadline = time.time() + 25
+        while time.time() < deadline and not _electron_pids():
+            time.sleep(0.5)
+        _ELECTRON_CACHE["at"] = 0.0
+        return {"action": "start", **power_status()}
+
+    raise ValueError(f"未知操作 {action}")
+
+
+def handle_power_get(_req: Any = None) -> Any:
+    from infra import fail, ok
+
+    try:
+        return ok(power_status())
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        return fail(f"读取桌宠运行状态失败：{error}", 500)
+
+
+def handle_power(req: Any) -> Any:
+    from infra import fail, ok
+
+    payload = req.payload if isinstance(req.payload, dict) else {}
+    try:
+        return ok(power(str(payload.get("action") or "")))
+    except ValueError as error:
+        return fail(str(error), 400)
+    except (RuntimeError, OSError) as error:
+        return fail(f"桌宠开关失败：{error}", 502)

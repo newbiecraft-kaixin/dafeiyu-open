@@ -120,6 +120,8 @@ routes = {
     "GET /pet/relay": petctl.handle_relay_get,
     "POST /pet/relay": petctl.handle_relay_save,
     "POST /pet/control": petctl.handle_control,
+    "GET /pet/power": petctl.handle_power_get,
+    "POST /pet/power": petctl.handle_power,
     "GET /windows": windows.handle_list,
     "POST /windows/start": windows.handle_start,
     "POST /windows/stop": windows.handle_stop,
