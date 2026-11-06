@@ -167,6 +167,7 @@
   "pm_active_max_age_hours": 72,
   "pm_active_probability": 0.15,
   "listen_window_reply_group": true,
+  "listen_window_at_seconds": 300,
   "greeting_slots": [
     {
       "name": "早安",
