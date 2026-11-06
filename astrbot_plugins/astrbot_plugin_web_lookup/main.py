@@ -1009,6 +1009,8 @@ class WebLookupPlugin(Star):
                     "用法：/看视频 关键词 [b站|快手|抖音|西瓜]；"
                     "或引用视频消息 @我 解析单条链接。")
                 return
+            yield event.plain_result(
+                f"去{names.get(p or 'bilibili', 'B站')}搜「{kw}」，稍等…")
             out = await self._video_search_texts(event, kw, p, deep, 2)
             yield event.plain_result("\n\n".join(out))
             return
@@ -1087,6 +1089,7 @@ class WebLookupPlugin(Star):
             vp = None
         if vp is not None and vp.detect_platform(lk):
             t0 = time.monotonic()
+            yield event.plain_result("开始解析这条视频，稍等…")
             try:
                 data = await asyncio.wait_for(
                     vp.parse_video(lk, self.cfg),
