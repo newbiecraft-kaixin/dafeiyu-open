@@ -32,7 +32,16 @@ class CoreMixin:
                 with open(cfg_path, encoding="utf-8-sig") as f:
                     loaded = json.load(f)
                 if isinstance(loaded, dict):
-                    self.cfg.update({k: loaded[k] for k in loaded if k in self.cfg})
+                    # 不再按 DEFAULTS 白名单过滤：以前不在默认表里的键会被静默丢弃，
+                    # 表现是「config.json 写了但完全不生效」（如 greeting_slots、send_min_gap_seconds）。
+                    # 这里全量合并，并把拼错的键打到日志里，便于发现。
+                    unknown = sorted(set(loaded) - set(DEFAULTS))
+                    if unknown:
+                        logger.warning(
+                            f"[human_sim] config.json 有 {len(unknown)} 个键不在 DEFAULTS 内，"
+                            f"已照样生效：{unknown}"
+                        )
+                    self.cfg.update(loaded)
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"[human_sim] 读取 config.json 失败: {e}")
 

@@ -57,9 +57,9 @@ flowchart LR
 
 | 安装包 | 内容 | 什么时候装 | 最低配置 |
 |---|---|---|---|
-| **① 核心（必装）** | `services/hub·model·store·brain`、`shared/infra`、`tools/windows/start-core.bat` | 想跑大脑/模型路由/记忆/控制台 | 无 GPU 也能跑（模型走云端 API） |
-| **② 插件（可选）** | `astrbot_plugins/*` + `services/io-wechat·napcat 接入·voice·audio·video·stickers·subtitle` + AstrBot / NapCat 本体 | 想要 QQ/微信聊天、语音、看视频等能力 | 建议双端聊天至少 8G 内存；本地语音需 NVIDIA GPU（2~4G 显存），无 GPU 自动回退 edge-tts |
-| **③ 桌宠（可选）** | `pet/dsh-pet`（本机同款，安装包已随仓库）+ `relay/pet-relay.js`、`services/pet·subtitle`；旧版 `pet/dafeiyu-web·dafeiyu3d` 保留 | 想要桌面宠物 | dsh-pet 是 Electron，集显可跑；3D 场景建议核显关闭 |
+| **① 核心（必装）** | `services/hub`、`services/model`、`services/store`、`services/brain`、`shared/infra`、`tools/windows/start-core.bat` | 想跑大脑/模型路由/记忆/控制台 | 无 GPU 也能跑（模型走云端 API） |
+| **② 插件（可选）** | `astrbot_plugins/*` + `services/io-wechat`（NapCat 接入）+ `services/voice`、`audio`、`video`、`stickers`、`subtitle` + AstrBot / NapCat 本体 | 想要 QQ/微信聊天、语音、看视频等能力 | 建议双端聊天至少 8G 内存；本地语音需 NVIDIA GPU（2~4G 显存），无 GPU 自动回退 edge-tts |
+| **③ 桌宠（可选）** | `pet/dsh-pet`（本机同款，安装包已随仓库）+ `relay/pet-relay.js`、`services/pet`、`services/subtitle`；旧版 `pet/dafeiyu-web`、`pet/dafeiyu3d` 保留 | 想要桌面宠物 | dsh-pet 是 Electron，集显可跑；3D 场景建议核显关闭 |
 
 > 组合示例：只跑核心 = 一台轻量机器（或 NAS）跑 hub/model/store/brain；聊天插件装在另一台有微信/QQ 的机器上；桌宠装在平时用的电脑上。三包拆开部署互不依赖启动顺序，通过端口互通即可。
 
@@ -82,7 +82,34 @@ relay/               桌宠与大脑桥接（pet-relay.js）               → �
 stack/               Docker 部署参考（compose / Dockerfile / 人设）
 tools/               CosyVoice 安装脚本、Windows 启动脚本（start-core.bat = 核心四服务一键启动）
 docs/                架构与 Windows 部署说明
+astrbot-win/         AstrBot 4.29.3 的部署数据（插件配置、表情包池、模板） → 安装包②
+cosyvoice_ref/       声线参考音与 profiles 档案（说话 / 唱歌共用）        → 安装包②
 ```
+
+## 插件清单（`astrbot_plugins/`）
+
+18 个插件都自带 `config.json`，复制到 AstrBot 的 `data/plugins/` 下即可启用。
+
+| 插件 | 作用 |
+|---|---|
+| `astrbot_plugin_human_sim` | 群内拟人：潜水插话、冷场开话头、冒泡发 QQ 表情、发表情包；拍一拍全链路 |
+| `astrbot_plugin_humanizer` | 人味处理：清洗 Markdown 结构、AI 腔样板句、长句排比，防复读 |
+| `astrbot_plugin_group_window` | 被动记录每个群的聊天窗口（不唤醒不回复），机器人发言时注入上下文 |
+| `astrbot_plugin_speaker_tag` | 消息补 `[昵称/时间]` 标签、群历史截断、每人档案按会话隔离 |
+| `astrbot_plugin_provider_router` | 群聊自动切本地 Ollama、好友私聊走云端；`/模型` `/转换` 切换 |
+| `astrbot_plugin_basic_tools` | 基础工具：时间/群成员/戳一戳/提醒/天气/查头像；`/听歌` `/声线` `/停` `/定时任务` |
+| `astrbot_plugin_sticker_pack` | 回复里的 `:情绪词:` 按语义从全库挑图，单独成条发送 |
+| `astrbot_plugin_face_convert` | 把 `[流泪]` `[doge]` 等文字表情转成真实 QQ 表情段 |
+| `astrbot_plugin_qzone_channel` | QQ 空间独立信道：轮询自己说说下的新评论，用独立上下文回复 |
+| `astrbot_plugin_daily_qzone` | 每天自动发一条 QQ 空间动态，内容优先取当日群聊总结 |
+| `astrbot_plugin_web_lookup` | 联网查证：搜索候选 → 校验 → 抓正文 → 相似度挑最相关页面 |
+| `astrbot_plugin_self_growth` | 把经验教训记进成长笔记，并自动注入系统提示，形成学习闭环 |
+| `astrbot_plugin_care_ping` | 冷场时主动私聊主人：≥180 分钟空闲、09:00–23:00、每天 ≤4 条 |
+| `astrbot_plugin_local_tools` | 给 AI 本机文件读写与命令执行权限（默认仅主人可用） |
+| `astrbot_plugin_tool_gate` | 按群决定模型/人设/工具集，支持一键预设与私聊接入 |
+| `astrbot_plugin_dafeiyu_pet` | 把 QQ/微信消息与回复状态转给桌宠中转服务（默认 `127.0.0.1:23334`） |
+| `astrbot_plugin_qq_mcp` | 发消息（拆条+打字节奏）/查历史/戳一戳封装成 MCP 工具，供 DSH 调用 |
+| `astrbot_plugin_wechat_oc_bridge` | 把本机 io-wechat（PC 微信小号 RPA）接入 AstrBot，回复走同一个小号 |
 
 ## 快速开始（Windows）
 
