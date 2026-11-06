@@ -69,12 +69,18 @@ def start(
         raise ValueError("peer_id 不能为空")
     now = time.time()
     span = max(1, int(seconds or DEFAULT_SECONDS))
+    group = str(group_id or "").strip()
+    umo = str(group_umo or "").strip()
+    if not umo and group.isdigit():
+        # 模型经常只给群号：按 OneBot 的 UMO 规则补全，
+        # 否则 human_sim 拿到空 group_umo 会直接放弃并入。
+        umo = f"aiocqhttp:GroupMessage:{group}"
     with _LOCK:
         items = _prune(_items())
         window = {
             "peer_id": peer,
-            "group_id": str(group_id or ""),
-            "group_umo": str(group_umo or ""),
+            "group_id": group,
+            "group_umo": umo,
             "started_at": now,
             "until": now + span,
             "seconds": span,
