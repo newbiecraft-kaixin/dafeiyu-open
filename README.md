@@ -310,6 +310,9 @@ A：先跑 `.\pet\dsh-pet\install.ps1 -Backdrop check`，确认 dsh-pet 版本�
 **Q：这个项目是完全原创的吗？**
 A：不是。核心代码原创，桌宠桥接、微信自动化、语音链路改造自上游项目，逐项来源见上文「来源与改编」与 [NOTICE](NOTICE)。
 
+**Q：代码和文档是 AI 生成的吗？**
+A：有 AI 工具参与，提交前由维护者修改并测试，维护者对内容负责。这里不声称「零 AI 参与」，也不给生成比例，说明见 [docs/AI_USAGE.md](docs/AI_USAGE.md)。
+
 ## 已知限制
 
 - 本文档描述的是**全量形态（L3）**；L0~L2 的降级差异、以及各能力单独关掉后的行为，见 [docs/DEGRADED.md](docs/DEGRADED.md)。

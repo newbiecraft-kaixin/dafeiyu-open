@@ -314,6 +314,9 @@ A: Run `.\pet\dsh-pet\install.ps1 -Backdrop check` first — make sure dsh-pet i
 **Q: Is this project fully original?**
 A: No. The core code is original; the pet bridge, WeChat automation and voice chain are adapted from upstream projects — see "Upstream projects" above and [NOTICE](NOTICE).
 
+**Q: Is the code or documentation AI-generated?**
+A: AI tools were involved; the maintainer reviews, edits and tests before committing, and is responsible for what is committed. We do not claim "zero AI", nor give a generated-code percentage — see [docs/AI_USAGE.md](docs/AI_USAGE.md).
+
 ## Known limitations
 
 - This document describes the **full form (L3)**. For the L0–L2 degraded tiers and what each capability loses when disabled, see [docs/DEGRADED.md](docs/DEGRADED.md) (Chinese).
