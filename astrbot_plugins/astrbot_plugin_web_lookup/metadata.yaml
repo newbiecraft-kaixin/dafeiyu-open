@@ -1,5 +1,5 @@
 name: astrbot_plugin_web_lookup
 desc: 联网查证工具：搜索候选名单 → 404/超时校验 → 流式抓正文 → 相似度挑最相关页面；也支持直接给链接抓正文与 B站视频字幕；按标签刷 B站视频（片单池）；新增扫码登录自动存 SESSDATA。
 version: v1.5.0
-author: dafeiyu-local
+author: newbiecraft-kaixin
 repo: local

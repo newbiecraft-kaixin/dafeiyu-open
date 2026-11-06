@@ -2,5 +2,5 @@ name: astrbot_plugin_basic_tools
 desc: 基础 LLM 工具集（时间/群成员/戳一戳/提醒/天气/查头像）+ /听歌 /声线 /停 /定时任务 指令
 help: 工具自动挂载到 LLM function calling；指令给主人用：/听歌 [歌名|页码]（/歌曲 同义）、/声线 [名称]、/停、/定时任务 查看|设置|删除
 version: v1.4.0
-author: dafeiyu-local
+author: newbiecraft-kaixin
 repo: local

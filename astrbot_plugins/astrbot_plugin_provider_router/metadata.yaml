@@ -2,6 +2,7 @@ name: astrbot_plugin_provider_router
 display_name: "按会话分流模型（群聊走本地）"
 desc: "群聊自动切到本地 Ollama 模型；好友私聊走云端，没加好友的临时会话/陌生人走本地；支持 /模型 查看、/转换 切换。"
 version: v2.1.0
-author: dafeiyu-local
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
 support_platforms:
   - aiocqhttp

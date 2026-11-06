@@ -2,6 +2,7 @@ name: astrbot_plugin_qq_mcp
 display_name: "QQ 能力 MCP 服务"
 desc: "把 QQ 发消息（拆条+打字节奏）、查历史、戳一戳包成 MCP streamable-http 工具，供 DSH 直接调用。"
 version: v1.0.0
-author: dafeiyu-local
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
 support_platforms:
   - aiocqhttp
