@@ -9,8 +9,14 @@ from typing import Any, Dict, List
 
 from infra import build_envelope
 
-from . import state
-from .config import AT_RE, GROUP_PREFIX_RE, NIGHT_REPLY_QUOTA, NIGHT_REPLY_WINDOW
+from . import pet_push, state
+from .config import (
+    AT_RE,
+    GROUP_PREFIX_RE,
+    NIGHT_REPLY_QUOTA,
+    NIGHT_REPLY_WINDOW,
+    STARTUP_GRACE,
+)
 from .util import log
 
 
@@ -62,6 +68,15 @@ def parse_content(content: str) -> tuple[str, List[Dict[str, Any]]]:
     return "[消息]", media
 
 
+def _create_time(msg, d: dict) -> int:
+    """消息创建时间（秒）。个别版本给毫秒，统一成秒；取不到返回 0。"""
+    try:
+        ct = int(getattr(msg, "create_time", 0) or d.get("create_time") or 0)
+    except (TypeError, ValueError):
+        return 0
+    return ct // 1000 if ct > 10 ** 12 else ct
+
+
 def snapshot(msg, chat) -> dict:
     info = {}
     try:
@@ -84,6 +99,14 @@ def snapshot(msg, chat) -> dict:
     content, media = parse_content(content)
     sender_uid = str(d.get("sender_wxid") or getattr(msg, "sender_wxid", "") or "")
     sender_name = str(d.get("sender") or getattr(msg, "sender", "") or "")
+    # 自己发的消息：引擎的 is_self 依赖 sender_wxid 解析，老分片里 sender_id
+    # 是数字、解析不出 wxid，就会漏判成对方消息，机器人读到自己的话再回一遍。
+    is_self = bool(getattr(msg, "is_self", False))
+    if not is_self and state.bot_wxid and sender_uid == state.bot_wxid:
+        is_self = True
+    if (not is_self and state.bot_name and sender_name == state.bot_name
+            and (not sender_uid or sender_uid == state.bot_wxid)):
+        is_self = True
     if not sender_uid and chat_type != "group":
         # 私聊里发消息的人就是会话本人，这条是结构事实而不是猜测
         sender_uid = who
@@ -102,7 +125,8 @@ def snapshot(msg, chat) -> dict:
         # 下游（AstrBot 桥接）要据此判断「有没有 @ 机器人」，
         # 因为微信正文里的 “@昵称” 只是一段普通文本，没有独立的消息段。
         "mentions": mentions(content),
-        "is_self": bool(getattr(msg, "is_self", False)),
+        "is_self": is_self,
+        "create_time": _create_time(msg, d),
         "id": str(getattr(msg, "id", "") or d.get("id") or ""),
     }
 
@@ -134,6 +158,18 @@ def muted(chat: str, sender: str) -> bool:
         return True
 
 
+def _echo_of_own(chat_uid: str, text: str) -> bool:
+    """自己的发送被数据库回读：sender 解析不出来时，用最近发送内容对账兜底。"""
+    if not chat_uid or not text:
+        return False
+    now = time.time()
+    with state.send_gate_lock:
+        for ts, who, last in state.recent_sends:
+            if who == chat_uid and last == text and 0 <= now - ts <= 120:
+                return True
+    return False
+
+
 def on_message(msg, chat) -> None:
     try:
         item = snapshot(msg, chat)
@@ -141,6 +177,21 @@ def on_message(msg, chat) -> None:
         log("snapshot failed:", exc)
         return
     if item["is_self"] or item["type"] == "system":
+        if item["is_self"]:
+            state.counts.inc("event_self")
+        return
+
+    # 重启后微信库会把停机期间的积压补发一遍：按消息创建时间丢掉旧消息
+    ct = int(item.get("create_time") or 0)
+    if ct and state.attach_time and ct < state.attach_time - STARTUP_GRACE:
+        state.counts.inc("event_stale")
+        return
+
+    # 自己刚发的消息被回读，但引擎没判出 is_self 时，用发送内容对账兜底
+    if (not item["sender"] or item["sender"] == state.bot_name) and _echo_of_own(
+        item["chat_uid"], item["content"]
+    ):
+        state.counts.inc("event_echo")
         return
 
     if muted(item["chat"], item["sender"]):
@@ -201,3 +252,8 @@ def on_message(msg, chat) -> None:
     state.queue.push(env)
     state.counts.inc("event_in")
     state.counts.inc("event message")
+    # 图片/表情/GIF 不进 AstrBot 消息链（桥接只认文字），在这里直推桌宠
+    try:
+        pet_push.push_image_message(item)
+    except Exception as exc:  # noqa: BLE001
+        log("pet push error:", exc)
