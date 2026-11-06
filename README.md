@@ -5,6 +5,23 @@
 > 本仓库是「大肥鱼」自研部分的全链路开源版本，包含 AstrBot 插件、微信桥、模型/语音/视频服务、桌宠前端与部署脚本。
 > AstrBot 主程序、NapCat、CosyVoice 模型权重等第三方组件不入库，按下方「依赖与许可」自行安装。
 
+## 来源与改编（Upstream）
+
+本仓库不是从零开始的项目，以下模块是在上游开源项目基础上**改造或对接**而来，版权归上游作者所有：
+
+| 本项目模块 | 上游项目 | 关系 | 上游许可 |
+|---|---|---|---|
+| `astrbot_plugins/*` | [AstrBot](https://github.com/AstrBotDevs/AstrBot) | 基于 AstrBot 4.x 插件接口开发；主程序与内置插件未随仓库分发 | AGPL-3.0 |
+| `pet/`、`relay/pet-relay.js`、`services/pet` | [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) | 桌宠壳（窗口 / 气泡 / 动作 / 语音链路）改造自该项目；壳本体未随仓库分发 | AGPL-3.0 |
+| `services/io-wechat`、`astrbot_plugin_wechat_oc_bridge` | [wechatauto-replica](https://github.com/fanyuantaier/wechatauto-replica) | 基于其 UIA 微信自动化库对接 | Apache-2.0 |
+| `services/voice`、`tools/` 下的 CosyVoice 脚本、`cosyvoice_ref/` | [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) | 基于 CosyVoice2 推理服务；代码与模型权重未随仓库分发 | Apache-2.0 |
+| 长期记忆能力 | [livingmemory](https://github.com/lxfight-s-Astrbot-Plugins/astrbot_plugin_livingmemory) | 以插件形式依赖，未随仓库分发 | AGPL-3.0 |
+| QQ 接入 | [NapCat](https://github.com/NapNeko/NapCatQQ) | QQ 协议端，未随仓库分发 | AGPL-3.0 |
+
+本仓库原创部分：`services/hub`、`model`、`store`、`brain`、`audio`、`video`、`subtitle`、`shared/infra`，以及 `human_sim`、`group_window`、`sticker_pack`、`face_convert`、`tool_gate`、`provider_router`、`basic_tools` 等插件。
+
+二次分发时请保留上述项目的版权与许可声明，并同样以 AGPL-3.0 开源；上游组件未随仓库分发，安装与使用请遵守其各自许可。
+
 ## 能力概览
 
 - **QQ 端**：NapCat + AstrBot，支持群聊/私聊、拟人化回复、表情回应、点赞、禁言、图片/表情包、群窗口记忆。
@@ -100,12 +117,12 @@ docs/                架构与 Windows 部署说明
 
 ## 依赖与许可
 
-本项目以 **AGPL-3.0** 发布，因为我们大量依赖并修改了同为 AGPL-3.0 的生态组件：
+本项目以 **AGPL-3.0** 发布，因为我们大量依赖并修改了同为 AGPL-3.0 的生态组件（模块级对应关系见上文「来源与改编」）：
 
 | 组件 | 许可 | 说明 |
 |---|---|---|
 | [AstrBot](https://github.com/AstrBotDevs/AstrBot) | AGPL-3.0 | 插件宿主，未随本仓库分发 |
-| [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) | AGPL-3.0 | 桌宠壳参考，未随本仓库分发 |
+| [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) | AGPL-3.0 | 桌宠壳改造自该项目，未随本仓库分发 |
 | [livingmemory](https://github.com/lxfight-s-Astrbot-Plugins/astrbot_plugin_livingmemory) | AGPL-3.0 | 长期记忆插件，未随本仓库分发 |
 | [NapCat](https://github.com/NapNeko/NapCatQQ) | AGPL-3.0 | QQ 协议端，未随本仓库分发 |
 | [wechatauto-replica](https://github.com/fanyuantaier/wechatauto-replica) | Apache-2.0 | 微信自动化库，以依赖形式安装 |
