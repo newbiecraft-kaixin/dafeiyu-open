@@ -3,4 +3,4 @@ desc: 每日自动发一篇 QQ 空间动态：内容优先「当日群聊总结�
 help: 每天到点自动发说说（6/12/18 点三档，内容优先当日群聊总结）
 version: v1.1.0
 author: newbiecraft-kaixin
-repo: local
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open

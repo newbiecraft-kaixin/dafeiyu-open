@@ -147,6 +147,12 @@ cosyvoice_ref/       声线参考音与 profiles 档案（说话 / 唱歌共用�
 18 个插件都自带 `config.json`，复制到 AstrBot 的 `data/plugins/` 下即可启用（或用 `tools/windows/install-plugins.ps1` 一键安装）。
 **每个插件的指令、配置项、依赖关系见 [docs/PLUGINS.md](docs/PLUGINS.md)**，全部指令有速查表。
 
+其中三个已拆成独立仓库，可以直接在 AstrBot 插件市场搜索安装（市场一条记录对应一个仓库根）：
+
+- [astrbot_plugin_human_sim](https://github.com/newbiecraft-kaixin/astrbot_plugin_human_sim) — 群内拟人
+- [astrbot_plugin_sticker_pack](https://github.com/newbiecraft-kaixin/astrbot_plugin_sticker_pack) — 表情包索引
+- [astrbot_plugin_web_lookup](https://github.com/newbiecraft-kaixin/astrbot_plugin_web_lookup) — 联网查证 + 视频解析
+
 | 插件 | 作用 |
 |---|---|
 | `astrbot_plugin_human_sim` | 群内拟人：潜水插话、冷场开话头、冒泡发 QQ 表情、发表情包；拍一拍全链路 |

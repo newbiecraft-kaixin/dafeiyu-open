@@ -149,6 +149,12 @@ cosyvoice_ref/       Voice reference audio & profiles (shared by talking and sin
 All 18 plugins ship with their own `config.json` — drop them into AstrBot's `data/plugins/` (or use `tools/windows/install-plugins.ps1` to install them all at once).
 **Per-plugin commands, config keys, and dependencies: see [docs/PLUGINS.md](docs/PLUGINS.md)** (Chinese) — it includes a full command cheat sheet.
 
+Three of them are also standalone repos, installable straight from the AstrBot plugin market (one market entry = one repo root):
+
+- [astrbot_plugin_human_sim](https://github.com/newbiecraft-kaixin/astrbot_plugin_human_sim) — human-like group chat
+- [astrbot_plugin_sticker_pack](https://github.com/newbiecraft-kaixin/astrbot_plugin_sticker_pack) — sticker index
+- [astrbot_plugin_web_lookup](https://github.com/newbiecraft-kaixin/astrbot_plugin_web_lookup) — web lookup + video parsing
+
 | Plugin | What it does |
 |---|---|
 | `astrbot_plugin_human_sim` | Human-like group behavior: lurk & interject, break silences, send QQ emotes & stickers; full poke chain |
