@@ -270,5 +270,61 @@ class ToolsMixin:
         except Exception as e:
             return f"贴表情回应失败: {e}"
 
+    @filter.llm_tool(name="recall_own_messages")
+    async def recall_own_messages(self, event: AstrMessageEvent, count: str = "1"):
+        """撤回你自己最近发出去的消息（只能撤自己发的，动不了别人的）。当你说错话、发错图/发错表情包、发重了，或对方明确让你撤回时使用。不要用来刷屏式连撤。
+
+        Args:
+            count(string): 要撤回几条自己的消息，1-5，默认 1
+        """
+        bot = getattr(event, "bot", None)
+        if bot is None:
+            return "当前环境拿不到 QQ 客户端"
+        try:
+            n = max(1, min(5, int(str(count).strip() or "1")))
+        except ValueError:
+            n = 1
+        self_id = str(getattr(event, "get_self_id", lambda: "")() or "")
+        gid = str(event.get_group_id() or "").strip()
+        try:
+            if gid:
+                hist = await bot.api.call_action(
+                    "get_group_msg_history", **{"group_id": int(gid), "count": 30}
+                )
+            else:
+                fuid = str(event.get_sender_id() or "").strip()
+                if not fuid:
+                    return "拿不到会话对象，没法找自己的发言"
+                hist = await bot.api.call_action(
+                    "get_friend_msg_history", **{"user_id": int(fuid), "count": 30}
+                )
+        except Exception as e:
+            return f"拉取聊天记录失败: {e}"
+        msgs = (hist or {}).get("messages") or []
+        mine = [
+            str(m.get("message_id"))
+            for m in msgs
+            if str((m.get("sender") or {}).get("user_id") or "") == self_id
+        ]
+        if not mine:
+            return "最近 30 条里没找到自己发的消息，没得撤"
+        ok, fail = 0, []
+        for mid in mine[-n:]:
+            try:
+                await bot.api.call_action("delete_msg", **{"message_id": int(mid)})
+                ok += 1
+            except Exception as e:  # noqa: BLE001
+                fail.append(f"{mid}: {e}")
+        # 条数统计：本次新增（找到的自己发言数）/ 撤销（撤回成功数），并累计
+        st = getattr(self, "_recall_stats", None)
+        if st is None:
+            st = self._recall_stats = {"recalled": 0}
+        st["recalled"] += ok
+        extra = f"，撤销失败 {len(fail)} 条" if fail else ""
+        return (
+            f"本次找到自己最近 {len(mine)} 条发言，成功撤销 {ok} 条{extra}"
+            f"（累计撤销 {st['recalled']} 条）"
+        )
+
 
 exit_plugin_main(globals(), _REAL_MODULE_NAME)
