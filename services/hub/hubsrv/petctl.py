@@ -36,13 +36,29 @@ TOP_FIELDS = {
     "chatAnimationEnabled": "bool",
     "whisperImageEnabled": "bool",
     "notificationsEnabled": "bool",
+    "clickSoundEnabled": "bool",
     "bubbleBackdropEnabled": "bool",
     "bubbleBackdropCount": "num",
     "bubbleBackdropMotion": "enum",
     "bubbleBackdropPalette": "enum",
     "bubbleRiseSfxEnabled": "bool",
+    "bubbleBurstSfxEnabled": "bool",
     "confineToScreen": "bool",
     "trayEnabled": "bool",
+}
+# 老版本配置文件没有这些键（版本升级新增）时按这里的默认值兜底：
+# dsh-pet 把它们当必填项，缺了会被判为「配置错误」，气泡开关也写不回去。
+TOP_DEFAULTS = {
+    "notificationsEnabled": True,
+    "clickSoundEnabled": True,
+    "bubbleBackdropEnabled": True,
+    "bubbleRiseSfxEnabled": True,
+    "bubbleBurstSfxEnabled": True,
+    "bubbleBackdropCount": 9,
+    "bubbleBackdropMotion": "normal",
+    "bubbleBackdropPalette": "candy",
+    "confineToScreen": False,
+    "trayEnabled": True,
 }
 # 顶层对象里的子字段
 NESTED_FIELDS = {
@@ -216,9 +232,13 @@ def _dig(obj: Any, path: str) -> Any:
 
 def read_config() -> Dict[str, Any]:
     raw = CONFIG_PATH.read_text("utf-8")
+    patched = _ensure_required(raw)
+    if patched != raw:
+        CONFIG_PATH.write_text(patched, "utf-8")
+        raw = patched
     data = json.loads(_strip_jsonc(raw))
     main = next((p for p in data.get("pets") or [] if isinstance(p, dict)), {})
-    out: Dict[str, Any] = {key: data.get(key) for key in TOP_FIELDS}
+    out: Dict[str, Any] = {key: data.get(key, TOP_DEFAULTS.get(key)) for key in TOP_FIELDS}
     out.update({key: main.get(key) for key in PET_FIELDS})
     out.update({key: _dig(data, key) for key in NESTED_FIELDS})
     out.update({key: _dig(data, key) for key in MODEL_FIELDS})
@@ -328,17 +348,57 @@ def _replace_in_span(raw: str, span: Tuple[int, int], key: str, literal: str) ->
     segment = raw[start : end + 1]
     pattern = re.compile(r'("' + re.escape(key) + r'"\s*:\s*)' + _VALUE_PATTERN)
     updated, count = pattern.subn(lambda m: m.group(1) + literal, segment, count=1)
-    if count == 0:
-        raise ValueError(f"配置里没有 {key} 字段")
-    return raw[:start] + updated + raw[end + 1 :]
+    if count:
+        return raw[:start] + updated + raw[end + 1 :]
+    # 老配置文件没有这个键：补到对象开头，而不是让保存失败
+    return raw[: start + 1] + f'\n    "{key}": {literal},' + raw[start + 1 :]
+
+
+def _top_brace(raw: str) -> int:
+    """跳过注释，找顶层对象的第一个 {。"""
+    i = 0
+    while i < len(raw):
+        ch = raw[i]
+        if ch == "/" and i + 1 < len(raw) and raw[i + 1] == "/":
+            while i < len(raw) and raw[i] != "\n":
+                i += 1
+            continue
+        if ch == "/" and i + 1 < len(raw) and raw[i + 1] == "*":
+            i += 2
+            while i + 1 < len(raw) and not (raw[i] == "*" and raw[i + 1] == "/"):
+                i += 1
+            i += 2
+            continue
+        if ch == "{":
+            return i
+        i += 1
+    raise ValueError("配置结构不完整：找不到顶层对象")
 
 
 def _replace_top(raw: str, key: str, literal: str) -> str:
     pattern = re.compile(r'("' + re.escape(key) + r'"\s*:\s*)' + _VALUE_PATTERN)
     updated, count = pattern.subn(lambda m: m.group(1) + literal, raw, count=1)
-    if count == 0:
-        raise ValueError(f"配置里没有 {key} 字段")
-    return updated
+    if count:
+        return updated
+    # 老配置文件没有这行（版本升级新增的字段）：插到顶层对象开头
+    brace = _top_brace(raw)
+    return raw[: brace + 1] + f'\n  "{key}": {literal},' + raw[brace + 1 :]
+
+
+def _literal(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _ensure_required(raw: str) -> str:
+    """老配置缺新版必填键时补上，避免 dsh-pet 判「配置错误」、气泡开关存不回去。"""
+    missing = [key for key in TOP_DEFAULTS if not re.search('"' + re.escape(key) + r'"\s*:', raw)]
+    for key in missing:
+        raw = _replace_top(raw, key, _literal(TOP_DEFAULTS[key]))
+    return raw
 
 
 def save_config(body: Dict[str, Any]) -> Dict[str, Any]:
@@ -355,6 +415,7 @@ def save_config(body: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("没有要保存的参数")
 
     raw = CONFIG_PATH.read_text("utf-8")
+    raw = _ensure_required(raw)
     for key, literal in normalized.items():
         if key in TOP_FIELDS:
             raw = _replace_top(raw, key, literal)

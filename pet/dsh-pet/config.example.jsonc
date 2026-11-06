@@ -41,9 +41,16 @@
   // 海草 + 背景泡泡（宠物身后的水族箱背景层）
   "bubbleBackdropEnabled": true,     // 总开关：false = 不显示
   "bubbleRiseSfxEnabled": true,      // 泡泡上浮音效
+  "bubbleBurstSfxEnabled": true,     // 戳破泡泡的爆裂声
   "bubbleBackdropCount": 9,          // 泡泡数量
   "bubbleBackdropMotion": "normal",  // normal | slow | lively
   "bubbleBackdropPalette": "candy",  // 配色主题
+
+  // 全局开关（都是必填布尔值：缺失会被判「配置错误」，右键菜单/设置页的开关也存不回去）
+  "notificationsEnabled": true,      // 系统通知
+  "clickSoundEnabled": true,         // 点击音效
+  "confineToScreen": false,          // true = 只在当前屏幕内活动
+  "trayEnabled": true,               // 系统托盘图标
 
   // 物理手感（拖拽抛掷）
   "physics": {

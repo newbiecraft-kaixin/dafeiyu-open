@@ -40,11 +40,40 @@ finally {
 Write-Host "完成。重启 DSH 后在插件列表里启用 dsh-pet，桌宠会出现在桌面上。" -ForegroundColor Green
 Write-Host "个人配置目录：$env:USERPROFILE\.dsh\dsh-pet"
 
-# 首次安装：铺一份个人配置（已存在则不动，保留本机改动）
+# 个人配置：没有就铺一份；已有则只补齐新版必填字段，不动用户原有设置
 $cfgDir = Join-Path $env:USERPROFILE ".dsh\dsh-pet"
 $cfg = Join-Path $cfgDir "main-config.jsonc"
 if (-not (Test-Path $cfg)) {
     New-Item -ItemType Directory $cfgDir -Force | Out-Null
     Copy-Item (Join-Path $here "config.example.jsonc") $cfg
     Write-Host "已铺入默认个人配置：$cfg（碎碎念人设/海草泡泡等，可自行修改）" -ForegroundColor Green
+}
+else {
+    # dsh-pet 把这几个开关当必填项，老版本配置缺了会被判「配置错误」，气泡开关也存不回去
+    $required = [ordered]@{
+        "bubbleBackdropEnabled"  = "true"
+        "bubbleRiseSfxEnabled"   = "true"
+        "bubbleBurstSfxEnabled"  = "true"
+        "notificationsEnabled"   = "true"
+        "clickSoundEnabled"      = "true"
+        "confineToScreen"        = "false"
+        "trayEnabled"            = "true"
+    }
+    $text = [System.IO.File]::ReadAllText($cfg)
+    $lines = @()
+    $names = @()
+    foreach ($k in $required.Keys) {
+        if ($text -notmatch ('"' + [regex]::Escape($k) + '"\s*:')) {
+            $lines += ('  "' + $k + '": ' + $required[$k] + ',')
+            $names += $k
+        }
+    }
+    if ($lines.Count -gt 0) {
+        $i = $text.IndexOf("{")
+        if ($i -ge 0) {
+            $text = $text.Insert($i + 1, "`r`n" + ($lines -join "`r`n"))
+            [System.IO.File]::WriteAllText($cfg, $text, (New-Object System.Text.UTF8Encoding($false)))
+            Write-Host "已为旧配置补齐缺失字段：$($names -join ', ')" -ForegroundColor Yellow
+        }
+    }
 }
