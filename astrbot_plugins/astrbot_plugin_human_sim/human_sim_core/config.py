@@ -60,6 +60,7 @@ DEFAULTS = {
     "followup_seconds": 180,            # 专项关注持续时长（秒）
     "followup_max_messages": 8,         # 窗口内最多为 TA 触发几次决策（防连发）
     "followup_min_gap_seconds": 10,     # 窗口内同一个人两次决策的最小间隔（防刷屏）
+    "followup_other_tolerance": 2,      # 窗口期间容忍别人插话几条，超过才退回普通概率插话
     "interject_cooldown_minutes": 45,
     "interject_per_minute": 1,    # 旧随机插话路径的每分钟上限/群
     "lurk_check_interval_minutes": 20,
@@ -132,7 +133,7 @@ DEFAULTS = {
     "recharge_tiers": [10, 20, 50, 100],  # 充值档位（元）：/充值 只发票价表，/充值 10 才给收款码
     # 动态出码：每笔现去充值页点「微信支付」，抓一张 15 分钟有效的新码
     "recharge_mode": "link",          # link=群里只发链接（点开现抓码）；deepseek=任何场景都直接发图；static=固定图
-    "recharge_link_base": "https://example.com/recharge",  # 现抓码网页（可自行替换）
+    "recharge_link_base": "https://example.com/recharge",  # 现抓码网页（自建）
     "recharge_script": r"C:\path\to\dafeiyu\recharge_page\ds_qr.py",
     "recharge_python": r"C:\path\to\dafeiyu\astrbot-win\venv\Scripts\python.exe",
     "recharge_qr_timeout": 60,        # 抓码最长等多久（秒），超时只发链接

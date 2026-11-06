@@ -168,7 +168,9 @@ class PolicyMixin:
                 return
             left = full
             until = now + span
-        self.state[f"followup:{umo}"] = {"uid": uid, "until": until, "left": left}
+        self.state[f"followup:{umo}"] = {
+            "uid": uid, "until": until, "left": left, "others": 0,
+        }
 
     def _followup_window(self, umo: str, uid: str) -> dict | None:
         """当前是否在盯这个人；窗口过期或额度用完就自动清掉。"""
@@ -183,19 +185,41 @@ class PolicyMixin:
             return None
         return fu
 
-    def _followup_still_talking(self, umo: str, sender_label: str) -> bool:
-        """TA 这句是不是还在跟我聊：上一句是机器人说的，或紧接着 TA 自己刚说的那句。
-
-        被 @ 之后群里的话题很快可能拐到别人身上；不能因为窗口还开着，就把 TA 说的
-        每句话都当成在找机器人，否则会插进别人之间的聊天。
-        """
-        hist = self._history.get(umo) or ()
-        if len(hist) < 2:
+    def _followup_active(self, umo: str) -> bool:
+        """窗口是否开着（不管盯的是谁）；过期或额度用完顺手清掉。"""
+        fu = self.state.get(f"followup:{umo}") or {}
+        if not fu:
             return False
-        prev = str(hist[-2])
-        if prev.startswith("大肥鱼："):
-            return True
-        return prev.split("：", 1)[0] == sender_label
+        now = datetime.now().timestamp()
+        if now >= float(fu.get("until") or 0) or int(fu.get("left") or 0) <= 0:
+            self.state.pop(f"followup:{umo}", None)
+            return False
+        return True
+
+    def _followup_note_other(self, umo: str) -> None:
+        """窗口盯的是 A，别人插了一句：计数 +1，超过容忍值才放走窗口。
+
+        活跃群里对话间隙几乎必然有人插话，直接因此清窗会把「被 @ 后盯住
+        同一个人」掐成普通概率插话；容忍几条，TA 再开口就清零。
+        """
+        fu = self.state.get(f"followup:{umo}") or {}
+        if not fu:
+            return
+        fu["others"] = int(fu.get("others") or 0) + 1
+        tol = int(self.cfg.get("followup_other_tolerance", 2) or 0)
+        if tol > 0 and fu["others"] > tol:
+            self.state.pop(f"followup:{umo}", None)
+        else:
+            self.state[f"followup:{umo}"] = fu
+
+    def _followup_reset_others(self, umo: str, uid: str) -> None:
+        """TA 自己又开口了：插话计数清零，窗口继续盯。"""
+        fu = self.state.get(f"followup:{umo}") or {}
+        if not fu or str(fu.get("uid") or "") != uid:
+            return
+        if fu.get("others"):
+            fu["others"] = 0
+            self.state[f"followup:{umo}"] = fu
 
     def _followup_gap_ok(self, umo: str, uid: str) -> bool:
         """窗口内也要有最小间隔：刚为 TA 决策过，紧跟着的碎句先不重复接。"""

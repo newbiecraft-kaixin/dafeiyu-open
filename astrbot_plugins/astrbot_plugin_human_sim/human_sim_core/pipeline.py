@@ -475,15 +475,22 @@ class PipelineMixin:
                     self._followup_start(umo, sender_id)
                 followup = False
                 if not directed and self._followup_window(umo, sender_id) is not None:
-                    if not self._followup_still_talking(umo, sender_label):
-                        # 群里已经换人说话了：窗口里那句「专门盯你」过期，
-                        # 退回普通概率，别硬插进 TA 跟别人的对话
-                        self.state.pop(f"followup:{umo}", None)
-                    elif self._followup_gap_ok(umo, sender_id):
+                    # 窗口开着且盯的就是 TA：TA 再说的话一律交给模型自主判断
+                    # 接不接（_decide(followup=True) 里模型可以自己选 [SILENT]），
+                    # 不再因别人插话就清窗——插话只在超过容忍值时才放走窗口
+                    self._followup_reset_others(umo, sender_id)
+                    if self._followup_gap_ok(umo, sender_id):
                         followup = True
                     else:
                         # 窗口内但刚为 TA 决策过：这条先不重复接，等下一句
                         return
+                elif not directed and self._followup_active(umo):
+                    # 窗口盯的是别人：别人的插话计数 +1（机器人自己的回声不算）；
+                    # 超过 followup_other_tolerance 条才放走窗口，退回普通概率
+                    if sender_id and sender_id != str(
+                        self.state.get(f"self_id:{umo}") or ""
+                    ):
+                        self._followup_note_other(umo)
                 # 输入端防刷屏：30 秒内 >6 条视为刷屏/斗图，真人此时只会潜水
                 ts_list = self._msg_ts.get(umo)
                 if ts_list and not directed and not followup:
