@@ -3,6 +3,10 @@
 /**
  * 大肥鱼桌宠 · 机器人状态中转
  *
+ * 改造自 clawd-on-desk（https://github.com/rullerzhou-afk/clawd-on-desk，AGPL-3.0）；
+ * 本文件在原项目的窗口 / 气泡 / 动作 / 语音链路上做了修改，修改时间 2026-11。
+ * 完整署名与再分发要求见仓库根目录 NOTICE。
+ *
  * QQ / 微信机器人（AstrBot 插件）把状态 POST 到本服务；本服务交给 brain（23402）
  * 生成一句中文旁白（brain 再调 model 层），然后把结果推给桌宠窗口（23335）/state，
  * 由桌宠显示气泡和动作。brain 不可用时才退回本机 Ollama。

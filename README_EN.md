@@ -48,6 +48,8 @@ Dafeiyu  00:22  [sticker: stay-up-late cat]
 
 This is not a from-scratch project. The following modules are **adapted from or integrated with** upstream open-source projects, whose copyright belongs to their authors:
 
+> Full credits, modification date and redistribution requirements: see [NOTICE](NOTICE).
+
 | Module here | Upstream | Relationship | Upstream license |
 |---|---|---|---|
 | `astrbot_plugins/*` | [AstrBot](https://github.com/AstrBotDevs/AstrBot) | Built on the AstrBot 4.x plugin API; host and built-in plugins not distributed | AGPL-3.0 |
