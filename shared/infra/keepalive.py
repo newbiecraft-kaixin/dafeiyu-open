@@ -12,6 +12,8 @@ import threading
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlsplit
 
+from . import trace as _trace
+
 
 class KeepAliveError(RuntimeError):
     """HTTP 状态码 >= 400 时抛出，保留状态码和响应体。"""
@@ -96,6 +98,8 @@ def request(
         if name.lower() == "content-type" and payload is not None:
             continue
         send_headers[name] = value
+    # 调用链上没显式指定时，自动带上当前请求的 trace_id
+    send_headers = _trace.headers(send_headers)
     for attempt in range(2):
         conn, lock = _slot(key, timeout)
         try:

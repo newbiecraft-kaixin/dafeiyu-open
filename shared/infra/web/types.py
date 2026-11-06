@@ -60,6 +60,7 @@ class Request:
     payload: Any
     headers: Dict[str, str] = field(default_factory=dict)
     client: str = ""
+    trace_id: str = ""
 
     def q(self, name: str, default: Any = None) -> Any:
         return self.query.get(name, default)

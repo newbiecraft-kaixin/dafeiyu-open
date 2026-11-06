@@ -67,6 +67,8 @@ QQ ↔ NapCat（OneBot11 反向 WS）↔ AstrBot ↔ 插件层
 ## 关键设计
 
 - **配置即服务**：每个服务目录一个 `service.json`（端口、启动命令、依赖），`hub` 据此统一拉起与巡检。
+- **链路追踪**：请求入口生成或沿用 `X-Trace-Id`，日志前缀带 id；服务间经 `infra.keepalive` 的调用会自动透传，响应头回显。
+- **启动检查**：控制台启服务前先看 `depends` 是否在线，启动后再等 `/health` 通过才报「已就绪」。
 - **模型解耦**：`services/model/providers.json` 用 `type` 区分 openai / ollama / harness，密钥只从环境变量读取。
 - **语音降级**：CosyVoice 不可用时回退 edge-tts，保证不因 TTS 故障阻塞回复。
 - **记忆分层**：短期用 `group_window`，长期记忆交给第三方 `livingmemory`（不随仓库分发），二者都不进 Git。

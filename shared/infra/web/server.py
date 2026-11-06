@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Mapping, Optional
 from urllib.parse import parse_qs, urlparse
 
+from .. import trace
 from ..config import HOST
 from .pages import data_page
 from .responses import fail
@@ -61,7 +62,7 @@ def make_handler(
 
         # ---- 基础 ----
         def log_message(self, fmt: str, *args: Any) -> None:
-            log.info("%s %s", self.client_address[0], fmt % args)
+            log.info("[%s] %s %s", getattr(self, "_trace_id", "-"), self.client_address[0], fmt % args)
 
         def do_OPTIONS(self) -> None:  # noqa: N802
             self._respond(204, None)
@@ -162,6 +163,7 @@ def make_handler(
             return self.rfile.read(length)
 
         def _build_request(self, method: str) -> Request:
+            self._trace_id = trace.inbound(self.headers, service)
             parsed = urlparse(self.path)
             path = parsed.path or "/"
             if len(path) > 1 and path.endswith("/"):
@@ -186,6 +188,7 @@ def make_handler(
                 payload=payload,
                 headers={k: v for k, v in self.headers.items()},
                 client=self.client_address[0] if self.client_address else "",
+                trace_id=self._trace_id,
             )
 
         def _respond(self, status: int, data: Any) -> None:
@@ -221,8 +224,12 @@ def make_handler(
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("Access-Control-Allow-Origin", cors)
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id")
                 self.send_header("Access-Control-Max-Age", "600")
+                trace_id = getattr(self, "_trace_id", "")
+                if trace_id:
+                    # 回显链路 id：调用方拿它去日志里搜同一次请求
+                    self.send_header("X-Trace-Id", trace_id)
                 self.end_headers()
                 if body:
                     self.wfile.write(body)

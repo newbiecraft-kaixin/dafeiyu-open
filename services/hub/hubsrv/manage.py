@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -110,7 +111,10 @@ def control_spec(name: str) -> Optional[Dict[str, Any]]:
 
     runtime = manifest.get("runtime")
     if isinstance(runtime, dict):
-        return _runtime_spec(manifest, runtime)
+        spec = _runtime_spec(manifest, runtime)
+        if spec is not None:
+            spec["depends"] = manifest.get("depends") or []
+        return spec
 
     entry = str(manifest.get("entry") or "").strip()
     if not entry:
@@ -135,7 +139,38 @@ def control_spec(name: str) -> Optional[Dict[str, Any]]:
         if not python and name == "io-wechat" and WECHAT_PY.exists():
             python = str(WECHAT_PY)
         cmd = [str(python or VENV_PY), file.name]
-    return {"cwd": cwd, "cmd": cmd, "port": manifest.get("port")}
+    return {"cwd": cwd, "cmd": cmd, "port": manifest.get("port"),
+            "depends": manifest.get("depends") or []}
+
+
+def _port_of(name: str) -> Optional[int]:
+    try:
+        manifest = json.loads((SERVICES / name / "service.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    port = manifest.get("port")
+    return port if isinstance(port, int) else None
+
+
+def _offline_deps(depends: List[str]) -> List[str]:
+    """启动前看一眼依赖是否在线；只作提示，不阻塞启动。"""
+    offline: List[str] = []
+    for name in depends:
+        if name == "infra":
+            continue
+        port = _port_of(name)
+        if isinstance(port, int) and not _port_alive(port):
+            offline.append(name)
+    return offline
+
+
+def _health_ready(port: int, timeout: float = 1.5) -> bool:
+    """端口开了不代表服务可用：再探一次 /health。"""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=timeout) as resp:
+            return 200 <= resp.status < 300
+    except OSError:
+        return False
 
 
 def _pids_on_port(port: int) -> List[int]:
@@ -196,10 +231,22 @@ def _start(spec: Dict[str, Any]) -> Dict[str, Any]:
     while time.time() < deadline and isinstance(port, int) and not _port_alive(port):
         time.sleep(0.4)
     alive = _port_alive(port) if isinstance(port, int) else None
+    ready = bool(alive) and isinstance(port, int) and _health_ready(port)
+    offline = _offline_deps(spec.get("depends") or [])
+    if ready:
+        message = f"已启动，端口 {port} 已就绪"
+    elif alive:
+        message = f"已启动，端口 {port} 已监听，但 /health 还没通过"
+    else:
+        message = f"已启动，端口 {port} 暂未监听（看 manage-*.log）"
+    if offline:
+        message += "；依赖未启动: " + "、".join(offline)
     return {
         "ok": alive is not False,
-        "message": f"已启动，端口 {port} " + ("已就绪" if alive else "暂未监听（看 manage-*.log）"),
+        "message": message,
         "online": alive,
+        "ready": ready,
+        "offline_deps": offline,
     }
 
 
