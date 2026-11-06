@@ -7,7 +7,6 @@ import json
 import os
 import random
 import re
-import threading
 import time
 import uuid
 from collections import deque
@@ -130,41 +129,6 @@ class PipelineMixin:
             return ((data or {}).get("data") or {}).get("items") or []
         except Exception:  # noqa: BLE001
             return []
-
-    def _open_listen_window(self, peer_id: str, group_umo: str) -> None:
-        """在群里被 @ 后，把这个人接下来的私聊也交给本群会话接管。"""
-        try:
-            seconds = int(self.cfg.get("listen_window_at_seconds", 300) or 0)
-        except (TypeError, ValueError):
-            seconds = 300
-        peer = str(peer_id or "")
-        if seconds <= 0 or not peer.isdigit() or not group_umo:
-            return
-        group_id = group_umo.rsplit(":", 1)[-1]
-        body = json.dumps(
-            {
-                "peer_id": peer,
-                "group_id": group_id if group_id.isdigit() else "",
-                "group_umo": group_umo,
-                "seconds": seconds,
-            }
-        ).encode("utf-8")
-
-        def _post() -> None:
-            try:
-                import urllib.request
-
-                req = urllib.request.Request(
-                    "http://127.0.0.1:23408/windows/start",
-                    data=body,
-                    headers={"Content-Type": "application/json"},
-                )
-                urllib.request.urlopen(req, timeout=1.5).read()
-            except Exception:  # noqa: BLE001
-                pass
-
-        # 开窗是旁路动作：放线程里，别让 hub 慢的时候卡住群消息处理
-        threading.Thread(target=_post, daemon=True).start()
 
     async def _active_listen_window(self, peer_id: str) -> dict | None:
         """查 hub 的监听窗口；5 秒缓存，hub 不在线就当没有。
@@ -567,7 +531,6 @@ class PipelineMixin:
                 # 被 @ 就是在找你：开一段专项关注窗口，之后 TA 接着说别被概率抽样漏掉
                 if event.is_at_or_wake_command and sender_id:
                     self._followup_start(umo, sender_id)
-                    self._open_listen_window(sender_id, umo)
                 return  # 被 @ / 指令走正式流水线，不抢；is_wake 对所有群消息恒为 True（插件 handler 会置位），不能用作判据
             # 纯链接没 @ 也没叫名字：只留在历史里，不当成点单去解析（省开销）
             url_only = bool(re.search(r"https?://", text)) and not re.sub(
