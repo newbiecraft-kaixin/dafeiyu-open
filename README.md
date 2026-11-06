@@ -33,37 +33,56 @@ flowchart LR
     RELAY <--> BRAIN
 ```
 
+## 按需安装：核心 / 插件 / 桌宠
+
+整套全开对机器有要求。仓库按三个安装包组织，**可以只装核心**，插件和桌宠按需追加：
+
+| 安装包 | 内容 | 什么时候装 | 最低配置 |
+|---|---|---|---|
+| **① 核心（必装）** | `services/hub·model·store·brain`、`shared/infra`、`tools/windows/start-core.bat` | 想跑大脑/模型路由/记忆/控制台 | 无 GPU 也能跑（模型走云端 API） |
+| **② 插件（可选）** | `astrbot_plugins/*` + `services/io-wechat·napcat 接入·voice·audio·video·stickers·subtitle` + AstrBot / NapCat 本体 | 想要 QQ/微信聊天、语音、看视频等能力 | 建议双端聊天至少 8G 内存；本地语音需 NVIDIA GPU（2~4G 显存），无 GPU 自动回退 edge-tts |
+| **③ 桌宠（可选）** | `pet/dafeiyu-web·dafeiyu3d`、`relay/pet-relay.js`、`services/pet·subtitle` + dsh 桌宠壳 | 想要桌面宠物 | 桌宠是 Electron + Three.js，集显可跑，核显建议关 3D 场景 |
+
+> 组合示例：只跑核心 = 一台轻量机器（或 NAS）跑 hub/model/store/brain；聊天插件装在另一台有微信/QQ 的机器上；桌宠装在平时用的电脑上。三包拆开部署互不依赖启动顺序，通过端口互通即可。
+
 ## 目录
 
 ```
-astrbot_plugins/     AstrBot 自研插件（human_sim、web_lookup、group_window 等）
+astrbot_plugins/     AstrBot 自研插件（human_sim、web_lookup、group_window 等）→ 安装包②
 services/
-  io-wechat/         微信桌面端桥（UIA 驱动、收发、窗口让路）
-  brain/             大脑/人设/任务编排
-  model/             模型提供方与路由
-  video/             视频解析与信息流
-  hub/               服务控制台
-  audio/ subtitle/ store/ stickers/  辅助服务
-shared/infra/        共享基础设施（端口、配置、日志）
+  hub/ model/ store/ brain/   核心四服务                          → 安装包①
+  io-wechat/         微信桌面端桥（UIA 驱动、收发、窗口让路）      → 安装包②
+  voice/ audio/ video/ stickers/ subtitle/  能力服务             → 安装包②（按需）
+  pet/               桌宠服务                                     → 安装包③
+shared/infra/        共享基础设施（端口、配置、日志）              → 安装包①
 pet/
-  dafeiyu-web/       桌宠 Electron 前端
-  dafeiyu3d/         桌宠 Three.js 场景
-  tools/             桌宠构建/素材脚本
-relay/               桌宠与大脑桥接
+  dafeiyu-web/       桌宠 Electron 前端                           → 安装包③
+  dafeiyu3d/         桌宠 Three.js 场景                           → 安装包③
+  tools/             桌宠构建/素材脚本                            → 安装包③
+relay/               桌宠与大脑桥接（pet-relay.js）               → 安装包③
 stack/               Docker 部署参考（compose / Dockerfile / 人设）
-tools/               CosyVoice 安装与服务脚本、Windows 启动脚本
+tools/               CosyVoice 安装脚本、Windows 启动脚本（start-core.bat = 核心四服务一键启动）
 docs/                架构与 Windows 部署说明
 ```
 
 ## 快速开始（Windows）
 
-1. 安装 Python 3.11+、Node.js 20+，以及第三方组件：
-   - [AstrBot](https://github.com/AstrBotDevs/AstrBot)（本项目按 AstrBot 4.x 插件接口开发）
-   - [NapCat](https://github.com/NapNeko/NapCatQQ)（QQ 协议端）
-   - 可选：CosyVoice2（本地语音）、Ollama（本地模型）
-2. 把 `astrbot_plugins/*` 复制到 AstrBot 的 `data/plugins/`。
-3. 按 [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md) 修改 `tools/windows/*.bat` 里的路径并依次启动。
-4. 各服务默认端口见 [`services`](services) 下每个目录的 `service.json`。
+### ① 核心四服务（低配机器从这里开始）
+
+1. 安装 Python 3.11+、Node.js 20+。
+2. 运行 `tools/windows/start-core.bat` —— 只启动 `hub 23408 / model 23406 / store 23407 / brain 23402` 四个服务（lite 模式，脚本里路径需替换成你的目录）。
+3. 模型密钥通过环境变量注入（如 `DEEPSEEK_API_KEY`），见 `services/model/providers.json`。不装插件/桌宠时，这就是全部。
+
+### ② 插件（聊天/语音/视频能力）
+
+1. 安装第三方组件：[AstrBot](https://github.com/AstrBotDevs/AstrBot)（按 4.x 插件接口开发）、[NapCat](https://github.com/NapNeko/NapCatQQ)（QQ 协议端）；可选 CosyVoice2（本地语音）、Ollama（本地模型）。
+2. 把 `astrbot_plugins/*` 复制到 AstrBot 的 `data/plugins/`，按需只启用你想要的插件。
+3. 按 [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md) 启动 `io-wechat`（微信桥）、`voice/audio/video` 等能力服务。各服务默认端口见 [`services`](services) 下每个目录的 `service.json`。
+
+### ③ 桌宠
+
+1. 启动 `relay/pet-relay.js`（桌宠与大脑桥接，23334）与 `services/pet`。
+2. 按 `pet/dafeiyu-web` 的说明启动桌宠壳（Electron）；3D 场景在 `pet/dafeiyu3d`，低配机器可关闭 3D 只用 2D。
 
 > 仓库里的启动脚本、配置中的路径均为占位符 `C:\path\to\dafeiyu`，需要替换成你的实际目录。
 
