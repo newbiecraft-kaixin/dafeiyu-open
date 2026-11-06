@@ -1,0 +1,25 @@
+{
+  "name": "store",
+  "kind": "storage",
+  "layer": "中枢层",
+  "port": 23407,
+  "ui": "http://127.0.0.1:23407/status",
+  "responsibility": "统一记忆层（SQLite）：会话、消息、长期事实，所有角色/平台/桌宠共用",
+  "depends": ["infra"],
+  "entry": "service.py",
+  "endpoints": [
+    "GET /messages",
+    "POST /messages",
+    "GET /sessions",
+    "POST /sessions",
+    "DELETE /sessions",
+    "GET /facts",
+    "POST /facts",
+    "DELETE /facts",
+    "GET /status"
+  ],
+  "files": {
+    "db": "data/memory.db"
+  },
+  "status": "active"
+}

@@ -1,0 +1,19 @@
+﻿{
+  "name": "dafeiyu3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "大肥鱼 3D 桌宠（Electron + three.js + VRM）",
+  "main": "src/main.js",
+  "scripts": {
+    "build": "esbuild src/renderer.js --bundle --format=iife --outfile=build/renderer.bundle.js --loader:.png=file --loader:.jpg=file --loader:.vrm=file --asset-names=assets/[name]",
+    "start": "npm run build && electron ."
+  },
+  "devDependencies": {
+    "electron": "41.10.4",
+    "esbuild": "^0.25.10"
+  },
+  "dependencies": {
+    "three": "0.170.0",
+    "@pixiv/three-vrm": "3.5.5"
+  }
+}

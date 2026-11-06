@@ -1,0 +1,18 @@
+{
+  "name": "hub",
+  "kind": "registry",
+  "layer": "中枢层",
+  "port": 23408,
+  "ui": "/ui",
+  "responsibility": "能力注册与 MCP 风格工具调用；可选能力缺失时自动隐藏工具",
+  "depends": ["infra"],
+  "entry": "service.py",
+  "endpoints": [
+    "GET /capabilities",
+    "GET /tools",
+    "POST /mcp",
+    "GET /health"
+  ],
+  "optional": false,
+  "status": "active"
+}

@@ -1,0 +1,13 @@
+{
+  "port": 23335,
+  "model": "qwen3.5:9b",
+  "ollama": "http://127.0.0.1:11434",
+  "width": 420,
+  "height": 620,
+  "marginRight": 18,
+  "marginBottom": 10,
+  "petName": "大肥鱼",
+  "narrate": false,
+  "narrationTimeoutMs": 9000,
+  "narrationCacheMs": 90000
+}

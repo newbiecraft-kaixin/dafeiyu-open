@@ -1,0 +1,21 @@
+{
+  "name": "astrbot",
+  "kind": "adapter",
+  "layer": "外部适配",
+  "port": 6185,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "responsibility": "QQ 机器人宿主（群聊插件 / 指令）",
+  "ui": "http://127.0.0.1:6185",
+  "links": {
+    "WebUI": "http://127.0.0.1:6185"
+  },
+  "entry": "astrbot-win/AstrBot-4.29.3/main.py",
+  "runtime": {
+    "cwd": "astrbot-win/AstrBot-4.29.3",
+    "entry": "astrbot-win/AstrBot-4.29.3/main.py",
+    "python": "astrbot-win/venv/Scripts/python.exe",
+    "args": []
+  }
+}

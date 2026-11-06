@@ -1,0 +1,2168 @@
+{
+ "_source": "C:\\path\\to\\dafeiyu\\stack\\napcat\\qq\\nt_qq\\global\\nt_data\\Emoji\\emoji-resource\\face_config.json",
+ "_note": "由 tools/sync_qq_faces.py 从 QQ face_config.json 生成，勿手改",
+ "sysface_visible": [
+  {
+   "id": 0,
+   "name": "惊讶",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 1,
+   "name": "撇嘴",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 2,
+   "name": "色",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 3,
+   "name": "发呆",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 4,
+   "name": "得意",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 5,
+   "name": "流泪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 6,
+   "name": "害羞",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 7,
+   "name": "闭嘴",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 8,
+   "name": "睡",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 9,
+   "name": "大哭",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 10,
+   "name": "尴尬",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 11,
+   "name": "发怒",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 12,
+   "name": "调皮",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 13,
+   "name": "呲牙",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 14,
+   "name": "微笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 15,
+   "name": "难过",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 16,
+   "name": "酷",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 18,
+   "name": "抓狂",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 19,
+   "name": "吐",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 20,
+   "name": "偷笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 21,
+   "name": "可爱",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 22,
+   "name": "白眼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 23,
+   "name": "傲慢",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 24,
+   "name": "饥饿",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 25,
+   "name": "困",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 26,
+   "name": "惊恐",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 27,
+   "name": "流汗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 28,
+   "name": "憨笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 29,
+   "name": "悠闲",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 30,
+   "name": "奋斗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 31,
+   "name": "咒骂",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 32,
+   "name": "疑问",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 33,
+   "name": "嘘",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 34,
+   "name": "晕",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 35,
+   "name": "折磨",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 36,
+   "name": "衰",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 37,
+   "name": "骷髅",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 38,
+   "name": "敲打",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 39,
+   "name": "再见",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 41,
+   "name": "发抖",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 42,
+   "name": "爱情",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 43,
+   "name": "跳跳",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 46,
+   "name": "猪头",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 49,
+   "name": "拥抱",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 53,
+   "name": "蛋糕",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 55,
+   "name": "炸弹",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 56,
+   "name": "刀",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 59,
+   "name": "便便",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 60,
+   "name": "咖啡",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 63,
+   "name": "玫瑰",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 64,
+   "name": "凋谢",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 66,
+   "name": "爱心",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 67,
+   "name": "心碎",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 74,
+   "name": "太阳",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 75,
+   "name": "月亮",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 76,
+   "name": "赞",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 77,
+   "name": "踩",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 78,
+   "name": "握手",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 79,
+   "name": "胜利",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 85,
+   "name": "飞吻",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 86,
+   "name": "怄火",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 89,
+   "name": "西瓜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 96,
+   "name": "冷汗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 97,
+   "name": "擦汗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 98,
+   "name": "抠鼻",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 99,
+   "name": "鼓掌",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 100,
+   "name": "糗大了",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 101,
+   "name": "坏笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 102,
+   "name": "左哼哼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 103,
+   "name": "右哼哼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 104,
+   "name": "哈欠",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 105,
+   "name": "鄙视",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 106,
+   "name": "委屈",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 107,
+   "name": "快哭了",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 108,
+   "name": "阴险",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 109,
+   "name": "左亲亲",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 110,
+   "name": "吓",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 111,
+   "name": "可怜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 112,
+   "name": "菜刀",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 114,
+   "name": "篮球",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 116,
+   "name": "示爱",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 118,
+   "name": "抱拳",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 119,
+   "name": "勾引",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 120,
+   "name": "拳头",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 121,
+   "name": "差劲",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 122,
+   "name": "爱你",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 123,
+   "name": "NO",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 124,
+   "name": "OK",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 125,
+   "name": "转圈",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 129,
+   "name": "挥手",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 137,
+   "name": "鞭炮",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 144,
+   "name": "喝彩",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 146,
+   "name": "爆筋",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 147,
+   "name": "棒棒糖",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 148,
+   "name": "喝奶",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 169,
+   "name": "手枪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 171,
+   "name": "茶",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 172,
+   "name": "眨眼睛",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 173,
+   "name": "泪奔",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 174,
+   "name": "无奈",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 175,
+   "name": "卖萌",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 176,
+   "name": "小纠结",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 177,
+   "name": "喷血",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 178,
+   "name": "斜眼笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 179,
+   "name": "doge",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 180,
+   "name": "惊喜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 181,
+   "name": "戳一戳",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 182,
+   "name": "笑哭",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 183,
+   "name": "我最美",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 185,
+   "name": "羊驼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 187,
+   "name": "幽灵",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 193,
+   "name": "大笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 194,
+   "name": "不开心",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 198,
+   "name": "呃",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 200,
+   "name": "求求",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 201,
+   "name": "点赞",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 202,
+   "name": "无聊",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 203,
+   "name": "托脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 204,
+   "name": "吃",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 206,
+   "name": "害怕",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 210,
+   "name": "飙泪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 211,
+   "name": "我不看",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 212,
+   "name": "托腮",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 214,
+   "name": "啵啵",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 215,
+   "name": "糊脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 216,
+   "name": "拍头",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 217,
+   "name": "扯一扯",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 218,
+   "name": "舔一舔",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 219,
+   "name": "蹭一蹭",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 221,
+   "name": "顶呱呱",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 222,
+   "name": "抱抱",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 223,
+   "name": "暴击",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 224,
+   "name": "开枪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 225,
+   "name": "撩一撩",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 226,
+   "name": "拍桌",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 227,
+   "name": "拍手",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 229,
+   "name": "干杯",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 230,
+   "name": "嘲讽",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 231,
+   "name": "哼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 232,
+   "name": "佛系",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 233,
+   "name": "掐一掐",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 235,
+   "name": "颤抖",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 237,
+   "name": "偷看",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 238,
+   "name": "扇脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 239,
+   "name": "原谅",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 240,
+   "name": "喷脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 241,
+   "name": "生日快乐",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 243,
+   "name": "甩头",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 244,
+   "name": "扔狗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 262,
+   "name": "脑阔疼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 263,
+   "name": "沧桑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 264,
+   "name": "捂脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 265,
+   "name": "辣眼睛",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 266,
+   "name": "哦哟",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 267,
+   "name": "头秃",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 268,
+   "name": "问号脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 269,
+   "name": "暗中观察",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 270,
+   "name": "emm",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 271,
+   "name": "吃瓜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 272,
+   "name": "呵呵哒",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 273,
+   "name": "我酸了",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 277,
+   "name": "汪汪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 278,
+   "name": "汗",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 281,
+   "name": "无眼笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 282,
+   "name": "敬礼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 283,
+   "name": "狂笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 284,
+   "name": "面无表情",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 285,
+   "name": "摸鱼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 286,
+   "name": "魔鬼笑",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 287,
+   "name": "哦",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 288,
+   "name": "请",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 289,
+   "name": "睁眼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 290,
+   "name": "敲开心",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 292,
+   "name": "让我康康",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 293,
+   "name": "摸锦鲤",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 294,
+   "name": "期待",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 295,
+   "name": "拿到红包",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 297,
+   "name": "拜谢",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 298,
+   "name": "元宝",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 299,
+   "name": "牛啊",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 300,
+   "name": "胖三斤",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 301,
+   "name": "好闪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 302,
+   "name": "左拜年",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 303,
+   "name": "右拜年",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 305,
+   "name": "右亲亲",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 306,
+   "name": "牛气冲天",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 307,
+   "name": "喵喵",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 311,
+   "name": "打call",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 312,
+   "name": "变形",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 314,
+   "name": "仔细分析",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 317,
+   "name": "菜汪",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 318,
+   "name": "崇拜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 319,
+   "name": "比心",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 320,
+   "name": "庆祝",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 322,
+   "name": "拒绝",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 323,
+   "name": "嫌弃",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 324,
+   "name": "吃糖",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 325,
+   "name": "惊吓",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 326,
+   "name": "生气",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 332,
+   "name": "举牌牌",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 333,
+   "name": "烟花",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 334,
+   "name": "虎虎生威",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 336,
+   "name": "豹富",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 337,
+   "name": "花朵脸",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 338,
+   "name": "我想开了",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 339,
+   "name": "舔屏",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 341,
+   "name": "打招呼",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 342,
+   "name": "酸Q",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 343,
+   "name": "我方了",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 344,
+   "name": "大怨种",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 345,
+   "name": "红包多多",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 346,
+   "name": "你真棒棒",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 347,
+   "name": "大展宏兔",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 348,
+   "name": "福萝卜",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 349,
+   "name": "坚强",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 350,
+   "name": "贴贴",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 351,
+   "name": "敲敲",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 352,
+   "name": "咦",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 353,
+   "name": "拜托",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 354,
+   "name": "尊嘟假嘟",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 355,
+   "name": "耶",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 356,
+   "name": "666",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 357,
+   "name": "裂开",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 358,
+   "name": "骰子",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 359,
+   "name": "包剪锤",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 392,
+   "name": "龙年快乐",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 393,
+   "name": "新年中龙",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 394,
+   "name": "新年大龙",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 395,
+   "name": "略略略",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 415,
+   "name": "划龙舟",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 416,
+   "name": "中龙舟",
+   "hidden": false,
+   "pack": ""
+  },
+  {
+   "id": 417,
+   "name": "大龙舟",
+   "hidden": false,
+   "pack": ""
+  }
+ ],
+ "sysface_hidden": [
+  {
+   "id": 360,
+   "name": "亲亲",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 361,
+   "name": "狗狗笑哭",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 362,
+   "name": "好兄弟",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 363,
+   "name": "狗狗可怜",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 364,
+   "name": "超级赞",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 365,
+   "name": "狗狗生气",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 366,
+   "name": "芒狗",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 367,
+   "name": "狗狗疑问",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 368,
+   "name": "奥特笑哭",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 369,
+   "name": "彩虹",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 370,
+   "name": "祝贺",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 371,
+   "name": "冒泡",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 372,
+   "name": "气呼呼",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 373,
+   "name": "忙",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 374,
+   "name": "波波流泪",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 375,
+   "name": "超级鼓掌",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 376,
+   "name": "跺脚",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 377,
+   "name": "嗨",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 378,
+   "name": "企鹅笑哭",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 379,
+   "name": "企鹅流泪",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 380,
+   "name": "真棒",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 381,
+   "name": "路过",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 382,
+   "name": "emo",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 383,
+   "name": "企鹅爱心",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 384,
+   "name": "晚安",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 385,
+   "name": "太气了",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 386,
+   "name": "呜呜呜",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 387,
+   "name": "太好笑",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 388,
+   "name": "太头疼",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 389,
+   "name": "太赞了",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 390,
+   "name": "太头秃",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 391,
+   "name": "太沧桑",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 396,
+   "name": "狼狗",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 397,
+   "name": "抛媚眼",
+   "hidden": true,
+   "pack": "汪汪"
+  },
+  {
+   "id": 398,
+   "name": "超级ok",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 399,
+   "name": "tui",
+   "hidden": true,
+   "pack": "噗噗星人"
+  },
+  {
+   "id": 400,
+   "name": "快乐",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 401,
+   "name": "超级转圈",
+   "hidden": true,
+   "pack": "企鹅"
+  },
+  {
+   "id": 402,
+   "name": "别说话",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 403,
+   "name": "出去玩",
+   "hidden": true,
+   "pack": "QQ黄脸"
+  },
+  {
+   "id": 404,
+   "name": "闪亮登场",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 405,
+   "name": "好运来",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 406,
+   "name": "姐是女王",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 407,
+   "name": "我听听",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 408,
+   "name": "臭美",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 409,
+   "name": "送你花花",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 410,
+   "name": "么么哒",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 411,
+   "name": "一起嗨",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 412,
+   "name": "开心",
+   "hidden": true,
+   "pack": "喜花妮"
+  },
+  {
+   "id": 413,
+   "name": "摇起来",
+   "hidden": true,
+   "pack": "喜花妮"
+  }
+ ],
+ "emoji": {
+  "😊": "憨笑",
+  "😊️": "憨笑",
+  "😌": "害羞",
+  "😌️": "害羞",
+  "😚": "飞吻",
+  "😚️": "飞吻",
+  "😓": "汗",
+  "😓️": "汗",
+  "😰": "发抖",
+  "😰️": "发抖",
+  "😝": "吐",
+  "😝️": "吐",
+  "😁": "呲牙",
+  "😁️": "呲牙",
+  "😜": "坏笑",
+  "😜️": "坏笑",
+  "☺": "卖萌",
+  "☺️": "卖萌",
+  "😉": "色",
+  "😉️": "色",
+  "😍": "花痴",
+  "😍️": "花痴",
+  "😔": "难过",
+  "😔️": "难过",
+  "😄": "呲牙",
+  "😄️": "呲牙",
+  "😏": "坏笑",
+  "😏️": "坏笑",
+  "😒": "白眼",
+  "😒️": "白眼",
+  "😳": "惊讶",
+  "😳️": "惊讶",
+  "😘": "飞吻",
+  "😘️": "飞吻",
+  "😭": "大哭",
+  "😭️": "大哭",
+  "😱": "惊恐",
+  "😱️": "惊恐",
+  "😂": "笑哭",
+  "😂️": "笑哭",
+  "💪": "奋斗",
+  "💪️": "奋斗",
+  "👊": "拳头",
+  "👊️": "拳头",
+  "👍": "赞",
+  "👍️": "赞",
+  "👏": "鼓掌",
+  "👏️": "鼓掌",
+  "✌": "胜利",
+  "✌️": "胜利",
+  "👎": "鄙视",
+  "👎️": "鄙视",
+  "🙏": "祈祷",
+  "🙏️": "祈祷",
+  "👌": "OK",
+  "👌️": "OK",
+  "👀": "让我康康",
+  "👀️": "让我康康",
+  "🍚": "饭",
+  "🍚️": "饭",
+  "🍝": "吃",
+  "🍝️": "吃",
+  "🍜": "吃",
+  "🍜️": "吃",
+  "🍙": "饭",
+  "🍙️": "饭",
+  "🍣": "吃",
+  "🍣️": "吃",
+  "🎂": "蛋糕",
+  "🎂️": "蛋糕",
+  "🍞": "吃",
+  "🍞️": "吃",
+  "🍔": "吃",
+  "🍔️": "吃",
+  "🍳": "吃",
+  "🍳️": "吃",
+  "🍟": "吃",
+  "🍟️": "吃",
+  "🍺": "啤酒",
+  "🍺️": "啤酒",
+  "🍻": "干杯",
+  "🍻️": "干杯",
+  "☕": "咖啡",
+  "☕️": "咖啡",
+  "🍉": "西瓜",
+  "🍉️": "西瓜",
+  "💊": "药",
+  "💊️": "药",
+  "🎄": "庆祝",
+  "🎄️": "庆祝",
+  "🌹": "玫瑰",
+  "🌹️": "玫瑰",
+  "🎉": "庆祝",
+  "🎉️": "庆祝",
+  "💝": "礼物",
+  "💝️": "礼物",
+  "🎀": "礼物",
+  "🎀️": "礼物",
+  "🎈": "庆祝",
+  "🎈️": "庆祝",
+  "💍": "示爱",
+  "💍️": "示爱",
+  "💣": "发怒",
+  "💣️": "发怒",
+  "👑": "得意",
+  "👑️": "得意",
+  "⭐": "好闪",
+  "⭐️": "好闪",
+  "✨": "好闪",
+  "✨️": "好闪",
+  "💨": "嘘",
+  "💨️": "嘘",
+  "💦": "汗",
+  "💦️": "汗",
+  "🏆": "赞",
+  "🏆️": "赞",
+  "💰": "钞票",
+  "💰️": "钞票",
+  "💤": "睡",
+  "💤️": "睡",
+  "⚡": "闪电",
+  "⚡️": "闪电",
+  "💩": "便便",
+  "💩️": "便便",
+  "💉": "药",
+  "💉️": "药",
+  "♨": "热化了",
+  "♨️": "热化了",
+  "✈": "飞机",
+  "✈️": "飞机",
+  "🚀": "牛啊",
+  "🚀️": "牛啊",
+  "🐷": "猪头",
+  "🐷️": "猪头",
+  "💀": "惊恐",
+  "💀️": "惊恐",
+  "🐮": "牛啊",
+  "🐮️": "牛啊",
+  "👻": "幽灵",
+  "👻️": "幽灵",
+  "🐠": "摸锦鲤",
+  "🐠️": "摸锦鲤",
+  "🐶": "汪汪",
+  "🐶️": "汪汪",
+  "🐯": "赞",
+  "🐯️": "赞",
+  "💄": "得意",
+  "💄️": "得意",
+  "👜": "红包",
+  "👜️": "红包",
+  "☀": "太阳",
+  "☀️": "太阳",
+  "🌙": "月亮",
+  "🌙️": "月亮",
+  "⭕": "对号",
+  "⭕️": "对号",
+  "❌": "错号",
+  "❌️": "错号",
+  "❔": "问号脸",
+  "❔️": "问号脸",
+  "❕": "惊讶",
+  "❕️": "惊讶",
+  "🎤": "K歌",
+  "🎤️": "K歌",
+  "🔫": "生气",
+  "🔫️": "生气",
+  "💓": "爱心",
+  "💓️": "爱心",
+  "🎸": "K歌",
+  "🎸️": "K歌"
+ },
+ "allow": [
+  "666",
+  "K歌",
+  "NO",
+  "OK",
+  "doge",
+  "emm",
+  "不开心",
+  "佛系",
+  "你真棒棒",
+  "便便",
+  "偷看",
+  "偷笑",
+  "傲慢",
+  "元宝",
+  "再见",
+  "冷汗",
+  "冷漠",
+  "凋谢",
+  "击掌",
+  "加一",
+  "加油",
+  "加油必胜",
+  "加油抱抱",
+  "卖萌",
+  "原谅",
+  "发呆",
+  "发怒",
+  "发抖",
+  "口罩护体",
+  "可怜",
+  "右亲亲",
+  "右哼哼",
+  "右太极",
+  "吃",
+  "吃瓜",
+  "吃糖",
+  "吐",
+  "吓",
+  "呃",
+  "呲牙",
+  "呵呵哒",
+  "咖啡",
+  "咦",
+  "哈欠",
+  "哦",
+  "哦哟",
+  "哼",
+  "啤酒",
+  "啵啵",
+  "喝奶",
+  "喵喵",
+  "嗑到了",
+  "嘘",
+  "嘲讽",
+  "困",
+  "坏笑",
+  "坚强",
+  "大哭",
+  "大怨种",
+  "大笑",
+  "太南了",
+  "太阳",
+  "头秃",
+  "奋斗",
+  "好棒",
+  "好闪",
+  "委屈",
+  "嫌弃",
+  "完成",
+  "害怕",
+  "害羞",
+  "对号",
+  "尊嘟假嘟",
+  "小样儿",
+  "小纠结",
+  "尴尬",
+  "崇拜",
+  "左亲亲",
+  "左哼哼",
+  "左太极",
+  "差劲",
+  "干杯",
+  "幽灵",
+  "庆祝",
+  "得意",
+  "心碎",
+  "忙到飞起",
+  "快哭了",
+  "怄火",
+  "恭喜",
+  "悠闲",
+  "惊吓",
+  "惊呆",
+  "惊喜",
+  "惊恐",
+  "惊讶",
+  "憨笑",
+  "我不看",
+  "我想开了",
+  "我方了",
+  "我没事",
+  "我酸了",
+  "戳一戳",
+  "打call",
+  "打招呼",
+  "托腮",
+  "抓狂",
+  "抠鼻",
+  "抱拳",
+  "拍手",
+  "拍桌",
+  "拒绝",
+  "拜托",
+  "拜谢",
+  "拥抱",
+  "拳头",
+  "拿到红包",
+  "捂脸",
+  "握手",
+  "搬砖中",
+  "摸锦鲤",
+  "摸鱼",
+  "撇嘴",
+  "撩一撩",
+  "擦汗",
+  "敬礼",
+  "敲开心",
+  "敲打",
+  "敲敲",
+  "无奈",
+  "无聊",
+  "明白",
+  "晕",
+  "暗中观察",
+  "月亮",
+  "期待",
+  "棒棒糖",
+  "比心",
+  "求求",
+  "汗",
+  "汪汪",
+  "沧桑",
+  "泪奔",
+  "流汗",
+  "流泪",
+  "激动",
+  "点赞",
+  "热化了",
+  "爱你",
+  "爱心",
+  "爱情",
+  "牛啊",
+  "狂笑",
+  "猪头",
+  "献吻",
+  "玫瑰",
+  "生气",
+  "略略略",
+  "疑问",
+  "白眼",
+  "真好",
+  "眨眼睛",
+  "睁眼",
+  "睡",
+  "磕头",
+  "示爱",
+  "礼物",
+  "祈祷",
+  "笑哭",
+  "糗大了",
+  "红包",
+  "耶",
+  "胖三斤",
+  "胜利",
+  "脑阔疼",
+  "舔屏",
+  "色",
+  "花朵脸",
+  "花痴",
+  "茶",
+  "药",
+  "菜汪",
+  "菜狗",
+  "蛋糕",
+  "裂开",
+  "西瓜",
+  "让我康康",
+  "请",
+  "贴贴",
+  "赞",
+  "踩",
+  "转圈",
+  "辣椒酱",
+  "辣眼睛",
+  "送花",
+  "鄙视",
+  "酷",
+  "酸Q",
+  "钞票",
+  "错号",
+  "闪电",
+  "闭嘴",
+  "问号脸",
+  "阴险",
+  "难过",
+  "震惊",
+  "面无表情",
+  "飙泪",
+  "飞吻",
+  "飞机",
+  "饥饿",
+  "饭",
+  "骚扰",
+  "鼓掌"
+ ],
+ "deny": [
+  "菜刀",
+  "刀",
+  "骷髅",
+  "喷血",
+  "爆筋",
+  "折磨",
+  "衰",
+  "手枪",
+  "炸弹",
+  "咒骂",
+  "斜眼笑",
+  "无眼笑",
+  "魔鬼笑",
+  "瓢虫",
+  "羊驼",
+  "河蟹",
+  "蛋",
+  "菊花",
+  "托脸",
+  "顶呱呱",
+  "变形",
+  "举牌牌",
+  "仔细分析",
+  "我最美",
+  "拽炸天",
+  "勾引",
+  "老色痞",
+  "拍头",
+  "扯一扯",
+  "舔一舔",
+  "蹭一蹭",
+  "掐一掐",
+  "扇脸",
+  "喷脸",
+  "糊脸",
+  "头撞击",
+  "甩头",
+  "扔狗",
+  "啃头",
+  "颤抖",
+  "开枪",
+  "暴击",
+  "打脸",
+  "回头",
+  "篮球",
+  "足球",
+  "乒乓",
+  "跳绳",
+  "跳跳",
+  "街舞",
+  "骰子",
+  "包剪锤",
+  "中龙舟",
+  "大龙舟",
+  "新年中龙",
+  "新年大龙"
+ ],
+ "seasonal": [
+  "龙年快乐",
+  "划龙舟",
+  "虎虎生威",
+  "大展宏兔",
+  "福萝卜",
+  "豹富",
+  "牛气冲天",
+  "左拜年",
+  "右拜年",
+  "红包多多",
+  "求红包",
+  "谢红包",
+  "红包包",
+  "新年烟花",
+  "双喜",
+  "鞭炮",
+  "灯笼",
+  "生日快乐",
+  "喝彩",
+  "烟花"
+ ]
+}

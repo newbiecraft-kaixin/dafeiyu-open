@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "io_base": "http://127.0.0.1:23392",
+  "allow_chats": [],
+  "enable_group": true,
+  "max_chars": 400
+}

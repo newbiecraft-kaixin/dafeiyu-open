@@ -1,0 +1,12 @@
+{
+  "master_umo": "大肥鱼QQ:FriendMessage:1000000000",
+  "provider_id": "ollama-chat/qwen3.5-9b",
+  "min_idle_minutes": 180,
+  "start_hour": 8,
+  "end_hour": 22,
+  "daily_cap": 4,
+  "check_interval_minutes": 10,
+  "sticker_probability": 0.35,
+  "max_chars": 40,
+  "enabled": true
+}

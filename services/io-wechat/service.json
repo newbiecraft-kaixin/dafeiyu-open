@@ -1,0 +1,22 @@
+{
+  "name": "io-wechat",
+  "kind": "platform-io",
+  "layer": "输入输出层",
+  "port": 23392,
+  "ui": "http://127.0.0.1:23392/ui",
+  "legacy_port": 23336,
+  "platform": "wechat",
+  "responsibility": "RPA 单实例串行、昵称映射、文字收发与通讯录",
+  "depends": ["infra"],
+  "entry": "wechat_service.py",
+  "endpoints": [
+    "GET /events",
+    "GET /messages",
+    "POST /send",
+    "GET /groups",
+    "GET /friends",
+    "GET /capabilities"
+  ],
+  "optional": true,
+  "status": "active"
+}

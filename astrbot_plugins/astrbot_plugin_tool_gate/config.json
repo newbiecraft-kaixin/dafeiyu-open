@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "open_providers": [
+    "deepseek"
+  ],
+  "open_provider_ids": [],
+  "owner_ids": [
+    "1000000000",
+    "wxid_owner"
+  ],
+  "owner_full_access": true
+}

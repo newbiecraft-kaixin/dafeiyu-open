@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>大肥鱼</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+  }
+  body { cursor: default; }
+</style>
+</head>
+<body>
+<script src="./dist/dafeiyu.iife.js"></script>
+<script>
+  var pet = Dafeiyu.mount({
+    assetBase: "./assets/",
+    name: "大肥鱼",
+    size: 168,
+    position: "bottom-right",
+    voice: true,
+  });
+
+  var ignoring = true;
+  function setIgnore(flag) {
+    if (flag === ignoring) return;
+    ignoring = flag;
+    window.petHost.setIgnore(flag);
+  }
+
+  // 命中检测：只有鼠标落在桌宠（含 Shadow DOM 内的动画/气泡/菜单）上时才接收事件，
+  // 其余透明区域一律穿透到桌面和其他窗口。
+  window.addEventListener("mousemove", function (e) {
+    var t = e.target;
+    var overPet = !!(t && t.nodeType === 1 && t !== document.body && t !== document.documentElement);
+    setIgnore(!overPet);
+  });
+</script>
+</body>
+</html>

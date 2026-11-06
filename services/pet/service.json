@@ -1,0 +1,22 @@
+{
+  "name": "pet",
+  "kind": "edge",
+  "layer": "接入客户端",
+  "optional": true,
+  "port": 23334,
+  "responsibility": "桌宠旁路：/state → brain（→ model）生成旁白 → 桌宠窗口 23335 显示",
+  "depends": ["infra", "brain", "model"],
+  "entry": "bots/pet-relay.js",
+  "endpoints": [
+    "GET /health",
+    "GET /last",
+    "GET /recent",
+    "POST /state"
+  ],
+  "ui": "http://127.0.0.1:23334/last",
+  "links": {
+    "最近旁白": "http://127.0.0.1:23334/last",
+    "桌宠窗口": "http://127.0.0.1:23335/health"
+  },
+  "status": "ready"
+}

@@ -1,0 +1,7 @@
+name: astrbot_plugin_care_ping
+display_name: "主动关心（低频限额）"
+desc: "冷场时主动给主人发一句话：仅私聊、≥180 分钟空闲、09:00-23:00、每天 ≤4 条，默认本地 Ollama 模型，可带表情包。"
+version: v1.0.0
+author: dafeiyu-local
+support_platforms:
+  - aiocqhttp

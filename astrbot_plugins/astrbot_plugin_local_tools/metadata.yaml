@@ -1,0 +1,7 @@
+name: astrbot_plugin_local_tools
+display_name: "本机工具（主人专用沙箱）"
+desc: "给 AI 开放本机部分工作权限：工作区/全盘文件读写、执行本机命令。默认仅主人可用；allow_others 时退化为 workspace 沙箱且无命令执行。"
+version: v1.2.0
+author: dafeiyu-local
+support_platforms:
+  - aiocqhttp

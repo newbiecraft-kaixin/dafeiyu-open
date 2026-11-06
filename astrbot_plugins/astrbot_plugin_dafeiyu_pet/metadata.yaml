@@ -1,0 +1,8 @@
+name: astrbot_plugin_dafeiyu_pet
+display_name: 大肥鱼桌宠状态同步
+short_desc: 把 QQ / 微信机器人的收发状态同步到官方 dsh-dafeiyu 3D 桌宠
+desc: 监听 QQ / 微信消息与回复，把状态发给大肥鱼桌宠中转服务（默认 127.0.0.1:23334），由本地 9B 模型生成气泡旁白。桌宠只做状态面板，不共享机器人人格与记忆。
+version: 0.1.0
+author: dafeiyu
+repo: ""
+astrbot_version: ">=4.0.0"

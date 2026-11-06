@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "group_ids": [],
+  "max_messages": 20,
+  "inject_max_messages": 0,
+  "inject_max_chars": 3000,
+  "include_bot_messages": false,
+  "save_interval": 60
+}

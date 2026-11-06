@@ -1,0 +1,67 @@
+{
+  "default_role": "大肥鱼",
+  "platform_defaults": {
+    "qq": "大肥鱼",
+    "wechat": "女仆"
+  },
+  "admins": {
+    "qq": ["1000000000"],
+    "wechat": ["wxid_owner"]
+  },
+  "identities": [
+    {
+      "platform": "qq",
+      "user_id": "1000000000",
+      "role": "大肥鱼",
+      "note": "主人 / QQ 管理员"
+    },
+    {
+      "platform": "wechat",
+      "user_id": "wxid_owner",
+      "role": "女仆",
+      "note": "主人 / 微信管理员"
+    }
+  ],
+  "harness": {
+    "dsh_root": "C:\\path\\to\\dafeiyu\\dsh",
+    "dsh_home": "",
+    "timeout_s": 180,
+    "max_parallel": 3,
+    "dotenv": [
+      "C:\\path\\to\\dafeiyu\\.env",
+      "C:\\path\\to\\dafeiyu\\services\\brain\\.env"
+    ]
+  },
+  "roles": {
+    "大肥鱼": {
+      "display": "大肥鱼",
+      "profile": "brain-dafeiyu",
+      "credential": {"mode": "account"},
+      "model": "deepseek-flash",
+      "reasoning_effort": "high",
+      "persona_files": ["stack/persona-大肥鱼.md"],
+      "workspace": "services/brain/workspaces/brain-dafeiyu"
+    },
+    "桌宠": {
+      "display": "桌宠",
+      "profile": "brain-pet",
+      "credential": {"mode": "account"},
+      "model": "deepseek-flash",
+      "reasoning_effort": "low",
+      "persona_files": ["stack/persona-桌宠.md"],
+      "workspace": "services/brain/workspaces/brain-pet"
+    },
+    "女仆": {
+      "display": "女仆",
+      "profile": "brain-maid",
+      "credential": {"mode": "api_key", "env": "DEEPSEEK_API_KEY_MAID"},
+      "model": "deepseek-flash",
+      "reasoning_effort": "medium",
+      "persona_files": [
+        "stack/persona-大肥鱼.md",
+        "stack/persona-女仆强化.md"
+      ],
+      "workspace": "services/brain/workspaces/brain-maid"
+    }
+  }
+}

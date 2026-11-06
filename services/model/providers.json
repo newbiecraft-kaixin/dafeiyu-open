@@ -1,0 +1,50 @@
+{
+  "default_role": "大肥鱼",
+  "dotenv": [
+    "C:\\path\\to\\dafeiyu\\.env",
+    "C:\\path\\to\\dafeiyu\\services\\brain\\.env"
+  ],
+  "providers": {
+    "dsh-account": {
+      "type": "harness",
+      "dsh_root": "C:\\path\\to\\dafeiyu\\dsh",
+      "dsh_home": "",
+      "timeout_s": 180,
+      "model": "deepseek-flash"
+    },
+    "deepseek-remote": {
+      "type": "openai",
+      "base_url": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "timeout_s": 120
+    },
+    "local-ollama": {
+      "type": "openai",
+      "base_url": "http://127.0.0.1:11434/v1",
+      "model": "qwen3.5:9b",
+      "api_key_env": "",
+      "timeout_s": 180
+    }
+  },
+  "routes": {
+    "大肥鱼": {
+      "provider": "dsh-account",
+      "model": "deepseek-flash"
+    },
+    "桌宠": {
+      "provider": "dsh-account",
+      "model": "deepseek-flash"
+    },
+    "女仆": {
+      "provider": "deepseek-remote",
+      "model": "deepseek-chat",
+      "api_key_env": "DEEPSEEK_API_KEY_MAID"
+    }
+  },
+  "default_route": {
+    "provider": "dsh-account",
+    "model": "deepseek-flash"
+  },
+  "fallbacks": ["deepseek-remote", "local-ollama"]
+}

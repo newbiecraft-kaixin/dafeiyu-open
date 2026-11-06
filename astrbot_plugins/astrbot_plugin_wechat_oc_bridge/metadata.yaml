@@ -1,0 +1,5 @@
+name: astrbot_plugin_wechat_oc_bridge
+display_name: "微信小号桥接（wechatauto）"
+desc: "把本机 io-wechat（PC 微信小号 RPA）的消息接入 AstrBot，回复走同一个小号发出。"
+version: v1.0.0
+author: dafeiyu-local

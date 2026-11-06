@@ -1,0 +1,20 @@
+{
+  "name": "stickers",
+  "kind": "storage",
+  "layer": "能力层",
+  "optional": true,
+  "port": 8712,
+  "ui": "http://127.0.0.1:8712/",
+  "responsibility": "表情/图片存储层（QQ 与微信共用一套）：map.txt 索引 + fav 收藏 + GIF/PNG 原件，表情插件按情绪挑图",
+  "entry": "astrbot-win/AstrBot-4.29.3/data/stickers/tools_source_server.py",
+  "endpoints": [
+    "GET /api/stickers",
+    "GET /api/stats",
+    "GET /health"
+  ],
+  "links": {
+    "存储管理": "http://127.0.0.1:8712/storage",
+    "接入管理": "http://127.0.0.1:8712/access"
+  },
+  "status": "active"
+}

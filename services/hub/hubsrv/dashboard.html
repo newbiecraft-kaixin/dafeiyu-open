@@ -1,0 +1,2471 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>大肥鱼 · 微服务中枢</title>
+<style>
+  :root {
+    --bg: #070a14;
+    --bg2: #0c1122;
+    --panel: rgba(18, 24, 44, .74);
+    --panel2: rgba(26, 34, 60, .55);
+    --line: rgba(122, 152, 222, .16);
+    --line2: rgba(122, 152, 222, .30);
+    --text: #e9edff;
+    --muted: #8b97bd;
+    --dim: #636d95;
+    --accent: #6b8fff;
+    --accent2: #3ddc97;
+    --warn: #ffbe3d;
+    --bad: #ff617b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font: 14px/1.65 "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background:
+      radial-gradient(1000px 640px at 8% -12%, rgba(107,143,255,.20), transparent 62%),
+      radial-gradient(760px 520px at 96% -6%, rgba(61,220,151,.12), transparent 58%),
+      linear-gradient(180deg, var(--bg2), var(--bg) 46%);
+    background-attachment: fixed;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 26px 22px 44px; }
+
+  /* ---------- 顶部 ---------- */
+  .top {
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;
+    padding-bottom: 20px; border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; gap: 14px; align-items: center; }
+  .logo {
+    width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+    font-size: 20px; font-weight: 700; color: #fff;
+    background: linear-gradient(140deg, var(--accent), #8f6bff);
+    box-shadow: 0 10px 26px rgba(107,143,255,.34);
+  }
+  h1 { margin: 0; font-size: 23px; letter-spacing: .4px; font-weight: 700; }
+  h1 span { color: var(--accent); font-weight: 600; }
+  .sub { color: var(--muted); margin-top: 2px; font-size: 12.5px; }
+
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .stat {
+    min-width: 84px; padding: 8px 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--panel2);
+  }
+  .stat b { display: block; font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--muted); font-size: 11px; letter-spacing: .5px; }
+  .stat.good b { color: var(--accent2); }
+  .stat.warn b { color: var(--warn); }
+  .ring {
+    width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--accent2) 0deg, var(--accent2) 0deg, rgba(122,152,222,.16) 0deg);
+    transition: background .4s ease;
+  }
+  .ring i {
+    width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+    background: #0b1020; font-style: normal; font-size: 15px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .actions { display: flex; gap: 8px; align-items: center; color: var(--dim); font-size: 12px; }
+  button, .btn {
+    font: inherit; cursor: pointer; color: #d7e2ff;
+    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line2);
+    background: rgba(107,143,255,.10); transition: .16s ease;
+  }
+  button:hover, .btn:hover { background: rgba(107,143,255,.22); border-color: var(--accent); color: #fff; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ghost { background: transparent; color: var(--muted); }
+
+  /* ---------- 机器人管控 ---------- */
+  .bot {
+    margin-top: 16px; padding: 16px 18px 18px; border: 1px solid var(--line);
+    border-radius: 16px; background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.72));
+  }
+  .bot-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .bot-head h2 { margin: 0; font-size: 15px; letter-spacing: .8px; color: #c8d3ff; }
+  .bot-head .sub { margin-top: 2px; }
+  .bot-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .bot-msg { font-size: 12px; color: var(--accent2); opacity: 0; transition: opacity .2s ease; }
+  .bot-msg.bad { color: var(--bad); }
+  .bot-grid {
+    display: grid; gap: 12px; margin-top: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  }
+  .panel {
+    min-width: 0; padding: 13px 14px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--panel2);
+  }
+  .panel h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .panel .hint { color: var(--dim); font-size: 11px; margin-top: 5px; }
+  .panel label.row { display: flex; align-items: center; gap: 9px; margin-top: 9px; color: var(--muted); font-size: 12px; }
+  .panel label.row span { flex: 0 0 62px; }
+  .panel input[type="text"], .panel select {
+    flex: 1; min-width: 0; padding: 7px 10px; border-radius: 9px; color: var(--text);
+    border: 1px solid var(--line); background: rgba(13,18,34,.9);
+    font: inherit; font-size: 12.5px;
+  }
+  .tool-panel { margin-top: 12px; }
+  .tool-panel-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tool-panel-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .tool-panel-head button { margin-left: auto; padding: 6px 14px; font-size: 12px; }
+  .tool-levels {
+    display: grid; gap: 10px; margin-top: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .tool-levels .fld { margin-top: 0; }
+  .human-panel { margin-top: 12px; }
+  .human-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .human-tag {
+    padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted); background: rgba(107,143,255,.06);
+  }
+  .human-tag.on { color: #dce7ff; border-color: rgba(107,143,255,.5); background: rgba(107,143,255,.16); }
+  .human-tag.warn { color: #ffd7de; border-color: rgba(255,97,123,.45); background: rgba(255,97,123,.12); }
+  .human-group { margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(122,152,222,.16); }
+  .human-group-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .human-group-head b { font-size: 12.5px; color: #c8d3ff; }
+  .human-group-head .hint { font-size: 11px; color: var(--dim); }
+  .picks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-height: 176px; overflow: auto; }
+  .pick {
+    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+    padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted);
+  }
+  .pick input { accent-color: var(--accent); margin: 0; }
+  .pick.on { color: #fff; border-color: rgba(107,143,255,.52); background: rgba(107,143,255,.14); }
+  .maps { display: grid; gap: 12px; margin-top: 9px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .maps h4 { margin: 0 0 4px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .map-list { display: flex; flex-direction: column; gap: 6px; }
+  .map-row { display: flex; gap: 6px; align-items: center; }
+  .map-row input { flex: 0 0 108px; }
+  .map-row select { flex: 1; }
+  .map-row button { padding: 3px 8px; font-size: 11px; color: var(--muted); }
+  .map-add { margin-top: 7px; padding: 4px 10px; font-size: 11.5px; background: transparent; color: var(--muted); }
+  .cmds { margin-top: 9px; max-height: 246px; overflow: auto; }
+  .cmd-row {
+    display: flex; gap: 8px; align-items: baseline; padding: 5px 0;
+    border-bottom: 1px dashed rgba(122,152,222,.14); font-size: 12px;
+  }
+  .cmd-row .c { flex: none; font-family: Consolas, "Cascadia Mono", monospace; color: #cfe0ff; font-weight: 600; }
+  .cmd-row .a { flex: none; color: var(--dim); font-size: 11px; }
+  .cmd-row .p { flex: none; color: #8fa3d8; font-size: 11px; }
+  .cmd-row .d { color: var(--muted); font-size: 11.5px; margin-left: auto; text-align: right; }
+  .cmd-group { margin-top: 9px; }
+  .cmd-group b { font-size: 11.5px; color: #b9c6ee; }
+
+  /* ---------- 管控：卡片 / 弹窗 / 声线 ---------- */
+  .bot-bar { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .bot-bar .search { flex: 1 1 220px; }
+  .sec-head { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .sec-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .sec-head .map-add { margin: 0 0 0 auto; }
+  .chips.pool { margin-top: 9px; max-height: 168px; overflow: auto; }
+  .pool-chip {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px;
+    border: 1px solid var(--line); border-radius: 999px; font-size: 11.5px; color: var(--muted);
+  }
+  .pool-chip code { color: var(--dim); font-size: 10.5px; }
+  .pool-chip button {
+    padding: 0 3px; border: 0; background: transparent; color: var(--dim);
+    font-size: 11px; line-height: 1; cursor: pointer;
+  }
+  .pool-chip button:hover { color: var(--bad); }
+  .pool-chip button.chip-main {
+    display: inline-flex; align-items: center; gap: 6px; padding: 0;
+    border: 0; background: transparent; color: var(--text); font-size: 12px;
+    cursor: pointer; border-bottom: 1px dashed transparent;
+  }
+  .pool-chip button.chip-main:hover { color: #fff; border-bottom-color: var(--line); }
+  .fld-checks .checks-toolbar { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .fld-checks .checks-toolbar input { flex: 1 1 auto; min-width: 0; }
+  .fld-checks .checks-toolbar button { padding: 4px 9px; font-size: 11px; }
+  .fld-checks .checks-list {
+    max-height: 240px; overflow: auto; display: grid; gap: 4px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    padding: 8px; border: 1px solid var(--line); border-radius: 8px;
+    background: rgba(255, 255, 255, .02);
+  }
+  .fld-checks .checks-list label {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted);
+  }
+  .fld-checks .checks-list label.hide { display: none; }
+  .ent-list {
+    display: grid; gap: 9px; margin-top: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  }
+  .ent-card {
+    display: flex; align-items: center; gap: 10px; padding: 11px 12px;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel2);
+    transition: border-color .16s ease, background .16s ease;
+  }
+  .ent-card:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.08); }
+  .ent-card.off { opacity: .78; border-color: rgba(255,97,123,.22); }
+  .ent-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .ent-main b { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ent-id { font-size: 10.5px; color: var(--dim); font-family: Consolas, "Cascadia Mono", monospace; }
+  .ent-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .tag {
+    padding: 2px 7px; border-radius: 999px; font-size: 10.5px;
+    color: var(--muted); border: 1px solid var(--line); background: rgba(122,152,222,.06);
+  }
+  .tag.on { color: #9ff0c9; border-color: rgba(64,220,150,.4); background: rgba(64,220,150,.10); }
+  .tag.warn { color: #ffb3c0; border-color: rgba(255,97,123,.35); background: rgba(255,97,123,.08); }
+  .ent-edit {
+    flex: none; padding: 5px 11px; font-size: 11.5px; border-radius: 9px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+  }
+  .ent-edit:hover { color: #fff; background: rgba(107,143,255,.18); }
+  .cmd-panel { margin-top: 16px; }
+  .cmd-panel .cmds { max-height: 300px; }
+
+  .modal {
+    position: fixed; inset: 0; z-index: 40; display: flex; align-items: center;
+    justify-content: center; padding: 20px;
+    background: rgba(4,7,15,.66); backdrop-filter: blur(4px);
+  }
+  .modal[hidden] { display: none; }
+  .modal-card {
+    width: min(520px, 100%); max-height: 88vh; overflow: auto;
+    padding: 16px 18px 14px; border: 1px solid rgba(122,152,222,.38); border-radius: 16px;
+    background: linear-gradient(165deg, #141b31, #0b1020);
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .form-sec {
+    margin: 16px 0 8px; padding-top: 10px; border-top: 1px dashed rgba(122,152,222,.2);
+    font-size: 11.5px; letter-spacing: .6px; color: #9fb3ff;
+  }
+  .form-sec:first-child { margin-top: 10px; padding-top: 0; border-top: 0; }
+  .modal-head { display: flex; align-items: center; gap: 10px; }
+  .modal-head h3 { margin: 0; font-size: 13.5px; letter-spacing: .6px; color: #dfe7ff; }
+  .modal-x {
+    margin-left: auto; width: 26px; height: 26px; padding: 0; border-radius: 8px;
+    background: transparent; color: var(--dim); border: 1px solid var(--line);
+  }
+  .lvl { margin-top: 12px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(13,18,34,.55); }
+  .lvl > label:first-child { display: block; font-size: 11.5px; color: #c8d3ff; margin-bottom: 7px; }
+  .lvl select, .lvl input[type="text"], .lvl textarea {
+    width: 100%; padding: 7px 10px; border-radius: 9px; color: var(--text);
+    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12.5px;
+  }
+  .lvl textarea { resize: vertical; }
+  .lvl input[type="text"] + select { margin-top: 8px; }
+  .lvl .switch { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .lvl .switch input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .tool-list {
+    display: flex; flex-wrap: wrap; gap: 6px 14px; max-height: 190px; overflow: auto;
+    margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 9px;
+  }
+  .tool-list[hidden] { display: none; }
+  .tool-list label { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+  .tool-list input { accent-color: #6b8fff; }
+  .lvl.danger { border-color: rgba(255,97,123,.3); }
+  .danger-btn {
+    width: 100%; padding: 8px 12px; border-radius: 9px; font-size: 12.5px; cursor: pointer;
+    color: #ffd7de; border: 1px solid rgba(255,97,123,.5); background: rgba(255,97,123,.12);
+  }
+  .danger-btn:hover { background: rgba(255,97,123,.24); color: #fff; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
+  .fld { display: block; margin-top: 10px; }
+  .fld span { display: block; font-size: 11.5px; color: #c8d3ff; margin-bottom: 6px; }
+  .fld input, .fld select, .fld textarea {
+    width: 100%; padding: 7px 10px; border-radius: 9px; color: var(--text);
+    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12.5px;
+  }
+  .fld textarea { resize: vertical; }
+  .fld input[type="checkbox"] { width: auto; margin: 0; accent-color: #6b8fff; }
+  .fld-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .fld-check span { margin: 0; }
+  .fld input[type="number"] { font-variant-numeric: tabular-nums; }
+  .pet-card {
+    margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--panel2); transition: border-color .16s ease, background .16s ease;
+  }
+  .pet-card:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.08); }
+  .pet-switches { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .pet-sw label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .pet-sw input { accent-color: #6b8fff; width: 15px; height: 15px; }
+  .pet-sw span { user-select: none; }
+  .pet-voice { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .pet-voice select {
+    flex: 1; min-width: 0; padding: 6px 9px; border-radius: 8px; color: var(--text);
+    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12px;
+  }
+  .pet-voice button {
+    padding: 6px 10px; font-size: 11.5px; border-radius: 8px; background: transparent;
+    color: var(--muted); border: 1px solid var(--line);
+  }
+  .pet-voice button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-voice button:disabled { opacity: .55; cursor: not-allowed; }
+  .voice-meta { font-size: 10.5px; color: var(--dim); }
+  .pet-api-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pet-api-head b { font-size: 12.5px; }
+  .pet-api-head .hint { flex: 1; min-width: 160px; }
+  .pet-api-row { display: flex; align-items: center; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+  .pet-api-row input {
+    flex: 1 1 200px; min-width: 0; padding: 6px 9px; border-radius: 8px; color: var(--text);
+    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12px;
+  }
+  .pet-api-row button {
+    padding: 6px 10px; font-size: 11.5px; border-radius: 8px; background: transparent;
+    color: var(--muted); border: 1px solid var(--line);
+  }
+  .pet-api-row button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-api-row button:disabled { opacity: .55; cursor: not-allowed; }
+  .pet-api-log { margin-top: 8px; font-size: 10.5px; color: var(--dim); word-break: break-all; }
+  .ent-actions { display: flex; gap: 5px; flex: none; }
+  .ent-actions button { padding: 4px 9px; font-size: 11px; border-radius: 8px; background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .ent-actions button:hover { color: #fff; background: rgba(107,143,255,.18); }
+  .ent-actions button.danger:hover { background: rgba(255,97,123,.2); border-color: rgba(255,97,123,.45); }
+
+  /* ---------- 工具条 ---------- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center; justify-content: space-between;
+    margin: 18px 0 6px; padding: 12px 0;
+    background: linear-gradient(180deg, rgba(7,10,20,.94), rgba(7,10,20,.72) 70%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .search {
+    flex: 1 1 260px; min-width: 220px; padding: 9px 14px; border-radius: 11px;
+    color: var(--text); border: 1px solid var(--line); background: rgba(13,18,34,.9);
+  }
+  .search::placeholder { color: var(--dim); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 7px 13px; border-radius: 999px; font-size: 12px;
+    color: var(--muted); border: 1px solid var(--line); background: transparent;
+  }
+  .chip[aria-pressed="true"] {
+    color: #fff; border-color: rgba(107,143,255,.55); background: rgba(107,143,255,.18);
+  }
+
+  /* ---------- 常用入口 ---------- */
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .quick .link { font-size: 12.5px; }
+
+  /* ---------- 分层：一层一行，能力在行内横向排列 ---------- */
+  .layer {
+    display: flex; align-items: flex-start; gap: 16px; margin-top: 12px;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+    background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.55));
+  }
+  .layer-head { flex: 0 0 132px; display: flex; flex-direction: column; gap: 3px; }
+  .layer-head h2 { margin: 0; font-size: 13px; letter-spacing: 1.2px; color: #c8d3ff; font-weight: 600; }
+  .layer-head .rule { display: none; }
+  .count { font-size: 11.5px; color: var(--dim); }
+  .layer-body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 13px; }
+
+  /* 单个能力：行内小胶囊，不再单独占一行 */
+  .svc {
+    display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+    padding: 7px 11px; border-radius: 11px; border: 1px solid var(--line);
+    background: rgba(122,152,222,.05); transition: border-color .16s ease, background .16s ease;
+  }
+  .svc:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.10); }
+  .svc.off { border-color: rgba(255,97,123,.26); opacity: .72; }
+  .svc .name { font-size: 13px; font-weight: 600; letter-spacing: .2px; }
+  .svc .port { font-size: 10.5px; color: var(--dim); font-family: Consolas, "Cascadia Mono", monospace; }
+  .svc-links { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+  .svc-links .link { padding: 2px 8px; font-size: 11px; border-radius: 999px; }
+  /* 管控按钮：只出现在有独立进程的服务上 */
+  .svc-ctl { display: inline-flex; gap: 3px; }
+  .svc-ctl button {
+    padding: 2px 8px; font-size: 11px; line-height: 1.4; border-radius: 8px;
+    background: transparent; color: var(--muted); border-color: var(--line);
+  }
+  .svc-ctl button:hover { background: rgba(107,143,255,.22); color: #fff; }
+  .svc-ctl button[disabled] { opacity: .45; cursor: wait; }
+
+  /* ---------- 卡片 ---------- */
+  .card {
+    position: relative; overflow: hidden; display: flex; flex-direction: column; min-width: 0;
+    padding: 15px 16px 13px; border: 1px solid var(--line); border-radius: 15px;
+    background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.78));
+    box-shadow: 0 12px 28px rgba(0,0,0,.24);
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(107,143,255,.35), transparent);
+    opacity: 0; transition: opacity .18s ease;
+  }
+  .card:hover { transform: translateY(-2px); border-color: rgba(107,143,255,.44); box-shadow: 0 16px 34px rgba(0,0,0,.32); }
+  .card:hover::after { opacity: 1; }
+  .card.off { border-color: rgba(255,97,123,.28); }
+  .card.off .name { color: #c9d2ee; }
+  .top2 { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex: none;
+    background: var(--bad); box-shadow: 0 0 0 4px rgba(255,97,123,.14);
+  }
+  .dot.on { background: var(--accent2); box-shadow: 0 0 0 4px rgba(61,220,151,.16); }
+  .name { font-size: 15.5px; font-weight: 650; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .port {
+    margin-left: auto; flex: none; font-size: 11px; color: var(--dim);
+    font-family: Consolas, "Cascadia Mono", monospace;
+  }
+  .resp { color: var(--muted); font-size: 12.5px; margin: 9px 0 0; flex: 1; min-height: 38px; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; margin: 11px 0 11px; }
+  .tag {
+    font-size: 11px; color: var(--muted); padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line); background: rgba(122,152,222,.06);
+  }
+  .tag.on { color: #b9f5dd; border-color: rgba(61,220,151,.34); background: rgba(61,220,151,.10); }
+  .tag.off { color: #ffc2cd; border-color: rgba(255,97,123,.34); background: rgba(255,97,123,.10); }
+  .links { display: flex; gap: 7px; flex-wrap: wrap; }
+  .link {
+    text-decoration: none; color: #cfe0ff; font-size: 12px; padding: 6px 10px;
+    border-radius: 9px; border: 1px solid rgba(107,143,255,.26); background: rgba(107,143,255,.08);
+    transition: .16s ease;
+  }
+  .link:hover { border-color: var(--accent); color: #fff; background: rgba(107,143,255,.20); }
+  .link.primary { border-color: rgba(61,220,151,.38); color: #bff6e4; background: rgba(61,220,151,.10); }
+  .link.off { opacity: .42; cursor: not-allowed; border-style: dashed; background: transparent; }
+
+  /* ---------- 工具 ---------- */
+  .tools { margin-top: 32px; }
+  .tool {
+    padding: 13px 15px; border: 1px solid var(--line); border-radius: 13px;
+    background: var(--panel2); display: flex; gap: 12px; align-items: flex-start;
+    transition: border-color .16s ease, background .16s ease;
+  }
+  .tool:hover { border-color: var(--line2); background: rgba(30,40,72,.62); }
+  .tool.off { opacity: .62; }
+  .tool .state { margin-left: auto; flex: none; }
+  .tool .mono { font-family: Consolas, "Cascadia Mono", monospace; color: var(--dim); font-size: 10.5px; margin-top: 2px; }
+  .tool .title { color: #e4ebff; font-size: 13px; }
+  .tool .desc { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .empty {
+    color: var(--muted); font-size: 12px; padding: 14px 16px;
+    border: 1px dashed var(--line2); border-radius: 12px; text-align: center;
+  }
+  footer {
+    margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line);
+    color: var(--dim); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  code { font-family: Consolas, monospace; color: #bfd0ff; }
+  @media (max-width: 640px) {
+    .wrap { padding: 18px 14px 32px; }
+    .stats { width: 100%; }
+    .stat { flex: 1; min-width: 0; }
+    .layer { flex-direction: column; gap: 8px; }
+    .layer-head { flex-basis: auto; flex-direction: row; align-items: baseline; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">鱼</div>
+      <div>
+        <h1>大肥鱼 <span>中枢</span></h1>
+        <div class="sub">服务注册 · 状态探测 · 能力直达</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="ring" id="ring" role="img" aria-label="在线比例"><i id="ringText">--</i></div>
+      <div class="stat good"><b id="online">--</b><small>在线</small></div>
+      <div class="stat"><b id="total">--</b><small>服务</small></div>
+      <div class="stat"><b id="tools">--</b><small>工具</small></div>
+      <div class="stat warn"><b id="missing">--</b><small>可选缺失</small></div>
+    </div>
+    <div class="actions">
+      <span id="stamp">--</span>
+      <button id="refreshBtn" class="ghost" type="button">刷新</button>
+    </div>
+  </header>
+
+  <div class="quick" id="quick" aria-label="常用入口"></div>
+
+  <section class="bot" id="botPanel" aria-label="机器人管控">
+    <div class="bot-head">
+      <div>
+        <h2>机器人 · 管控</h2>
+        <div class="sub" id="botSub">读取 provider_router 配置…</div>
+      </div>
+      <div class="bot-actions">
+        <span class="bot-msg" id="botMsg" role="status"></span>
+        <button id="botSave" type="button">保存并生效</button>
+        <button id="botReload" class="ghost" type="button">重新读取</button>
+      </div>
+    </div>
+    <div class="bot-grid">
+      <div class="panel">
+        <h3>模型层 <span class="hint" id="modelCount"></span></h3>
+        <div class="hint" id="botDefaults">默认模型读取中…</div>
+        <div class="chips pool" id="modelChips"></div>
+        <button class="map-add" type="button" id="addModel">+ 添加模型</button>
+      </div>
+
+      <div class="panel">
+        <h3>角色层 <span class="hint" id="personaCount"></span></h3>
+        <div class="hint">复用 AstrBot 现有人格，按群绑定。</div>
+        <div class="chips pool" id="personaChips"></div>
+        <button class="map-add" type="button" id="addPersona">+ 新建角色</button>
+      </div>
+    </div>
+
+    <div class="panel tool-panel">
+      <div class="tool-panel-head">
+        <h3>工具与权限 <span class="hint" id="toolAccessSub">读取中…</span></h3>
+        <button id="toolAccessSave" type="button">保存档位</button>
+      </div>
+      <div class="tool-levels">
+        <label class="fld"><span>默认档位</span><select id="toolDefaultLevel"></select></label>
+        <label class="fld"><span>群聊</span><select id="roleGroup"></select></label>
+        <label class="fld"><span>好友私聊</span><select id="roleFriend"></select></label>
+        <label class="fld"><span>陌生人私聊</span><select id="roleStranger"></select></label>
+      </div>
+      <div class="hint">角色档位按会话类型生效；单个群 / 好友在「配置」里单独覆盖优先。保存后下一条消息生效。</div>
+      <div class="sec-head">
+        <h3>自定义档位</h3><span class="hint">内置档位固定，可自己新建档位并挑工具</span>
+        <button class="map-add" type="button" id="addToolLevel">+ 新建档位</button>
+      </div>
+      <div class="chips pool" id="toolLevelChips"></div>
+    </div>
+
+    <div class="panel human-panel">
+      <div class="tool-panel-head">
+        <h3>人味水群 <span class="hint" id="humanSub">读取中…</span></h3>
+        <button id="humanSave" type="button">保存并重启 AstrBot</button>
+      </div>
+      <div class="human-status" id="humanStatus"></div>
+      <div class="human-group">
+        <div class="human-group-head"><b>白天档</b><span class="hint" id="humanDayHint">时段内按这里的参数说话</span></div>
+        <div class="tool-levels" id="humanDay"></div>
+      </div>
+      <div class="human-group">
+        <div class="human-group-head"><b>夜宵档</b><span class="hint" id="humanNightHint">时段外按系数缩放</span></div>
+        <div class="tool-levels" id="humanNight"></div>
+      </div>
+      <div class="hint">这些参数只在 AstrBot 启动时读一次，保存后会重启一次才生效；点名回复不受时段和夜间系数影响。</div>
+    </div>
+
+    <div class="bot-bar">
+      <input id="groupSearch" class="search" type="search" placeholder="搜索群名 / 群号" aria-label="搜索群" />
+      <div class="chips" id="groupFilter">
+        <button class="chip" type="button" data-gfilter="all" aria-pressed="true">全部</button>
+        <button class="chip" type="button" data-gfilter="on" aria-pressed="false">监听中</button>
+        <button class="chip" type="button" data-gfilter="off" aria-pressed="false">已忽略</button>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <h3>QQ 群</h3><span class="hint" id="qqGroupSub"></span>
+    </div>
+    <div class="ent-list" id="qqGroupCards"><div class="empty">正在读取 QQ 群…</div></div>
+
+    <div class="sec-head">
+      <h3>微信群</h3><span class="hint" id="wxGroupSub"></span>
+    </div>
+    <div class="ent-list" id="wxGroupCards"><div class="empty">正在读取微信群…</div></div>
+
+    <div class="sec-head">
+      <h3>QQ 好友</h3><span class="hint" id="qqFriendSub"></span>
+    </div>
+    <div class="ent-list" id="qqFriendCards"><div class="empty">正在读取 QQ 好友…</div></div>
+
+    <div class="sec-head">
+      <h3>微信好友</h3><span class="hint" id="wxFriendSub"></span>
+    </div>
+    <div class="ent-list" id="wxFriendCards"><div class="empty">正在读取微信好友…</div></div>
+
+    <div class="sec-head">
+      <h3>管理员</h3><span class="hint" id="adminSub"></span>
+      <button class="map-add" type="button" id="addAdmin">+ 添加管理员</button>
+    </div>
+    <div class="ent-list" id="adminCards"><div class="empty">正在读取管理员…</div></div>
+
+    <div class="sec-head">
+      <h3>声线管理</h3><span class="hint" id="voiceSub"></span>
+      <button class="map-add" type="button" id="addVoice">+ 导入声线</button>
+    </div>
+    <div class="ent-list" id="voiceCards"><div class="empty">正在读取声线…</div></div>
+
+    <div class="sec-head">
+      <h3>桌宠</h3><span class="hint" id="petSub">正在读取…</span>
+      <button class="map-add" type="button" id="editPet">编辑</button>
+    </div>
+
+    <div class="pet-card">
+      <div class="pet-switches">
+        <label class="pet-sw"><input type="checkbox" id="petVoiceOn" /><span>语音</span></label>
+        <label class="pet-sw"><input type="checkbox" id="petClickOn" /><span>点击音效</span></label>
+        <label class="pet-sw"><input type="checkbox" id="petWhisperOn" /><span>碎碎念</span></label>
+        <label class="pet-sw"><input type="checkbox" id="petVisionOn" /><span>看屏点评</span></label>
+      </div>
+      <div class="pet-voice">
+        <select id="petVoice"><option value="">读取中…</option></select>
+        <button type="button" id="petVoiceApply">切换声线</button>
+        <button type="button" id="petVoicePlay">试听</button>
+      </div>
+    </div>
+
+    <div class="pet-card">
+      <div class="pet-api-head">
+        <b>桌宠 API</b>
+        <span class="hint" id="petApiSub">读取中…</span>
+        <button class="map-add" type="button" id="editRelay">中转参数</button>
+      </div>
+      <div class="pet-api-row">
+        <input id="petApiText" type="text" placeholder="气泡内容 / 对话内容" />
+        <button type="button" id="petApiSay">气泡</button>
+        <button type="button" id="petApiChat">对话</button>
+        <button type="button" id="petApiClear">清空气泡</button>
+        <button type="button" id="petApiBalance">刷新余额</button>
+      </div>
+      <div class="pet-api-row">
+        <input id="petApiAnim" type="text" placeholder="动作名，例如 wave" />
+        <button type="button" id="petApiAnimPlay">播放动作</button>
+        <button type="button" id="petApiTrim">清理旧对话</button>
+        <button type="button" id="petApiWipe">清空对话</button>
+      </div>
+      <div class="pet-api-log" id="petApiLog"></div>
+    </div>
+
+    <div class="pet-card">
+      <div class="pet-api-head">
+        <b>监听窗口</b>
+        <span class="hint" id="winSub">读取中…</span>
+        <button class="map-add" type="button" id="winRefresh">刷新</button>
+      </div>
+      <div class="pet-api-log" id="winList">暂无监听窗口</div>
+    </div>
+
+    <div class="panel cmd-panel">
+      <h3>指令清单 <span class="hint" id="cmdCount"></span></h3>
+      <div class="cmds" id="cmdList"><div class="empty">正在扫描插件指令…</div></div>
+    </div>
+  </section>
+
+  <div class="modal" id="editModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="editTitle">配置</h3><button class="modal-x" type="button" id="editClose">✕</button></div>
+      <div class="lvl" id="lvlPersona">
+        <label>第一层 · 角色提示词</label>
+        <select id="editPersona"></select>
+        <div class="hint">不指定 = 沿用全局人格</div>
+      </div>
+      <div class="lvl" id="lvlModel">
+        <label>第二层 · 使用的模型</label>
+        <select id="editModel"></select>
+        <div class="hint">跟随默认 = 按全局路由规则</div>
+      </div>
+      <div class="lvl" id="lvlListen">
+        <label>第三层 · 是否监听</label>
+        <label class="switch"><input type="checkbox" id="editListen" /><span id="editListenText">监听</span></label>
+      </div>
+      <div class="lvl" id="lvlAdmin" hidden>
+        <label>管理员身份</label>
+        <input id="editIdentity" type="text" list="identityPresets" maxlength="24" placeholder="例如 主人、爸爸、母亲大人" />
+        <datalist id="identityPresets">
+          <option value="主人"></option>
+          <option value="爸爸"></option>
+          <option value="母亲大人"></option>
+          <option value="家人"></option>
+          <option value="朋友"></option>
+        </datalist>
+        <div class="hint">身份只作标识，不影响权限；权限由下方的角色、模型与工具档位决定。</div>
+      </div>
+      <div class="lvl" id="lvlTools">
+        <label id="editToolLabel">工具 · 本群可调用的工具</label>
+        <select id="editToolLevel"><option value="">跟随默认档位</option></select>
+        <div class="hint" id="editToolHint">按会话覆盖工具档位，保存后下一条消息生效</div>
+        <div class="tool-list" id="editToolList" hidden></div>
+      </div>
+      <div class="lvl danger" id="lvlDanger">
+        <label>第四层 · 危险操作</label>
+        <button type="button" class="danger-btn" id="editDanger">退出群聊</button>
+        <div class="hint" id="editDangerHint">不可撤销，会同步清理该群的配置</div>
+      </div>
+      <div class="modal-foot"><button class="ghost" type="button" id="editCancel">取消</button><button type="button" id="editOk">保存</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="formModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="formTitle">添加</h3><button class="modal-x" type="button" id="formClose">✕</button></div>
+      <div id="formBody"></div>
+      <div class="modal-foot"><button class="ghost" type="button" id="formCancel">取消</button><button type="button" id="formOk">提交</button></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input id="search" class="search" type="search" placeholder="搜索服务 / 端口 / 职责…" aria-label="搜索服务" />
+    <div class="chips" role="group" aria-label="状态筛选">
+      <button class="chip" type="button" data-filter="all" aria-pressed="true">全部</button>
+      <button class="chip" type="button" data-filter="online" aria-pressed="false">在线</button>
+      <button class="chip" type="button" data-filter="offline" aria-pressed="false">离线</button>
+      <button class="chip" type="button" data-filter="optional" aria-pressed="false">可选缺失</button>
+    </div>
+  </div>
+
+  <main id="layers" aria-live="polite"><div class="empty">正在读取服务清单…</div></main>
+
+  <section class="tools">
+    <div class="layer-head"><h2>能力工具</h2><div class="rule"></div><div class="count" id="toolCount">读取中</div></div>
+    <div id="toolGrid" class="grid"></div>
+  </section>
+
+  <footer>
+    <div>刷新于 <span id="stamp2">--</span> · 每 5 秒自动更新</div>
+  </footer>
+</div>
+<script>
+  const state = { filter: "all", query: "" };
+  const $ = (id) => document.getElementById(id);
+
+  const esc = (text) => String(text == null ? "" : text).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+
+  // 界面上一律用中文：服务显示中文名，状态、接口标签也跟着翻译，技术编号只放在悬停提示里。
+  const SVC_ZH = {
+    "pet": "桌宠旁路", "dsh": "桌宠宿主", "brain": "记忆中枢", "store": "记忆库",
+    "subtitle": "实时字幕", "astrbot": "机器人宿主", "io-wechat": "微信接入",
+    "voice": "语音合成", "napcat": "QQ 协议端", "plugins": "插件系统",
+    "stickers": "表情库", "hub": "中枢", "audio": "音频能力", "video": "视频能力"
+  };
+  const KIND_ZH = {
+    edge: "接入端", capability: "能力", storage: "存储", registry: "注册中心",
+    pipeline: "管道", dispatcher: "调度", adapter: "适配", "platform-io": "输入输出"
+  };
+  const STATUS_ZH = {
+    active: "运行中", ready: "就绪", optional: "可选",
+    error: "异常", degraded: "降级", offline: "离线"
+  };
+  const LINK_ZH = {
+    "/health": "健康检查", "/roles": "角色清单", "/messages": "消息记录",
+    "/events": "事件流", "/capabilities": "能力清单", "/sessions": "会话列表",
+    "/last": "最近旁白", "/status": "状态", "/memory": "记忆", "/tools": "工具",
+    "/faces": "表情", "/mcp": "调用入口"
+  };
+  const svcLabel = (name) => SVC_ZH[name] || name;
+  const kindLabel = (kind) => KIND_ZH[kind] || kind || "";
+  const statusLabel = (status) => STATUS_ZH[status] || status;
+  const linkLabel = (label) => LINK_ZH[label] || label;
+
+  // 所有链接都先走 /view：网页原样跳转，JSON 变成可读表格，服务没启动给说明页
+  const viewer = (href) => "/view?target=" + encodeURIComponent(href);
+
+  const isPage = (href) => {
+    try {
+      const path = new URL(href, location.origin).pathname.toLowerCase();
+      return path === "/" || path.endsWith("/ui") || path.includes("/webui") ||
+        path.includes("/console") || path.endsWith("/index.html");
+    } catch (error) { return false; }
+  };
+
+  function linkPill(label, href, primary, dead) {
+    if (dead) {
+      return '<span class="link off" title="服务没启动，点了打不开">' + esc(label) + '</span>';
+    }
+    return '<a class="link' + (primary ? ' primary' : '') + '" target="_blank" rel="noreferrer" href="' +
+      esc(viewer(href)) + '">' + esc(label) + '</a>';
+  }
+
+  function matchQuery(svc) {
+    if (!state.query) return true;
+    const links = Object.values(svc.links || {}).join(" ");
+    const endpoints = (svc.endpoints || []).join(" ");
+    const hay = [svc.name, svc.port, svc.responsibility, svc.kind, svc.layer, svc.status,
+      svc.ui, links, endpoints].filter(Boolean).join(" ").toLowerCase();
+    return hay.indexOf(state.query) !== -1;
+  }
+
+  function matchFilter(svc) {
+    if (state.filter === "online") return svc.online;
+    if (state.filter === "offline") return !svc.online;
+    if (state.filter === "optional") return svc.optional && !svc.online;
+    return true;
+  }
+
+  // 卡片只放服务自己声明的中文入口；/health、/groups、/songs 这类英文端点不再平铺出来
+  const isZh = (text) => /[\u4e00-\u9fa5]/.test(String(text || ""));
+  // 和「界面」同义的入口不重复显示
+  const DUP_LABELS = new Set(["控制台", "界面", "状态", "数据", "健康检查", "WebUI"]);
+
+  function renderSvc(svc) {
+    const dead = !svc.online && !svc.virtual;
+    const zhLinks = Object.entries(svc.links || {})
+      .filter(([label, href]) => href && href !== svc.ui && isZh(label) && !DUP_LABELS.has(label));
+    // 有中文入口时，/health、/status 这类数据型主入口不再占位
+    const showUi = svc.ui && (isPage(svc.ui) || !zhLinks.length);
+    const extra = zhLinks.slice(0, showUi ? 1 : 2)
+      .map(([label, href]) => linkPill(linkLabel(label), href, false, dead)).join("");
+    const ui = showUi
+      ? linkPill(isPage(svc.ui) ? "界面" : "数据", svc.ui, true, dead)
+      : "";
+    // 表情库把张数/分组报在 /health，卡片上直接显示，不用点进去才知道有多少
+    const stats = svc.stats && svc.stats.stickers
+      ? '<span class="tag">表情 ' + esc(svc.stats.stickers) + ' 张 · ' + esc(svc.stats.months || 0) + ' 组</span>'
+      : "";
+    const tags = [
+      svc.virtual ? '<span class="tag on">常驻</span>'
+                  : (svc.online ? "" : '<span class="tag off">离线</span>'),
+      svc.status && svc.status !== "active" ? '<span class="tag">' + esc(statusLabel(svc.status)) + '</span>' : "",
+      stats
+    ].filter(Boolean).join("");
+    // 有独立进程的服务才能启停；在线给「重启 / 停止」，离线给「启动」
+    const ctl = svc.manageable
+      ? '<span class="svc-ctl">' + (svc.online
+          ? '<button type="button" data-act="restart" data-name="' + esc(svc.name) + '" title="重启">↻</button>' +
+            '<button type="button" data-act="stop" data-name="' + esc(svc.name) + '" title="停止">■</button>'
+          : '<button type="button" data-act="start" data-name="' + esc(svc.name) + '" title="启动">▶</button>') +
+        '</span>'
+      : "";
+    return '<div class="svc' + (dead ? ' off' : '') + '" title="' +
+      esc(svc.name + (svc.kind ? " · " + kindLabel(svc.kind) : "") + "：" + (svc.responsibility || "")) + '">' +
+      '<i class="dot' + (svc.online || svc.virtual ? ' on' : '') + '" aria-hidden="true"></i>' +
+      '<span class="name">' + esc(svcLabel(svc.name)) + '</span>' +
+      '<span class="port">' + (svc.port ? ":" + esc(svc.port) : (svc.virtual ? "库" : "")) + '</span>' +
+      tags +
+      '<span class="svc-links">' + ui + extra + '</span>' + ctl + '</div>';
+  }
+
+  function renderRing(ratio) {
+    const deg = Math.round(ratio * 360);
+    $("ring").style.background = "conic-gradient(var(--accent2) 0deg, var(--accent2) " + deg +
+      "deg, rgba(122,152,222,.16) " + deg + "deg)";
+    $("ringText").textContent = Math.round(ratio * 100) + "%";
+  }
+
+  function render(data) {
+    const layers = data.layers || [];
+    const rows = data.services || layers.flatMap((layer) => layer.services || []);
+    const real = rows.filter((row) => !row.virtual);
+    const online = real.filter((row) => row.online).length;
+    $("online").textContent = online;
+    $("total").textContent = real.length;
+    renderRing(real.length ? online / real.length : 0);
+
+    // 桌宠/微信/QQ 这类新增入口固定置顶，不再按层排序沉到最底部。
+    $("quick").innerHTML = rows
+      .filter((row) => row.pin && row.ui)
+      .map((row) => linkPill(
+        svcLabel(row.name) + (isPage(row.ui) ? " · 控制台" : " · 状态"),
+        row.ui, true, !row.online && !row.virtual))
+      .join("");
+
+    const sections = layers.map((layer) => {
+      const services = (layer.services || []).filter((svc) => matchFilter(svc) && matchQuery(svc));
+      if (!services.length) return "";
+      return '<section class="layer"><div class="layer-head"><h2>' + esc(layer.name) + '</h2>' +
+        '<div class="count">' + services.length + ' / ' +
+        (layer.services || []).length + '</div></div>' +
+        '<div class="layer-body">' + services.map(renderSvc).join("") + '</div></section>';
+    }).join("");
+
+    $("layers").innerHTML = sections ||
+      '<div class="empty">没有匹配的服务，试试清空搜索或取消筛选</div>';
+
+    // 显示全部工具（含依赖离线），避免「某个功能查不到」。
+    const catalog = data.tool_catalog || (data.tools || []).map((tool) => ({ ...tool, ready: true }));
+    const ready = catalog.filter((tool) => tool.ready).length;
+    $("tools").textContent = ready;
+    $("missing").textContent = (data.optional_missing || []).length;
+    $("toolCount").textContent = "可用 " + ready + " / " + catalog.length + " 个";
+    $("toolGrid").innerHTML = catalog.map((tool) =>
+      '<div class="tool' + (tool.ready ? "" : " off") + '"><div><div class="title">' + esc(tool.description) + '</div>' +
+      '<div class="mono">' + esc(tool.name) + '</div>' +
+      (tool.depends ? '<div class="desc">依赖：' + esc(tool.depends) + '</div>' : "") + '</div>' +
+      '<span class="tag ' + (tool.ready ? "on" : "off") + ' state">' + (tool.ready ? "可用" : "离线") + '</span></div>'
+    ).join("") || '<div class="empty">没有注册任何工具</div>';
+  }
+
+  async function refresh() {
+    const btn = $("refreshBtn");
+    btn.disabled = true;
+    try {
+      const response = await fetch("/capabilities", { cache: "no-store" });
+      const payload = await response.json();
+      // 后端统一返回 {ok, data}，必须取 data
+      render(payload.data || payload);
+      const now = new Date().toLocaleTimeString();
+      $("stamp").textContent = now;
+      $("stamp2").textContent = now;
+    } catch (error) {
+      $("layers").innerHTML = '<div class="empty">中枢暂时不可达：' + esc(error.message) + '</div>';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  $("search").addEventListener("input", (event) => {
+    state.query = event.target.value.trim().toLowerCase();
+    refresh();
+  });
+
+  document.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      state.filter = chip.dataset.filter;
+      document.querySelectorAll(".chip").forEach((item) =>
+        item.setAttribute("aria-pressed", String(item === chip)));
+      refresh();
+    });
+  });
+
+  async function manage(name, action, btn) {
+    const verb = { start: "启动", stop: "停止", restart: "重启" }[action] || action;
+    if (action !== "start" && !window.confirm(verb + " " + svcLabel(name) + "？")) return;
+    btn.disabled = true;
+    try {
+      const response = await fetch("/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, action: action })
+      });
+      const payload = await response.json();
+      if (!payload.ok) window.alert(verb + "失败：" + (payload.error || "未知错误"));
+    } catch (error) {
+      window.alert(verb + "失败：" + error.message);
+    } finally {
+      btn.disabled = false;
+    }
+    refresh();
+  }
+
+  $("layers").addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-act]");
+    if (btn) manage(btn.dataset.name, btn.dataset.act, btn);
+  });
+
+  // ---------- 机器人管控 ----------
+  const bot = {
+    cfg: null, providers: [], sources: [], personas: [], admins: [],
+    adminProfiles: {},
+    groups: [], qqOnline: true, wechatOnline: true,
+    friends: [],
+    voices: [], voiceActive: "", filter: "all", search: "",
+    toolCfg: { groups: {}, tools: [], default_level: "standard", roles: {}, levels: [] },
+  };
+  let editing = null;
+  let formHandler = null;
+  let previewAudio = null;
+  let relayCfg = null;
+
+  const TOOL_LEVEL_ZH = {
+    full: "全量", standard: "标准", lite: "精简", media: "表情语音",
+    admin: "群管通知", info: "只读查询", guest: "陌生人", none: "禁用", custom: "自定义"
+  };
+
+  function toolLevels() {
+    return (bot.toolCfg.levels || []).length
+      ? bot.toolCfg.levels
+      : Object.keys(TOOL_LEVEL_ZH).map((id) => ({ id: id, label: TOOL_LEVEL_ZH[id], desc: "" }));
+  }
+
+  function levelOptions(includeFollow) {
+    const rows = toolLevels().map((lv) =>
+      '<option value="' + esc(lv.id) + '" title="' + esc(lv.desc || "") + '">' +
+      esc(lv.label) + "</option>").join("");
+    return (includeFollow ? '<option value="">跟随默认档位</option>' : "") + rows;
+  }
+
+  function levelLabel(id) {
+    const hit = toolLevels().find((lv) => lv.id === id);
+    return hit ? hit.label : (TOOL_LEVEL_ZH[id] || id || "默认");
+  }
+
+  function renderToolAccess() {
+    const cfg = bot.toolCfg || {};
+    const roles = cfg.roles || {};
+    $("toolDefaultLevel").innerHTML = levelOptions(false);
+    $("toolDefaultLevel").value = cfg.default_level || "standard";
+    $("roleGroup").innerHTML = levelOptions(false);
+    $("roleGroup").value = roles.group || "standard";
+    $("roleFriend").innerHTML = levelOptions(false);
+    $("roleFriend").value = roles.friend || "standard";
+    $("roleStranger").innerHTML = levelOptions(false);
+    $("roleStranger").value = roles.stranger || "guest";
+    const def = cfg.default_level || "standard";
+    $("toolAccessSub").textContent = "默认 · " + levelLabel(def) +
+      " · 会话数 " + Object.keys(cfg.groups || {}).length;
+    renderToolLevelChips();
+  }
+
+  function renderToolLevelChips() {
+    const rows = (toolLevels() || []).filter((lv) => lv.custom);
+    $("toolLevelChips").innerHTML = rows.map((lv) =>
+      '<span class="pool-chip">' +
+      '<button type="button" class="chip-main" data-edit-level="' + esc(lv.id) + '" title="' + esc(lv.desc || "") + '">' +
+      esc(lv.label) + " <code>" + esc(lv.id) + " · " + (lv.tools || []).length + " 个工具</code></button>" +
+      '<button type="button" data-del-level="' + esc(lv.id) + '" title="删除档位">✕</button></span>'
+    ).join("") || '<span class="hint">还没有自定义档位。新建后可在上面四个下拉框和会话「配置」里直接选。</span>';
+  }
+
+  function editToolLevel(id) {
+    const lv = (toolLevels() || []).find((row) => row.id === id) || {};
+    const picked = Array.isArray(lv.tools) ? lv.tools : [];
+    const all = (bot.toolCfg && bot.toolCfg.tools) || [];
+    if (!all.length) {
+      botMsg("工具列表还没读到，等 AstrBot 启动完成后再试", true);
+      return;
+    }
+    openForm(id ? "修改档位 · " + (lv.label || id) : "新建工具档位", [
+      { name: "id", label: "档位 ID（小写字母/数字/-/_，创建后不能改）", value: id || "", placeholder: "例如 quiet" },
+      { name: "label", label: "显示名称", value: lv.label || "", placeholder: "例如 安静模式" },
+      { name: "desc", label: "说明", value: lv.desc || "", placeholder: "这个档位给什么会话用" },
+      { name: "tools", type: "checks", label: "工具（勾选要启用的，可搜索）", options: all, value: picked }
+    ], async (data) => {
+      const level = String(data.id || "").trim().toLowerCase();
+      if (!/^[a-z0-9_-]{2,24}$/.test(level)) {
+        botMsg("档位 ID 只能用 2-24 位小写字母、数字、- 或 _", true);
+        return false;
+      }
+      if (id && level !== id) {
+        botMsg("档位 ID 创建后不能修改", true);
+        return false;
+      }
+      const tools = Array.isArray(data.tools) ? data.tools : [];
+      try {
+        const res = await postJson("/bot/tools/level", {
+          action: "save", id: level, label: data.label, desc: data.desc, tools: tools
+        });
+        bot.toolCfg = Object.assign({}, bot.toolCfg, res || {});
+        renderToolAccess();
+        renderGroups();
+        renderFriends();
+        botMsg("档位已保存，下一条消息生效");
+        return true;
+      } catch (error) {
+        botMsg("保存失败：" + error.message, true);
+        return false;
+      }
+    });
+  }
+
+  function removeToolLevel(id) {
+    if (!confirm("删除档位「" + id + "」？仍被会话使用时会被拒绝。")) return;
+    postJson("/bot/tools/level", { action: "delete", id: id })
+      .then((res) => {
+        bot.toolCfg = Object.assign({}, bot.toolCfg, res || {});
+        renderToolAccess();
+        renderGroups();
+        renderFriends();
+        botMsg("档位已删除");
+      })
+      .catch((error) => botMsg("删除失败：" + error.message, true));
+  }
+
+  // ---------- 人味水群（human_sim 白天档 / 夜宵档） ----------
+  const human = { cfg: null, period: null, online: false };
+
+  const HUMAN_DAY_FIELDS = [
+    ["start_hour", "白天开始（点）", 1, 0, 23],
+    ["end_hour", "白天结束（点）", 1, 0, 23],
+    ["ai_decide_probability", "主动决策概率", 0.01, 0, 1],
+    ["ai_decide_cooldown_seconds", "主动决策冷却（秒）", 1, 0, 86400],
+    ["decision_check_interval_seconds", "决策检查间隔（秒）", 1, 1, 3600],
+    ["ai_decide_per_minute", "主动决策每分钟", 1, 0, 60],
+    ["followup_seconds", "接话窗口（秒）", 1, 0, 3600],
+    ["followup_max_messages", "窗口内最多条数", 1, 0, 20],
+    ["followup_min_gap_seconds", "跟进最小间隔（秒）", 1, 0, 600],
+    ["interject_probability", "随机插话概率", 0.01, 0, 1],
+    ["interject_cooldown_minutes", "插话冷却（分钟）", 1, 0, 1440],
+    ["group_idle_minutes", "冷场判定（分钟）", 1, 0, 1440],
+    ["group_idle_probability", "冷场开话头概率", 0.01, 0, 1],
+    ["solo_face_probability", "单发表情概率", 0.01, 0, 1],
+    ["solo_sticker_probability", "表情包概率", 0.01, 0, 1],
+    ["repeat_probability", "复读概率", 0.01, 0, 1],
+    ["repeat_cooldown_seconds", "复读冷却（秒）", 1, 0, 86400],
+    ["global_per_minute", "全局每分钟上限", 1, 0, 60],
+    ["global_gap_min", "全局最小间隔（秒）", 1, 0, 600],
+    ["global_gap_max", "全局最大间隔（秒）", 1, 0, 600],
+    ["pm_active_probability", "私聊主动关心概率", 0.01, 0, 1],
+    ["pm_active_cooldown_hours", "私聊关心冷却（小时）", 1, 0, 168]
+  ];
+  const HUMAN_DAY_CHECKS = [
+    ["ai_decide", "AI 自主决策"],
+    ["repeat_enabled", "复读开关"],
+    ["plus1_enabled", "+1 机械跟队（关 = 全交给 AI 判断）"]
+  ];
+  const HUMAN_NIGHT_FIELDS = [
+    ["night_frequency_scale", "夜间频率系数（0 = 静默）", 0.01, 0, 1]
+  ];
+
+  function humanField(row) {
+    const key = row[0], label = row[1], step = row[2], min = row[3], max = row[4];
+    return '<label class="fld"><span>' + esc(label) + '</span>' +
+      '<input type="number" data-hs="' + esc(key) + '" step="' + step +
+      '" min="' + min + '" max="' + max + '" /></label>';
+  }
+
+  function humanCheck(row) {
+    return '<label class="fld fld-check"><span>' + esc(row[1]) + '</span>' +
+      '<input type="checkbox" data-hs="' + esc(row[0]) + '" /></label>';
+  }
+
+  function renderHumanSim() {
+    const cfg = human.cfg || {};
+    $("humanDay").innerHTML = HUMAN_DAY_FIELDS.map(humanField).join("") +
+      HUMAN_DAY_CHECKS.map(humanCheck).join("");
+    $("humanNight").innerHTML = HUMAN_NIGHT_FIELDS.map(humanField).join("");
+    document.querySelectorAll("[data-hs]").forEach((el) => {
+      const key = el.dataset.hs;
+      if (el.type === "checkbox") el.checked = !!cfg[key];
+      else if (cfg[key] !== undefined && cfg[key] !== null) el.value = cfg[key];
+    });
+    const p = human.period || {};
+    const nowLabel = p.is_day ? "白天档" : "夜宵档";
+    const tags = [
+      '<span class="human-tag on">现在 ' + esc(p.now_hour) + ':00 · ' + nowLabel + '</span>',
+      '<span class="human-tag">白天 ' + esc(p.start_hour) + ':00–' + esc(p.end_hour) + ':00</span>'
+    ];
+    if (p.night_silent) {
+      tags.push('<span class="human-tag warn">夜间静默（系数 0）</span>');
+    } else {
+      tags.push('<span class="human-tag">夜间系数 ×' + esc(p.night_scale) + '</span>');
+    }
+    if (!human.online) tags.push('<span class="human-tag warn">human_sim 插件目录缺失</span>');
+    $("humanStatus").innerHTML = tags.join("");
+    $("humanSub").textContent = human.online ? "human_sim · 改完需重启" : "未安装";
+    $("humanDayHint").textContent = "白天 " + p.start_hour + ":00–" + p.end_hour + ":00 内按这里的参数说话";
+    $("humanNightHint").textContent = p.night_silent
+      ? "时段外完全静默，只回应点名 / 拍一拍"
+      : "时段外所有主动发言概率 ×" + p.night_scale;
+  }
+
+  async function loadHumanSim() {
+    try {
+      const response = await fetch("/bot/human_sim", { cache: "no-store" });
+      const payload = await response.json();
+      if (!payload.ok) throw new Error(payload.error || "读取失败");
+      const data = payload.data || {};
+      human.cfg = data.config || {};
+      human.period = data.period || {};
+      human.online = !!data.plugin_online;
+      renderHumanSim();
+    } catch (error) {
+      $("humanSub").textContent = "读取失败：" + error.message;
+    }
+  }
+
+  async function saveHumanSim() {
+    const btn = $("humanSave");
+    btn.disabled = true;
+    const config = {};
+    document.querySelectorAll("[data-hs]").forEach((el) => {
+      const key = el.dataset.hs;
+      if (el.type === "checkbox") config[key] = el.checked;
+      else if (el.value !== "") config[key] = Number(el.value);
+    });
+    try {
+      const data = await postJson("/bot/human_sim", { config: config });
+      human.cfg = data.config || config;
+      human.period = data.period || human.period;
+      human.online = !!data.plugin_online;
+      renderHumanSim();
+      botMsg("水群参数已保存，AstrBot 正在重启（约 10 秒生效）");
+      setTimeout(loadHumanSim, 15000);
+    } catch (error) {
+      botMsg("保存失败：" + error.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function saveToolAccess() {
+    const btn = $("toolAccessSave");
+    btn.disabled = true;
+    try {
+      const data = await postJson("/bot/tools/access", {
+        default_level: $("toolDefaultLevel").value,
+        roles: {
+          group: $("roleGroup").value,
+          friend: $("roleFriend").value,
+          stranger: $("roleStranger").value
+        }
+      });
+      bot.toolCfg = Object.assign({}, bot.toolCfg, data);
+      renderToolAccess();
+      renderGroups();
+      renderFriends();
+      botMsg("工具档位已保存，下一条消息生效");
+    } catch (error) {
+      botMsg("档位保存失败：" + error.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  const parseList = (text) => String(text || "").split(/[,，、\s]+/).map((s) => s.trim()).filter(Boolean);
+  const hasId = (list, id) => (list || []).map(String).includes(String(id));
+
+  function setList(key, id, on) {
+    const list = (bot.cfg[key] || []).filter((item) => item !== id);
+    if (on) list.push(id);
+    bot.cfg[key] = list;
+  }
+
+  function setMap(key, id, value) {
+    const map = Object.assign({}, bot.cfg[key] || {});
+    if (value) map[id] = value; else delete map[id];
+    bot.cfg[key] = map;
+  }
+
+  function listenOn(id) {
+    return !hasId(bot.cfg.block_groups, id);
+  }
+
+  async function postJson(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.error || "请求失败");
+    return payload.data || {};
+  }
+
+  function botMsg(text, bad) {
+    const node = $("botMsg");
+    node.textContent = text;
+    node.classList.toggle("bad", !!bad);
+    node.style.opacity = "1";
+    clearTimeout(botMsg._timer);
+    botMsg._timer = setTimeout(() => { node.style.opacity = "0"; }, 3600);
+  }
+
+  // ---------- 池：模型 / 角色 ----------
+  function renderPools() {
+    $("modelCount").textContent = bot.providers.length + " 个";
+    $("modelChips").innerHTML = bot.providers.map((p) =>
+      '<span class="pool-chip">' +
+      '<button type="button" class="chip-main" data-edit-model="' + esc(p.id) + '" title="' + esc(p.id) + ' · 点击修改模型参数">' +
+      esc(p.model && p.model !== p.id ? p.model : p.id) + "<code>" + esc(p.source || "未标来源") + "</code></button>" +
+      '<button type="button" data-model="' + esc(p.id) + '" title="删除模型">✕</button></span>'
+    ).join("") || '<span class="hint">没有可用模型</span>';
+    $("personaCount").textContent = bot.personas.length + " 个";
+    $("personaChips").innerHTML = bot.personas.map((p) =>
+      '<span class="pool-chip">' +
+      '<button type="button" class="chip-main" data-edit-persona="' + esc(p.id) + '" title="点击修改角色提示词">' +
+      esc(p.name) + "<code>" + esc(p.id) + "</code></button>" +
+      '<button type="button" data-persona="' + esc(p.id) + '" title="删除角色">✕</button></span>'
+    ).join("") || '<span class="hint">没有可用的 AstrBot 人格</span>';
+  }
+
+  // ---------- 卡片：群 / 好友 / 声线 ----------
+  function groupCard(g) {
+    const pid = (bot.cfg.group_provider_ids || {})[g.id] || "";
+    const personaId = (bot.cfg.group_persona_ids || {})[g.id] || "";
+    const persona = bot.personas.find((p) => p.id === personaId);
+    const toolLevel = ((bot.toolCfg.groups || {})[g.id] || {}).level || "";
+    const on = listenOn(g.id);
+    const plat = g.platform === "wechat" ? "微信" : "QQ";
+    return '<div class="ent-card' + (on ? "" : " off") + '">' +
+      '<div class="ent-main"><b>' + esc(g.name) + '</b>' +
+      '<span class="ent-id">' + esc(g.id) + (g.member_count ? " · " + esc(g.member_count) + " 人" : "") + "</span>" +
+      '<div class="ent-tags">' +
+      '<span class="tag">' + plat + '</span>' +
+      '<span class="tag">角色 · ' + esc(persona ? persona.name : (personaId || "默认")) + "</span>" +
+      '<span class="tag">模型 · ' + esc(pid || "默认") + "</span>" +
+      '<span class="tag">工具 · ' + esc(levelLabel(toolLevel)) + "</span>" +
+      '<span class="tag ' + (on ? "on" : "warn") + '">' + (on ? "监听中" : "已忽略") + "</span>" +
+      "</div></div>" +
+      '<button class="ent-edit" type="button" data-kind="group" data-id="' + esc(g.id) +
+      '" data-name="' + esc(g.name) + '">配置</button></div>';
+  }
+
+  function friendCard(f) {
+    const pid = (bot.cfg.user_provider_ids || {})[f.id] || "";
+    const personaId = (bot.cfg.user_persona_ids || {})[f.id] || "";
+    const persona = bot.personas.find((p) => p.id === personaId);
+    const toolLevel = ((bot.toolCfg.groups || {})[f.id] || {}).level || "";
+    const plat = f.platform === "wechat" ? "微信" : "QQ";
+    return '<div class="ent-card"><div class="ent-main"><b>' + esc(f.name) + '</b>' +
+      '<span class="ent-id">' + esc(f.id) + "</span>" +
+      '<div class="ent-tags">' +
+      '<span class="tag">' + plat + '</span>' +
+      '<span class="tag">角色 · ' + esc(persona ? persona.name : (personaId || "默认")) + "</span>" +
+      '<span class="tag">模型 · ' + esc(pid || "默认") + "</span>" +
+      '<span class="tag">工具 · ' + esc(levelLabel(toolLevel)) + "</span>" +
+      '<span class="tag on">私聊</span></div></div>' +
+      '<button class="ent-edit" type="button" data-kind="friend" data-id="' + esc(f.id) +
+      '" data-name="' + esc(f.name) + '">配置</button></div>';
+  }
+
+  function adminList() {
+    const ids = Array.from(new Set([...(bot.admins || []), ...Object.keys(bot.adminProfiles || {})]));
+    return ids.map((id) => ({ id: id, profile: (bot.adminProfiles || {})[id] || {} }));
+  }
+
+  function adminDisplayName(row) {
+    const profile = row.profile || {};
+    if (profile.identity) return profile.identity;
+    if (profile.name) return profile.name;
+    const friend = (bot.friends || []).find((f) => f.id === row.id);
+    return friend ? friend.name : row.id;
+  }
+
+  function adminCard(row) {
+    const profile = row.profile || {};
+    const cfg = bot.cfg || {};
+    const pid = (cfg.user_provider_ids || {})[row.id] || "";
+    const personaId = (cfg.user_persona_ids || {})[row.id] || "";
+    const persona = bot.personas.find((p) => p.id === personaId);
+    const toolLevel = ((bot.toolCfg.groups || {})[row.id] || {}).level || "";
+    const name = adminDisplayName(row);
+    return '<div class="ent-card"><div class="ent-main"><b>' + esc(name) + '</b>' +
+      '<span class="ent-id">' + esc(row.id) + "</span>" +
+      '<div class="ent-tags">' +
+      '<span class="tag on">管理员</span>' +
+      '<span class="tag">身份 · ' + esc(profile.identity || "未设置") + '</span>' +
+      '<span class="tag">角色 · ' + esc(persona ? persona.name : (personaId || "默认")) + "</span>" +
+      '<span class="tag">模型 · ' + esc(pid || "默认") + "</span>" +
+      '<span class="tag">工具 · ' + esc(levelLabel(toolLevel)) + "</span>" +
+      "</div></div>" +
+      '<button class="ent-edit" type="button" data-kind="admin" data-id="' + esc(row.id) +
+      '" data-name="' + esc(name) + '">配置</button></div>';
+  }
+
+  function renderAdmins() {
+    const rows = adminList();
+    $("adminSub").textContent = rows.length
+      ? rows.length + " 位 · 已从好友列表独立管理"
+      : "还没有管理员";
+    $("adminCards").innerHTML = rows.length
+      ? rows.map(adminCard).join("")
+      : '<div class="empty">还没有管理员，点击右上角添加</div>';
+  }
+
+  function voiceCard(v) {
+    const mode = v.mode_label ? v.mode_label + (v.mode ? " · " + v.mode : "") : "模式未知";
+    return '<div class="ent-card"><div class="ent-main"><b>' + esc(v.name) + '</b>' +
+      '<span class="ent-id voice-meta">' + esc(v.meta) + "</span>" +
+      '<div class="ent-tags"><span class="tag ' + (v.active ? "on" : "") + '">' +
+      (v.active ? "当前使用" : "未启用") + "</span>" +
+      '<span class="tag">' + esc(mode) + "</span>" +
+      '<span class="tag ' + (v.has_ref ? "" : "warn") + '">' + (v.has_ref ? "ref 就绪" : "缺 ref.wav") + "</span>" +
+      (v.ft_weight ? '<span class="tag">Seed-VC 权重（TTS 未接入）</span>' : "") + "</div></div>" +
+      '<div class="ent-actions">' +
+      '<button type="button" data-voice-switch="' + esc(v.name) + '"' + (v.active ? " disabled" : "") + ">" +
+      (v.active ? "使用中" : "切换") + "</button>" +
+      (v.has_ref ? '<button type="button" data-voice-play="' + esc(v.name) + '">试听</button>' : "") +
+      '<button type="button" class="danger" data-voice-del="' + esc(v.name) + '">删除</button>' +
+      "</div></div>";
+  }
+
+  function platformOf(row) {
+    return row && row.platform === "wechat" ? "wechat" : "qq";
+  }
+
+  // QQ / 微信各自独立：离线时只报自己这一侧的原因，不把两边合成一句话
+  function offlineText(platform, label) {
+    return (platform === "qq" ? "QQ（NapCat）离线" : "微信接入离线") + "，拉不到" + label;
+  }
+
+  function renderGroups() {
+    const query = bot.search.trim().toLowerCase();
+    const match = (g) => {
+      const on = listenOn(g.id);
+      if (bot.filter === "on" && !on) return false;
+      if (bot.filter === "off" && on) return false;
+      return !query || String(g.name).toLowerCase().includes(query) || String(g.id).includes(query);
+    };
+    const paint = (platform, boxId, subId, online, label) => {
+      const all = bot.groups.filter((g) => platformOf(g) === platform);
+      const rows = all.filter(match);
+      const box = $(boxId);
+      $(subId).textContent = online
+        ? all.length + " 个" + (rows.length !== all.length ? " · 显示 " + rows.length : "")
+        : "离线 · 未加载";
+      if (!all.length) {
+        box.innerHTML = '<div class="empty">' + (online ? "在线，但没有拉到" + label : offlineText(platform, label)) + "</div>";
+        return;
+      }
+      box.innerHTML = rows.length ? rows.map(groupCard).join("") : '<div class="empty">没有匹配的群</div>';
+    };
+    paint("qq", "qqGroupCards", "qqGroupSub", bot.qqOnline, " QQ 群");
+    paint("wechat", "wxGroupCards", "wxGroupSub", bot.wechatOnline, "微信群");
+  }
+
+  function renderFriends() {
+    const adminIds = new Set(adminList().map((row) => row.id));
+    const base = (bot.friends || []).filter((f) => !adminIds.has(f.id));
+    const paint = (platform, boxId, subId, online, label) => {
+      const rows = base.filter((f) => platformOf(f) === platform);
+      const box = $(boxId);
+      $(subId).textContent = online ? rows.length + " 位" : "离线 · 未加载";
+      box.innerHTML = rows.length
+        ? rows.map(friendCard).join("")
+        : '<div class="empty">' + (online ? "在线，但没有好友" : offlineText(platform, label)) + "</div>";
+    };
+    paint("qq", "qqFriendCards", "qqFriendSub", bot.qqOnline, " QQ 好友");
+    paint("wechat", "wxFriendCards", "wxFriendSub", bot.wechatOnline, "微信好友");
+  }
+
+  function renderVoices() {
+    const box = $("voiceCards");
+    $("voiceSub").textContent = bot.voiceActive ? "当前：" + bot.voiceActive : "未设置当前声线";
+    box.innerHTML = bot.voices.length
+      ? bot.voices.map(voiceCard).join("")
+      : '<div class="empty">还没有声线档案</div>';
+    fillPetVoices();
+  }
+
+  /** 桌宠参数卡片里的声线下拉：和声线管理共用 bot.voices / bot.voiceActive。 */
+  function fillPetVoices() {
+    const sel = $("petVoice");
+    if (!sel) return;
+    if (!bot.voices.length) {
+      sel.innerHTML = '<option value="">暂无可用声线</option>';
+      return;
+    }
+    sel.innerHTML = bot.voices.map((v) =>
+      '<option value="' + esc(v.name) + '"' + (v.name === bot.voiceActive ? " selected" : "") + ">" +
+      esc(v.name) + (v.active ? "（使用中）" : "") + "</option>").join("");
+  }
+
+  function renderCommands(data) {
+    const rows = data.commands || [];
+    $("cmdCount").textContent = rows.length + " 条 · " + (data.plugins || 0) + " 个插件";
+    const groups = {};
+    rows.forEach((row) => (groups[row.plugin] = groups[row.plugin] || []).push(row));
+    $("cmdList").innerHTML = Object.keys(groups).sort().map((plugin) =>
+      '<div class="cmd-group"><b>' + esc(plugin) + "</b>" +
+      groups[plugin].map((row) => {
+        const desc = (row.desc || "").replace(/^\/\S+\s*/, "");
+        return '<div class="cmd-row"><span class="c">/' + esc(row.command) + "</span>" +
+          (row.aliases && row.aliases.length ? '<span class="a">别称 ' + esc(row.aliases.join("、")) + "</span>" : "") +
+          (desc ? '<span class="d">' + esc(desc) + "</span>" : "") + "</div>";
+      }).join("") + "</div>").join("") || '<div class="empty">没有扫到插件指令</div>';
+  }
+
+  function renderBot() {
+    const cfg = bot.cfg;
+    // 监听统一成“全部群 + 黑名单”：卡片里关掉某个群，就把它写进 block_groups。
+    if ((cfg.listen_groups || []).length) {
+      const keep = new Set((cfg.listen_groups || []).map(String));
+      const blocked = new Set((cfg.block_groups || []).map(String));
+      bot.groups.forEach((g) => { if (!keep.has(String(g.id))) blocked.add(String(g.id)); });
+      Array.from(keep).forEach((id) => blocked.delete(id));
+      cfg.block_groups = Array.from(blocked);
+      cfg.listen_groups = [];
+    }
+    cfg.block_groups = cfg.block_groups || [];
+    cfg.block_users = cfg.block_users || [];
+    $("botDefaults").textContent = "默认：普通群 " + (cfg.group_provider_id || "未设") +
+      " · 私聊 " + (cfg.private_provider_id || "未设") +
+      " · 陌生人 " + (cfg.stranger_private_provider_id || "未设");
+    renderPools();
+    renderToolAccess();
+    renderGroups();
+    renderFriends();
+    renderAdmins();
+    renderVoices();
+  }
+
+  // 面板副标题只做两平台的在线状态汇总，不再把 QQ / 微信的报错混成一句
+  function updatePlatformSub() {
+    $("botSub").textContent = "QQ " + (bot.qqOnline ? "在线" : "离线") + " · 微信 " + (bot.wechatOnline ? "在线" : "离线");
+  }
+
+  // ---------- 读取 ----------
+  async function loadGroups() {
+    try {
+      const payload = await (await fetch("/bot/groups", { cache: "no-store" })).json();
+      const data = payload.data || {};
+      bot.groups = data.groups || [];
+      bot.qqOnline = !!data.qq_online;
+      bot.wechatOnline = !!data.wechat_online;
+      updatePlatformSub();
+      renderGroups();
+    } catch (error) {
+      bot.groups = [];
+      bot.qqOnline = false;
+      bot.wechatOnline = false;
+      updatePlatformSub();
+      renderGroups();
+    }
+  }
+
+  async function loadFriends() {
+    try {
+      const payload = await (await fetch("/bot/friends", { cache: "no-store" })).json();
+      const data = payload.data || {};
+      bot.friends = data.friends || [];
+      bot.qqOnline = !!data.qq_online;
+      bot.wechatOnline = !!data.wechat_online;
+      updatePlatformSub();
+      renderFriends();
+      renderAdmins();
+    } catch (error) {
+      bot.friends = [];
+      bot.qqOnline = false;
+      bot.wechatOnline = false;
+      updatePlatformSub();
+      renderFriends();
+      renderAdmins();
+    }
+  }
+
+  async function loadVoices() {
+    try {
+      const payload = await (await fetch("/bot/voices", { cache: "no-store" })).json();
+      const data = payload.data || {};
+      bot.voices = data.voices || [];
+      bot.voiceActive = data.active || "";
+      renderVoices();
+    } catch (error) {
+      bot.voices = [];
+      renderVoices();
+    }
+  }
+
+  // 桌宠卡片：同步开关状态与声线摘要
+  async function loadPet() {
+    try {
+      const payload = await (await fetch("/pet/config", { cache: "no-store" })).json();
+      const c = payload.data || {};
+      const mark = (on) => (on ? "✓" : "✗");
+      $("petVoiceOn").checked = c.voiceEnabled === true;
+      $("petClickOn").checked = c.clickSoundEnabled === true;
+      $("petWhisperOn").checked = c.whisperEnabled === true;
+      $("petVisionOn").checked = c.visionWatchEnabled === true;
+      $("petSub").textContent = "声线 " + (c.activeVoice || "姬子") + " · " +
+        "语音 " + mark(c.voiceEnabled === true) + "（音量 " + (c.voiceVolume ?? 1) + "） · " +
+        "点击音效 " + mark(c.clickSoundEnabled === true) + " · " +
+        "碎碎念 " + mark(c.whisperEnabled === true) + " · " +
+        "看屏点评 " + mark(c.visionWatchEnabled === true) + "（每 " + Math.round((c.visionWatchSec ?? 900) / 60) + " 分钟）";
+    } catch (error) {
+      $("petSub").textContent = "读取失败：" + error.message;
+    }
+  }
+
+  function savePetSwitch(key, label, el) {
+    postJson("/pet/config", { [key]: el.checked })
+      .then(() => {
+        botMsg("桌宠「" + label + "」已" + (el.checked ? "开启" : "关闭") + "，30 秒内生效");
+        loadPet();
+      })
+      .catch((error) => {
+        botMsg("保存失败：" + error.message, true);
+        el.checked = !el.checked;
+      });
+  }
+
+  // 桌宠 API：中转状态 + 直接控制
+  async function loadRelay() {
+    try {
+      const payload = await (await fetch("/pet/relay", { cache: "no-store" })).json();
+      if (!payload.ok) throw new Error(payload.error || "读取失败");
+      const data = payload.data || {};
+      relayCfg = data.config || {};
+      const status = data.status || {};
+      const last = (status.health || {}).last || {};
+      $("petApiSub").textContent = (status.online ? "中转在线" : "中转离线") +
+        " · " + (relayCfg.model || "未设模型") +
+        " · 补播" + (relayCfg.periodicEnabled ? "开/" + (relayCfg.periodicMinutes ?? 30) + " 分钟" : "关") +
+        (last.message ? " · 最近：" + last.message : "");
+    } catch (error) {
+      $("petApiSub").textContent = "中转读取失败：" + error.message;
+    }
+  }
+
+  async function loadWindows() {
+    try {
+      const payload = await (await fetch("/windows", { cache: "no-store" })).json();
+      if (!payload.ok) throw new Error(payload.error || "读取失败");
+      const data = payload.data || {};
+      const items = data.items || [];
+      const node = $("winList");
+      $("winSub").textContent = items.length
+        ? items.length + " 个窗口 · 默认 " + (data.default_seconds || 300) + " 秒"
+        : "暂无监听窗口 · 默认 " + (data.default_seconds || 300) + " 秒";
+      if (!items.length) {
+        node.textContent = "暂无监听窗口";
+        return;
+      }
+      node.innerHTML = items.map((w) => {
+        const left = Number(w.left_s || 0);
+        const target = esc(w.peer_id || "");
+        const group = esc(w.group_id || w.group_umo || "未关联群");
+        return '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:4px 0">' +
+          '<span>私聊 <b>' + target + '</b> ↔ 群 <b>' + group + '</b> · 剩余 ' + left + 's</span>' +
+          '<button class="map-add" type="button" data-win-stop="' + esc(w.peer_id || "") + '">结束</button></div>';
+      }).join("");
+    } catch (error) {
+      $("winSub").textContent = "监听窗口读取失败：" + error.message;
+    }
+  }
+
+  function petLog(text, bad) {
+    const node = $("petApiLog");
+    node.textContent = text;
+    node.style.color = bad ? "#ff617b" : "";
+    clearTimeout(petLog._timer);
+    petLog._timer = setTimeout(() => { node.textContent = ""; }, 6000);
+  }
+
+  async function petCommand(body, okText) {
+    try {
+      const data = await postJson("/pet/control", body);
+      const detail = data.removed === undefined ? "" : "，删除 " + data.removed + " 条旧对话";
+      petLog(okText + detail);
+      loadRelay();
+    } catch (error) {
+      petLog("失败：" + error.message, true);
+    }
+  }
+
+  function openRelayForm() {
+    if (!relayCfg) {
+      botMsg("中转配置还没读到，稍后再试", true);
+      return;
+    }
+    const c = relayCfg;
+    openForm("桌宠中转参数", [
+      { type: "section", label: "桌宠连接" },
+      { name: "pet", label: "桌宠地址", value: c.pet || "" },
+      { name: "petPath", label: "接口路径", value: c.petPath || "" },
+      { name: "petKind", label: "接口类型", type: "select", value: c.petKind || "auto", options: [
+        { value: "auto", text: "自动识别" }, { value: "dsh-pet", text: "dsh-pet" },
+        { value: "dafeiyu3d", text: "dafeiyu3d" }
+      ] },
+
+      { type: "section", label: "旁白模型" },
+      { name: "model", label: "Ollama 模型", value: c.model || "" },
+      { name: "ollama", label: "Ollama 地址", value: c.ollama || "" },
+      { name: "brain", label: "Brain 地址（留空用默认）", value: c.brain || "" },
+      { name: "narrate", label: "生成旁白", type: "checkbox", value: c.narrate === true },
+      { name: "timeoutMs", label: "Ollama 超时（毫秒）", type: "number", min: 1000, max: 120000, step: 500, value: c.timeoutMs ?? 15000 },
+      { name: "brainTimeoutMs", label: "Brain 超时（毫秒）", type: "number", min: 1000, max: 120000, step: 500, value: c.brainTimeoutMs ?? 10000 },
+
+      { type: "section", label: "播报节流" },
+      { name: "petChatIntervalMs", label: "同会话最小间隔（毫秒）", type: "number", min: 0, max: 600000, step: 1000, value: c.petChatIntervalMs ?? 15000 },
+      { name: "petMinGapMs", label: "全局最小间隔（毫秒）", type: "number", min: 0, max: 600000, step: 1000, value: c.petMinGapMs ?? 10000 },
+      { name: "periodicEnabled", label: "定时补播", type: "checkbox", value: c.periodicEnabled === true },
+      { name: "periodicMinutes", label: "补播周期（分钟）", type: "number", min: 1, max: 1440, step: 1, value: c.periodicMinutes ?? 30 }
+    ], async (form) => {
+      try {
+        const data = await postJson("/pet/relay", form);
+        const restart = data.restart || {};
+        botMsg(restart.ok === false ? "已保存，但中转重启失败：" + (restart.message || "") : "中转参数已保存并重启");
+        relayCfg = data.config || relayCfg;
+        loadRelay();
+        return true;
+      } catch (error) {
+        botMsg("保存失败：" + error.message, true);
+        return false;
+      }
+    });
+  }
+
+  async function loadBot() {
+    $("botSub").textContent = "读取 provider_router 配置…";
+    try {
+      const [cfgRes, cmdRes, toolRes] = await Promise.all([
+        fetch("/bot/config", { cache: "no-store" }),
+        fetch("/bot/commands", { cache: "no-store" }),
+        fetch("/bot/tools/access", { cache: "no-store" })
+      ]);
+      const cfgPayload = await cfgRes.json();
+      const cmdPayload = await cmdRes.json();
+      const toolPayload = await toolRes.json();
+      if (!cfgPayload.ok) throw new Error(cfgPayload.error || "读取失败");
+      if (toolPayload.ok) bot.toolCfg = Object.assign({
+        groups: {}, tools: [], default_level: "standard", roles: {}, levels: []
+      }, toolPayload.data || {});
+      const data = cfgPayload.data || {};
+      bot.providers = data.providers || [];
+      bot.sources = data.provider_sources || [];
+      bot.personas = data.personas || [];
+      bot.admins = Array.isArray(data.admins) ? data.admins : [];
+      bot.adminProfiles = data.admin_profiles || {};
+      bot.cfg = Object.assign({}, data.config || {});
+      ["listen_groups", "block_users", "block_groups"].forEach((key) => { bot.cfg[key] = bot.cfg[key] || []; });
+      ["user_provider_ids", "group_provider_ids", "group_persona_ids", "user_persona_ids"].forEach((key) => { bot.cfg[key] = bot.cfg[key] || {}; });
+      renderBot();
+      $("botSub").textContent = (data.plugin_online ? "provider_router 已安装" : "插件目录缺失") +
+        " · 保存后下一条消息生效，无需重启";
+      renderCommands(cmdPayload.data || {});
+    } catch (error) {
+      $("botSub").textContent = "读取失败：" + error.message;
+    }
+    loadGroups();
+    loadFriends();
+    loadVoices();
+    loadPet();
+    loadRelay();
+    loadWindows();
+    loadHumanSim();
+  }
+
+  // ---------- 保存 ----------
+  async function saveBot() {
+    const btn = $("botSave");
+    btn.disabled = true;
+    const prevAdmins = (bot.admins || []).join(",");
+    try {
+      const listenIds = [];
+      const config = {
+        listen_groups: listenIds,
+        block_users: bot.cfg.block_users || [],
+        block_groups: bot.cfg.block_groups || [],
+        user_provider_ids: bot.cfg.user_provider_ids || {},
+        group_provider_ids: bot.cfg.group_provider_ids || {},
+        group_persona_ids: bot.cfg.group_persona_ids || {},
+        user_persona_ids: bot.cfg.user_persona_ids || {},
+        admins: bot.admins || []
+      };
+      const data = await postJson("/bot/config", { config: config });
+      bot.providers = data.providers || bot.providers;
+      bot.sources = data.provider_sources || bot.sources;
+      bot.personas = data.personas || bot.personas;
+      bot.admins = Array.isArray(data.admins) ? data.admins : bot.admins;
+      bot.adminProfiles = data.admin_profiles || bot.adminProfiles;
+      bot.cfg = Object.assign({}, data.config || {});
+      ["listen_groups", "block_users", "block_groups"].forEach((key) => { bot.cfg[key] = bot.cfg[key] || []; });
+      ["user_provider_ids", "group_provider_ids", "group_persona_ids", "user_persona_ids"].forEach((key) => { bot.cfg[key] = bot.cfg[key] || {}; });
+      renderBot();
+      if (prevAdmins !== (bot.admins || []).join(",")) {
+        botMsg("管理员已更新，AstrBot 正在重启…");
+        setTimeout(loadBot, 15000);
+      } else {
+        botMsg("已保存，下一条消息生效");
+      }
+    } catch (error) {
+      botMsg("保存失败：" + error.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- 四层弹窗 ----------
+  function openEdit(kind, id, name) {
+    editing = { kind: kind, id: String(id), name: name };
+    const titlePrefix = kind === "group" ? "群 · " : (kind === "admin" ? "管理员 · " : "好友 · ");
+    $("editTitle").textContent = titlePrefix + name;
+    $("lvlPersona").hidden = false;
+    $("lvlListen").hidden = kind !== "group";
+    $("lvlAdmin").hidden = kind !== "admin";
+    $("lvlTools").hidden = false;
+    const toolLabel = kind === "group"
+      ? "工具 · 本群可调用的工具"
+      : (kind === "admin" ? "工具 · 该管理员私聊可调用的工具" : "工具 · 该好友会话可调用的工具");
+    $("editToolLabel").textContent = toolLabel;
+    $("editPersona").innerHTML = '<option value="">沿用默认人格</option>' + bot.personas.map((p) =>
+      '<option value="' + esc(p.id) + '">' + esc(p.name) + " · " + esc(p.id) + "</option>").join("");
+    $("editModel").innerHTML = '<option value="">跟随默认</option>' + bot.providers.map((p) =>
+      '<option value="' + esc(p.id) + '">' + esc(p.id) +
+      (p.model && p.model !== p.id ? " · " + esc(p.model) : "") + "</option>").join("");
+    const tc = ((bot.toolCfg.groups || {})[id]) || {};
+    const picked = Array.isArray(tc.tools) ? tc.tools : [];
+    $("editToolLevel").innerHTML = levelOptions(true);
+    $("editToolLevel").value = tc.level || "";
+    $("editToolList").innerHTML = (bot.toolCfg.tools || []).map((tool) =>
+      '<label><input type="checkbox" value="' + esc(tool) + '"' +
+      (picked.includes(tool) ? " checked" : "") + " />" + esc(tool) + "</label>").join("") ||
+      '<span class="hint">还没有可用工具清单（等 AstrBot 启动后再刷新）</span>';
+    syncToolBox();
+    if (kind === "group") {
+      $("editPersona").value = (bot.cfg.group_persona_ids || {})[id] || "";
+      $("editListen").checked = listenOn(id);
+      $("editListenText").textContent = $("editListen").checked ? "监听" : "不监听";
+      $("editDanger").textContent = "退出群聊";
+      $("editDangerHint").textContent = "不可撤销，会同步清理该群的配置";
+      $("editModel").value = (bot.cfg.group_provider_ids || {})[id] || "";
+    } else {
+      $("editPersona").value = (bot.cfg.user_persona_ids || {})[id] || "";
+      $("editModel").value = (bot.cfg.user_provider_ids || {})[id] || "";
+      if (kind === "admin") {
+        const profile = (bot.adminProfiles || {})[id] || {};
+        $("editIdentity").value = profile.identity || "";
+        $("editDanger").textContent = "撤销管理员";
+        $("editDangerHint").textContent =
+          "只撤销管理员身份，不删除好友、不清配置；撤销后会回到好友列表，要彻底删除请再到好友里操作。";
+      } else {
+        $("editDanger").textContent = "删除好友";
+        $("editDangerHint").textContent = "不可撤销，会同步清理该好友的会话配置";
+      }
+    }
+    $("editModal").hidden = false;
+  }
+
+  function closeEdit() {
+    $("editModal").hidden = true;
+    editing = null;
+  }
+
+  function syncToolBox() {
+    const level = $("editToolLevel").value;
+    $("editToolList").hidden = level !== "custom";
+    if (level === "custom") {
+      $("editToolHint").textContent = "勾选本会话允许调用的工具，未勾选的不会给模型";
+    } else if (!level) {
+      $("editToolHint").textContent = "跟随默认档位：工具由全局 / 角色档位决定，本会话不单独覆盖";
+    } else {
+      $("editToolHint").textContent = "当前档位「" + levelLabel(level) +
+        "」：工具由档位预设决定，选「自定义」才逐个勾选";
+    }
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const kind = editing.kind;
+    const id = editing.id;
+    const pid = $("editModel").value;
+    let restart = false;
+    if (kind === "group") {
+      setMap("group_persona_ids", id, $("editPersona").value);
+      setMap("group_provider_ids", id, pid);
+      const on = $("editListen").checked;
+      setList("block_groups", id, !on);
+    } else {
+      setMap("user_persona_ids", id, $("editPersona").value);
+      setMap("user_provider_ids", id, pid);
+    }
+    if (kind === "admin") {
+      try {
+        const data = await postJson("/bot/admin/profile", {
+          id: id,
+          identity: $("editIdentity").value.trim(),
+          name: editing.name
+        });
+        if (data && data.admins) bot.admins = data.admins;
+        if (data && data.admin_profiles) bot.adminProfiles = data.admin_profiles;
+        restart = !!(data && data.restart);
+      } catch (error) {
+        botMsg("管理员身份保存失败：" + error.message, true);
+        return;
+      }
+    }
+    try {
+      const picked = Array.from($("editToolList").querySelectorAll("input:checked")).map((el) => el.value);
+      const payload = {
+        name: editing.name,
+        level: $("editToolLevel").value,
+        tools: picked
+      };
+      payload[kind === "group" ? "group_id" : "session_id"] = id;
+      const data = await postJson("/bot/group/tools", payload);
+      if (data && data.groups) bot.toolCfg = Object.assign({}, bot.toolCfg, { groups: data.groups });
+    } catch (error) {
+      botMsg("工具档位保存失败：" + error.message, true);
+    }
+    closeEdit();
+    saveBot();
+    if (restart) {
+      botMsg("管理员身份已保存，AstrBot 正在重启…");
+      setTimeout(loadBot, 15000);
+    }
+  }
+
+  async function doDanger() {
+    if (!editing) return;
+    const kind = editing.kind;
+    const name = editing.name;
+    const tip = kind === "group"
+      ? "确定退出「" + name + "」？会同步清理该群的配置，此操作不可撤销。"
+      : kind === "admin"
+        ? "确定撤销「" + name + "」的管理员身份？撤销后会回到好友列表，配置保留。"
+        : "确定删除好友「" + name + "」？会同步清理该好友的会话配置，此操作不可撤销。";
+    if (!confirm(tip)) return;
+    try {
+      if (kind === "admin") {
+        const data = await postJson("/bot/admin/remove", { id: editing.id });
+        if (data && data.admins) bot.admins = data.admins;
+        if (data && data.admin_profiles) bot.adminProfiles = data.admin_profiles;
+        closeEdit();
+        botMsg(data && data.restart ? "已撤销管理员，已回到好友列表；AstrBot 正在重启…" : "已撤销管理员，已回到好友列表");
+        await loadBot();
+        if (data && data.restart) setTimeout(loadBot, 15000);
+        return;
+      }
+      await postJson(kind === "group" ? "/bot/group/leave" : "/bot/friend/delete",
+        kind === "group" ? { group_id: editing.id } : { user_id: editing.id });
+      closeEdit();
+      botMsg(kind === "group" ? "已退出群聊" : "已删除好友");
+      await loadBot();
+    } catch (error) {
+      botMsg("操作失败：" + error.message, true);
+    }
+  }
+
+  // ---------- 通用表单弹窗 ----------
+  function openForm(title, fields, handler) {
+    formHandler = handler;
+    $("formTitle").textContent = title;
+    $("formBody").innerHTML = fields.map((field) => {
+      const id = "f_" + field.name;
+      if (field.type === "section") {
+        return '<div class="form-sec">' + esc(field.label) + "</div>";
+      }
+      if (field.type === "checkbox") {
+        const checked = field.value === true || String(field.value) === "true";
+        return '<label class="fld fld-check"><span>' + field.label + '</span><input id="' + id +
+          '" type="checkbox"' + (checked ? " checked" : "") + " /></label>";
+      }
+      if (field.type === "number") {
+        return '<label class="fld"><span>' + field.label + '</span><input id="' + id + '" type="number" min="' +
+          esc(String(field.min ?? "")) + '" max="' + esc(String(field.max ?? "")) + '" step="' +
+          esc(String(field.step ?? "any")) + '" value="' + esc(String(field.value ?? "")) + '" /></label>';
+      }
+      if (field.type === "textarea") {
+        return '<label class="fld"><span>' + field.label + '</span><textarea id="' + id +
+          '" rows="5" placeholder="' + esc(field.placeholder || "") + '">' + esc(field.value || "") + "</textarea></label>";
+      }
+      if (field.type === "checks") {
+        const picked = new Set((field.value || []).map(String));
+        const opts = (field.options || []).map((opt) => {
+          const val = typeof opt === "string" ? opt : opt.value;
+          const text = typeof opt === "string" ? opt : (opt.text || opt.value);
+          return '<label data-tool="' + esc(val) + '"><input type="checkbox" value="' + esc(val) + '"' +
+            (picked.has(String(val)) ? " checked" : "") + " /><span>" + esc(text) + "</span></label>";
+        }).join("");
+        return '<div class="fld fld-checks"><span>' + field.label +
+          ' <em class="hint" data-check-count="' + esc(field.name) + '"></em></span>' +
+          '<div class="checks-toolbar"><input type="search" data-check-search="' + esc(field.name) +
+          '" placeholder="搜索工具名…" /><button type="button" data-check-all="' + esc(field.name) +
+          '">全选</button><button type="button" data-check-none="' + esc(field.name) + '">清空</button></div>' +
+          '<div class="checks-list" data-checks="' + esc(field.name) + '">' + opts + "</div></div>";
+      }
+      if (field.type === "select") {
+        const cur = field.value == null ? "" : String(field.value);
+        return '<label class="fld"><span>' + field.label + '</span><select id="' + id + '">' +
+          field.options.map((opt) => '<option value="' + esc(opt.value) + '"' +
+            (String(opt.value) === cur ? " selected" : "") + ">" + esc(opt.text) + "</option>").join("") +
+          "</select></label>";
+      }
+      return '<label class="fld"><span>' + field.label + '</span><input id="' + id +
+        '" type="text" placeholder="' + esc(field.placeholder || "") + '" value="' + esc(field.value || "") + '" /></label>';
+    }).join("");
+    $("formBody").querySelectorAll("[data-checks]").forEach(bindCheckGroup);
+    $("formModal").hidden = false;
+  }
+
+  function bindCheckGroup(box) {
+    const name = box.getAttribute("data-checks");
+    const body = $("formBody");
+    const search = body.querySelector('[data-check-search="' + name + '"]');
+    const count = body.querySelector('[data-check-count="' + name + '"]');
+    const refresh = () => {
+      const total = box.querySelectorAll("input[type='checkbox']").length;
+      const on = box.querySelectorAll("input[type='checkbox']:checked").length;
+      if (count) count.textContent = on + " / " + total;
+    };
+    if (search) {
+      search.addEventListener("input", () => {
+        const q = (search.value || "").trim().toLowerCase();
+        box.querySelectorAll("label").forEach((row) => {
+          const hit = !q || (row.getAttribute("data-tool") || "").toLowerCase().includes(q);
+          row.classList.toggle("hide", !hit);
+        });
+      });
+    }
+    const all = body.querySelector('[data-check-all="' + name + '"]');
+    if (all) all.addEventListener("click", () => {
+      box.querySelectorAll("input[type='checkbox']").forEach((node) => { node.checked = true; });
+      refresh();
+    });
+    const none = body.querySelector('[data-check-none="' + name + '"]');
+    if (none) none.addEventListener("click", () => {
+      box.querySelectorAll("input[type='checkbox']").forEach((node) => { node.checked = false; });
+      refresh();
+    });
+    box.addEventListener("change", refresh);
+    refresh();
+  }
+
+  function closeForm() {
+    $("formModal").hidden = true;
+    formHandler = null;
+  }
+
+  async function submitForm() {
+    if (!formHandler) return;
+    const okBtn = $("formOk");
+    if (okBtn.disabled) return;
+    const data = {};
+    document.querySelectorAll("#formBody [id^='f_']").forEach((node) => {
+      data[node.id.slice(2)] = node.type === "checkbox"
+        ? (node.checked ? "true" : "false")
+        : node.value.trim();
+    });
+    document.querySelectorAll("#formBody [data-checks]").forEach((box) => {
+      data[box.getAttribute("data-checks")] = Array.from(
+        box.querySelectorAll("input[type='checkbox']:checked")
+      ).map((node) => node.value);
+    });
+    okBtn.disabled = true;
+    try {
+      if (await formHandler(data)) closeForm();
+    } finally {
+      okBtn.disabled = false;
+    }
+  }
+
+  function removeModel(id) {
+    if (!confirm("删除模型 " + id + "？被群/用户绑定时会被拒绝。")) return;
+    postJson("/bot/model", { action: "delete", id: id })
+      .then(async () => { botMsg("模型已删除并自动提交"); await loadBot(); setTimeout(loadBot, 12000); })
+      .catch((error) => botMsg("删除失败：" + error.message, true));
+  }
+
+  function removePersona(id) {
+    if (!confirm("删除角色 " + id + "？仍被群或好友绑定时会被拒绝。")) return;
+    postJson("/bot/persona", { action: "delete", id: id })
+      .then(async () => { botMsg("角色已删除并自动提交"); await loadBot(); setTimeout(loadBot, 12000); })
+      .catch((error) => botMsg("删除失败：" + error.message, true));
+  }
+
+  function editModel(id) {
+    const row = bot.providers.find((p) => p.id === id) || { id: id, model: id };
+    const src = bot.sources.find((s) => s.id === row.source) || {};
+    const num = (value) => (value === null || value === undefined ? "" : String(value));
+    openForm("修改模型 · " + id, [
+      { name: "model", label: "模型名", value: row.model || id, placeholder: "例如 deepseek-chat" },
+      { name: "source", label: "提供商", type: "select", value: row.source || "",
+        options: bot.sources.map((s) => ({ value: s.id, text: s.id + " · " + s.type })) },
+      { name: "api_base", label: "API 地址（写提供商，该来源下所有模型共用）", value: src.api_base || "", placeholder: "https://.../v1" },
+      { name: "api_key", label: "API Key（留空不改）", placeholder: src.has_key ? "已配置，留空保持不变" : "填这个提供商的密钥" },
+      { name: "temperature", label: "温度", value: num(row.temperature), placeholder: "例如 1.2，留空清除" },
+      { name: "top_p", label: "Top P", value: num(row.top_p), placeholder: "例如 0.95，留空清除" },
+      { name: "max_context_tokens", label: "最大上下文 tokens", value: num(row.max_context_tokens), placeholder: "例如 131072" }
+    ], async (data) => {
+      if (!data.model) { botMsg("模型名不能为空", true); return false; }
+      try {
+        await postJson("/bot/model", Object.assign({ action: "update", id: id }, data));
+        botMsg("模型配置已保存并自动提交");
+        await loadBot();
+        setTimeout(loadBot, 12000);
+        return true;
+      } catch (error) { botMsg("修改失败：" + error.message, true); return false; }
+    });
+  }
+
+  async function editPersona(id) {
+    let detail = { name: id, prompt: "" };
+    try { detail = await postJson("/bot/persona", { action: "get", id: id }); }
+    catch (error) { botMsg("读取角色失败：" + error.message, true); return; }
+    openForm("修改角色", [
+      { name: "name", label: "角色名称", value: detail.name || id },
+      { name: "prompt", label: "角色提示词", type: "textarea", value: detail.prompt || "" }
+    ], async (data) => {
+      if (!data.name || !data.prompt) { botMsg("名称和提示词都要填", true); return false; }
+      try {
+        await postJson("/bot/persona", {
+          action: "update", id: id, name: data.name, prompt: data.prompt
+        });
+        botMsg("角色已更新并自动提交");
+        await loadBot();
+        setTimeout(loadBot, 12000);
+        return true;
+      } catch (error) { botMsg("修改失败：" + error.message, true); return false; }
+    });
+  }
+
+  // ---------- 事件 ----------
+  document.querySelectorAll("#groupFilter .chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      bot.filter = chip.dataset.gfilter;
+      document.querySelectorAll("#groupFilter .chip").forEach((item) =>
+        item.setAttribute("aria-pressed", String(item === chip)));
+      renderGroups();
+    });
+  });
+
+  $("groupSearch").addEventListener("input", () => {
+    bot.search = $("groupSearch").value;
+    renderGroups();
+  });
+
+  // 群和好友都拆成 QQ / 微信两块，事件委托统一绑在四个容器上
+  ["qqGroupCards", "wxGroupCards", "qqFriendCards", "wxFriendCards"].forEach((id) => {
+    $(id).addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-kind]");
+      if (btn) openEdit(btn.dataset.kind, btn.dataset.id, btn.dataset.name);
+    });
+  });
+
+  $("voiceCards").addEventListener("click", (event) => {
+    const play = event.target.closest("[data-voice-play]");
+    if (play) {
+      const name = play.dataset.voicePlay;
+      // 必须把 Audio 对象留住：new Audio(...).play() 不保存引用会被浏览器回收，听不到声。
+      if (previewAudio) previewAudio.pause();
+      const audio = new Audio("/bot/voices/audio?name=" + encodeURIComponent(name));
+      previewAudio = audio;
+      audio.onerror = () => botMsg("试听失败：音频读不出来", true);
+      audio.onended = () => botMsg("试听结束");
+      botMsg("正在试听「" + name + "」");
+      const task = audio.play();
+      if (task && task.catch) {
+        task.catch((error) => botMsg("试听失败：" + (error.message || "浏览器拦截了播放"), true));
+      }
+      return;
+    }
+    const sw = event.target.closest("[data-voice-switch]");
+    if (sw) {
+      postJson("/bot/voices", { action: "switch", name: sw.dataset.voiceSwitch })
+        .then(() => {
+          botMsg("已切换声线「" + sw.dataset.voiceSwitch + "」，桌宠下一句话就生效");
+          loadVoices();
+          loadPet();
+        })
+        .catch((error) => botMsg("切换失败：" + error.message, true));
+      return;
+    }
+    const del = event.target.closest("[data-voice-del]");
+    if (del && confirm("删除声线「" + del.dataset.voiceDel + "」？")) {
+      postJson("/bot/voices", { action: "delete", name: del.dataset.voiceDel })
+        .then(() => { botMsg("声线已删除"); loadVoices(); })
+        .catch((error) => botMsg("删除失败：" + error.message, true));
+    }
+  });
+
+  $("modelChips").addEventListener("click", (event) => {
+    const edit = event.target.closest("[data-edit-model]");
+    if (edit) { editModel(edit.dataset.editModel); return; }
+    const btn = event.target.closest("[data-model]");
+    if (btn) removeModel(btn.dataset.model);
+  });
+
+  $("personaChips").addEventListener("click", (event) => {
+    const edit = event.target.closest("[data-edit-persona]");
+    if (edit) { editPersona(edit.dataset.editPersona); return; }
+    const btn = event.target.closest("[data-persona]");
+    if (btn) removePersona(btn.dataset.persona);
+  });
+
+  $("adminCards").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-kind]");
+    if (btn) openEdit(btn.dataset.kind, btn.dataset.id, btn.dataset.name);
+  });
+
+  $("addModel").addEventListener("click", () => {
+    openForm("添加模型", [
+      {
+        name: "source", label: "提供商", type: "select",
+        options: bot.sources.map((s) => ({ value: s.id, text: s.id + " · " + s.type }))
+          .concat([{ value: "__new__", text: "＋ 新建提供商" }])
+      },
+      { name: "source_new", label: "新提供商 ID（仅新建时填）", placeholder: "字母/数字/-/_，例如 myapi" },
+      { name: "api_base", label: "API 地址", placeholder: "https://.../v1" },
+      { name: "api_key", label: "API Key", placeholder: "新建提供商时填写" },
+      { name: "model", label: "模型名", placeholder: "例如 deepseek-chat" },
+      { name: "temperature", label: "温度", placeholder: "例如 1.2，可留空" },
+      { name: "top_p", label: "Top P", placeholder: "例如 0.95，可留空" },
+      { name: "max_context_tokens", label: "最大上下文 tokens", placeholder: "例如 131072，可留空" },
+      { name: "id", label: "模型 ID（可留空）", placeholder: "默认 提供商/模型名" }
+    ], async (data) => {
+      if (!data.model) { botMsg("模型名不能为空", true); return false; }
+      if (data.source === "__new__" && !data.source_new) { botMsg("新建提供商要填提供商 ID", true); return false; }
+      if (data.source === "__new__" && !data.api_base) { botMsg("新建提供商要填 API 地址", true); return false; }
+      try {
+        await postJson("/bot/model", Object.assign({ action: "create" }, data));
+        botMsg("模型已创建并自动提交，正在刷新列表…");
+        await loadBot();
+        setTimeout(loadBot, 12000);
+        return true;
+      } catch (error) { botMsg("添加失败：" + error.message, true); return false; }
+    });
+  });
+
+  $("addPersona").addEventListener("click", () => {
+    openForm("新建角色", [
+      { name: "name", label: "角色名称", placeholder: "会写在提示词首行" },
+      { name: "id", label: "角色 ID（可留空）", placeholder: "英文/数字/下划线" },
+      { name: "prompt", label: "角色提示词", type: "textarea", placeholder: "你希望它怎么说话、怎么反应…" }
+    ], async (data) => {
+      if (!data.name || !data.prompt) { botMsg("名称和提示词都要填", true); return false; }
+      try {
+        await postJson("/bot/persona", { action: "create", name: data.name, id: data.id, prompt: data.prompt });
+        botMsg("角色已创建并自动提交，正在刷新列表…");
+        await loadBot();
+        setTimeout(loadBot, 12000);
+        return true;
+      } catch (error) { botMsg("创建失败：" + error.message, true); return false; }
+    });
+  });
+
+  $("addAdmin").addEventListener("click", () => {
+    openForm("添加管理员", [
+      { name: "id", label: "QQ 号 / 微信 ID", placeholder: "例如 1000000000 或 wxid_xxx" },
+      { name: "identity", label: "身份", placeholder: "例如 主人、爸爸、母亲大人" }
+    ], async (data) => {
+      if (!data.id) { botMsg("要填 QQ 号或微信 ID", true); return false; }
+      try {
+        const res = await postJson("/bot/admin/profile", {
+          id: data.id, identity: data.identity
+        });
+        if (res && res.admins) bot.admins = res.admins;
+        if (res && res.admin_profiles) bot.adminProfiles = res.admin_profiles;
+        renderAdmins();
+        if (res && res.restart) {
+          botMsg("管理员已添加，AstrBot 正在重启…");
+          setTimeout(loadBot, 15000);
+        } else {
+          botMsg("管理员已保存");
+          loadBot();
+        }
+        return true;
+      } catch (error) { botMsg("添加失败：" + error.message, true); return false; }
+    });
+  });
+
+  $("addVoice").addEventListener("click", () => {
+    openForm("导入声线", [
+      { name: "name", label: "声线名称", placeholder: "例如 小忆、流萤" },
+      { name: "ref_path", label: "参考音频路径", placeholder: "本机 .wav 绝对路径" },
+      { name: "prompt", label: "参考音频对应的文字", type: "textarea", placeholder: "音频里说的那句话" },
+      { name: "meta", label: "备注", placeholder: "自定义" }
+    ], async (data) => {
+      if (!data.name || !data.ref_path) { botMsg("名称和参考音频路径都要填", true); return false; }
+      try {
+        await postJson("/bot/voices", { action: "add", name: data.name, ref_path: data.ref_path, prompt: data.prompt, meta: data.meta });
+        botMsg("声线已导入");
+        loadVoices();
+        return true;
+      } catch (error) { botMsg("导入失败：" + error.message, true); return false; }
+    });
+  });
+
+  $("editPet").addEventListener("click", async () => {
+    let c = {};
+    try {
+      const payload = await (await fetch("/pet/config", { cache: "no-store" })).json();
+      c = payload.data || {};
+    } catch (error) {
+      botMsg("读取桌宠参数失败：" + error.message, true);
+      return;
+    }
+    openForm("桌宠参数（保存后 30 秒内生效）", [
+      { type: "section", label: "看屏 / OCR" },
+      { name: "visionWatchEnabled", label: "定期看屏点评", type: "checkbox", value: c.visionWatchEnabled === true },
+      { name: "visionWatchSec", label: "看屏 / OCR 间隔（秒，≥60）", type: "number", min: 60, max: 86400, step: 30, value: c.visionWatchSec ?? 900 },
+      { name: "visionToolsEnabled", label: "对话时开放看屏 / 本机操作工具", type: "checkbox", value: c.visionToolsEnabled === true },
+      { name: "ollamaModel", label: "看屏点评模型（Ollama）", value: c.ollamaModel || "" },
+      { name: "ollamaBase", label: "Ollama 地址", value: c.ollamaBase || "" },
+      { name: "visionWechatBase", label: "微信服务地址（io-wechat）", value: c.visionWechatBase || "" },
+
+      { type: "section", label: "语音" },
+      { name: "voiceEnabled", label: "语音总开关", type: "checkbox", value: c.voiceEnabled === true },
+      { name: "voiceName", label: "音色 ID", value: c.voiceName || "" },
+      { name: "voiceVolume", label: "语音音量（0~1）", type: "number", min: 0, max: 1, step: 0.05, value: c.voiceVolume ?? 1 },
+      { name: "voiceWhisperEnabled", label: "碎碎念也念出来", type: "checkbox", value: c.voiceWhisperEnabled === true },
+      { name: "voiceTodoEnabled", label: "待办提醒也念出来", type: "checkbox", value: c.voiceTodoEnabled === true },
+
+      { type: "section", label: "对话与记忆" },
+      { name: "chatMemoryRounds", label: "对话记忆轮数", type: "number", min: 0, max: 100, step: 1, value: c.chatMemoryRounds ?? 10 },
+      { name: "chatImageEnabled", label: "对话配表情包", type: "checkbox", value: c.chatImageEnabled === true },
+      { name: "chatImageLimit", label: "配图张数上限（0 = 不限）", type: "number", min: 0, max: 200, step: 1, value: c.chatImageLimit ?? 20 },
+      { name: "chatAnimationEnabled", label: "对话动作联动", type: "checkbox", value: c.chatAnimationEnabled === true },
+      { name: "whisperImageEnabled", label: "碎碎念配表情包", type: "checkbox", value: c.whisperImageEnabled === true },
+
+      { type: "section", label: "模型 API（留空 = 跟随当前会话模型）" },
+      { name: "whisperModel.provider", label: "碎碎念 · 服务商", placeholder: "例如 deepseek / ollama", value: c["whisperModel.provider"] || "" },
+      { name: "whisperModel.model", label: "碎碎念 · 模型", placeholder: "例如 deepseek-chat", value: c["whisperModel.model"] || "" },
+      { name: "chatModel.provider", label: "对话 · 服务商", placeholder: "例如 deepseek / ollama", value: c["chatModel.provider"] || "" },
+      { name: "chatModel.model", label: "对话 · 模型", placeholder: "例如 deepseek-chat", value: c["chatModel.model"] || "" },
+
+      { type: "section", label: "周期（秒）" },
+      { name: "eventsRefreshSec.whisper", label: "碎碎念间隔", type: "number", min: 10, max: 86400, step: 30, value: c["eventsRefreshSec.whisper"] ?? 300 },
+      { name: "eventsRefreshSec.sleepTalk", label: "梦话间隔", type: "number", min: 10, max: 86400, step: 10, value: c["eventsRefreshSec.sleepTalk"] ?? 60 },
+      { name: "eventsRefreshSec.balance", label: "余额刷新间隔", type: "number", min: 30, max: 86400, step: 60, value: c["eventsRefreshSec.balance"] ?? 1800 },
+
+      { type: "section", label: "外观与字体" },
+      { name: "font.family", label: "字体", type: "select", value: c["font.family"] ?? "candy", options: [
+        { value: "candy", text: "软糖体" }, { value: "yahei", text: "微软雅黑 / 苹方" },
+        { value: "youyuan", text: "幼圆" }, { value: "kaiti", text: "楷体" },
+        { value: "simsun", text: "宋体" }, { value: "comic", text: "漫画体" },
+        { value: "system", text: "系统默认" }
+      ] },
+      { name: "font.size", label: "气泡字号（px）", type: "number", min: 4, max: 200, step: 1, value: c["font.size"] ?? 21 },
+      { name: "font.followPet", label: "字号随宠物大小缩放", type: "checkbox", value: c["font.followPet"] !== false },
+
+      { type: "section", label: "物理手感" },
+      { name: "physics.gravity", label: "重力", type: "number", min: 0, max: 100000, step: 100, value: c["physics.gravity"] ?? 1400 },
+      { name: "physics.restitution", label: "反弹系数（0~1）", type: "number", min: 0, max: 1, step: 0.01, value: c["physics.restitution"] ?? 0.78 },
+      { name: "physics.groundFriction", label: "落地摩擦", type: "number", min: 0, max: 100, step: 0.1, value: c["physics.groundFriction"] ?? 2.5 },
+      { name: "physics.throwPower", label: "抛掷力度", type: "number", min: 0.1, max: 10, step: 0.1, value: c["physics.throwPower"] ?? 1 },
+      { name: "physics.ceilingBounce", label: "顶部反弹", type: "checkbox", value: c["physics.ceilingBounce"] !== false },
+      { name: "physics.petCollision", label: "宠物互相碰撞", type: "checkbox", value: c["physics.petCollision"] !== false },
+      { name: "physics.hapticEnabled", label: "碰撞震动", type: "checkbox", value: c["physics.hapticEnabled"] !== false },
+      { name: "physics.tiltGravity", label: "倾斜控制重力", type: "checkbox", value: c["physics.tiltGravity"] !== false },
+      { name: "physics.shakeThrow", label: "摇一摇抛出", type: "checkbox", value: c["physics.shakeThrow"] !== false },
+
+      { type: "section", label: "通知与效果开关" },
+      { name: "notificationsEnabled", label: "系统通知", type: "checkbox", value: c.notificationsEnabled === true },
+      { name: "trayEnabled", label: "系统托盘图标", type: "checkbox", value: c.trayEnabled === true },
+      { name: "confineToScreen", label: "锁定在当前屏幕", type: "checkbox", value: c.confineToScreen === true },
+      { name: "actionSubtitleEnabled", label: "动作字幕", type: "checkbox", value: c.actionSubtitleEnabled === true },
+      { name: "bubbleBackdropEnabled", label: "背景泡泡", type: "checkbox", value: c.bubbleBackdropEnabled !== false },
+      { name: "bubbleRiseSfxEnabled", label: "泡泡上浮音效", type: "checkbox", value: c.bubbleRiseSfxEnabled !== false },
+      { name: "bubbleBackdropCount", label: "背景泡泡数量（0 = 关闭）", type: "number", min: 0, max: 24, step: 1, value: c.bubbleBackdropCount ?? 9 },
+      { name: "bubbleBackdropMotion", label: "泡泡漂浮幅度", type: "select", value: c.bubbleBackdropMotion ?? "normal", options: [
+        { value: "calm", text: "轻柔" }, { value: "normal", text: "正常" }, { value: "lively", text: "活泼" }
+      ] },
+      { name: "bubbleBackdropPalette", label: "泡泡色调", type: "select", value: c.bubbleBackdropPalette ?? "candy", options: [
+        { value: "candy", text: "糖果" }, { value: "ocean", text: "海洋" }, { value: "sunset", text: "晚霞" },
+        { value: "rainbow", text: "彩虹" }, { value: "mono", text: "单色" }
+      ] },
+
+      { type: "section", label: "宠物本体（main）" },
+      { name: "name", label: "显示名", value: c.name || "" },
+      { name: "size", label: "尺寸（宽 px）", type: "number", min: 50, max: 2000, step: 10, value: c.size ?? 462 },
+      { name: "display", label: "显示位置", type: "select", value: c.display ?? "both", options: [
+        { value: "both", text: "浏览器 + 桌面" }, { value: "web", text: "仅浏览器" },
+        { value: "desktop", text: "仅桌面" }, { value: "none", text: "都不显示" }
+      ] },
+      { name: "balanceEnabled", label: "余额功能", type: "checkbox", value: c.balanceEnabled === true },
+      { name: "whisperEnabled", label: "碎碎念", type: "checkbox", value: c.whisperEnabled === true },
+      { name: "workStatusEnabled", label: "工作状态联动", type: "checkbox", value: c.workStatusEnabled === true },
+      { name: "fixedEnabled", label: "固定原地（不自己走 / 转向）", type: "checkbox", value: c.fixedEnabled === true },
+
+      { type: "section", label: "动画" },
+      { name: "animations.speed", label: "动画播放速度（0.25~3，1 = 原速，越小越慢）", type: "number", min: 0.25, max: 3, step: 0.05, value: c["animations.speed"] ?? 1 },
+      { name: "animations.switchSec", label: "动画切换间隔（秒）", type: "number", min: 2, max: 120, step: 1, value: c["animations.switchSec"] ?? 12 },
+      { name: "animations.sleepEnabled", label: "睡觉/起床动画", type: "checkbox", value: c["animations.sleepEnabled"] !== false },
+
+      { name: "position.corner", label: "停靠角落", type: "select", value: c["position.corner"] ?? "top-right", options: [
+        { value: "top-right", text: "右上" }, { value: "top-left", text: "左上" },
+        { value: "bottom-right", text: "右下" }, { value: "bottom-left", text: "左下" }
+      ] },
+      { name: "position.marginX", label: "水平偏移（px）", type: "number", min: 0, max: 5000, step: 1, value: c["position.marginX"] ?? 24 },
+      { name: "position.marginY", label: "垂直偏移（px）", type: "number", min: 0, max: 5000, step: 1, value: c["position.marginY"] ?? 100 }
+    ], async (form) => {
+      try {
+        await postJson("/pet/config", form);
+        botMsg("桌宠参数已保存，30 秒内生效");
+        loadPet();
+        return true;
+      } catch (error) {
+        botMsg("保存失败：" + error.message, true);
+        return false;
+      }
+    });
+  });
+
+  [
+    ["petVoiceOn", "voiceEnabled", "语音"],
+    ["petClickOn", "clickSoundEnabled", "点击音效"],
+    ["petWhisperOn", "whisperEnabled", "碎碎念"],
+    ["petVisionOn", "visionWatchEnabled", "OCR 定期识屏"]
+  ].forEach(([id, key, label]) => {
+    $(id).addEventListener("change", () => savePetSwitch(key, label, $(id)));
+  });
+
+  $("editRelay").addEventListener("click", openRelayForm);
+  $("petApiSay").addEventListener("click", () => {
+    const text = $("petApiText").value.trim();
+    if (!text) { petLog("先写一句气泡内容", true); return; }
+    petCommand({ action: "say", text }, "气泡已发送");
+  });
+  $("petApiChat").addEventListener("click", () => {
+    const text = $("petApiText").value.trim();
+    if (!text) { petLog("先写一句对话内容", true); return; }
+    petCommand({ action: "chat", text }, "已发给桌宠，等它回复");
+  });
+  $("petApiClear").addEventListener("click", () => petCommand({ action: "clear" }, "气泡已清空"));
+  $("petApiBalance").addEventListener("click", () => petCommand({ action: "balance" }, "余额已刷新"));
+  $("petApiAnimPlay").addEventListener("click", () => {
+    const name = $("petApiAnim").value.trim();
+    if (!name) { petLog("先写动作名", true); return; }
+    petCommand({ action: "anim", name }, "动作已发送");
+  });
+  $("petApiTrim").addEventListener("click", () => {
+    const keep = Number(prompt("保留最近几轮对话？（1 轮 = 1 问 1 答）", "10"));
+    if (!Number.isInteger(keep) || keep < 0) { petLog("轮数需要 0 以上的整数", true); return; }
+    petCommand({ action: "history", keep }, "已清理旧对话");
+  });
+  $("petApiWipe").addEventListener("click", () => {
+    if (!confirm("清空桌宠的全部对话记忆？此操作不可撤销。")) return;
+    petCommand({ action: "history-clear" }, "对话已全部清空");
+  });
+
+  $("petVoiceApply").addEventListener("click", () => {
+    const name = $("petVoice").value;
+    if (!name) {
+      botMsg("没有可切换的声线", true);
+      return;
+    }
+    const btn = $("petVoiceApply");
+    btn.disabled = true;
+    postJson("/bot/voices", { action: "switch", name })
+      .then(() => {
+        botMsg("已切换声线「" + name + "」，桌宠下一句话就生效");
+        loadVoices();
+        loadPet();
+      })
+      .catch((error) => botMsg("切换失败：" + error.message, true))
+      .finally(() => { btn.disabled = false; });
+  });
+
+  $("petVoicePlay").addEventListener("click", () => {
+    const name = $("petVoice").value;
+    if (!name) {
+      botMsg("没有可试听的声线", true);
+      return;
+    }
+    if (previewAudio) previewAudio.pause();
+    const audio = new Audio("/bot/voices/audio?name=" + encodeURIComponent(name));
+    previewAudio = audio;
+    audio.onerror = () => botMsg("试听失败：音频读不出来", true);
+    botMsg("正在试听「" + name + "」");
+    const task = audio.play();
+    if (task && task.catch) {
+      task.catch((error) => botMsg("试听失败：" + (error.message || "浏览器拦截了播放"), true));
+    }
+  });
+
+  $("editListen").addEventListener("change", () => {
+    $("editListenText").textContent = $("editListen").checked ? "监听" : "不监听";
+  });
+
+  $("editOk").addEventListener("click", saveEdit);
+  $("editToolLevel").addEventListener("change", syncToolBox);
+  $("editCancel").addEventListener("click", closeEdit);
+  $("editClose").addEventListener("click", closeEdit);
+  $("editDanger").addEventListener("click", doDanger);
+  $("formOk").addEventListener("click", submitForm);
+  $("formCancel").addEventListener("click", closeForm);
+  $("formClose").addEventListener("click", closeForm);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (!$("editModal").hidden) closeEdit();
+    if (!$("formModal").hidden) closeForm();
+  });
+
+  $("botSave").addEventListener("click", saveBot);
+  $("botReload").addEventListener("click", loadBot);
+  $("toolAccessSave").addEventListener("click", saveToolAccess);
+  $("humanSave").addEventListener("click", saveHumanSim);
+  $("addToolLevel").addEventListener("click", () => editToolLevel(""));
+  $("toolLevelChips").addEventListener("click", (event) => {
+    const del = event.target.closest("[data-del-level]");
+    if (del) { removeToolLevel(del.dataset.delLevel); return; }
+    const edit = event.target.closest("[data-edit-level]");
+    if (edit) editToolLevel(edit.dataset.editLevel);
+  });
+
+  $("refreshBtn").addEventListener("click", refresh);
+  $("winRefresh").addEventListener("click", loadWindows);
+  document.addEventListener("click", async (event) => {
+    const stop = event.target.closest("[data-win-stop]");
+    if (!stop) return;
+    try {
+      await postJson("/windows/stop", { peer_id: stop.dataset.winStop });
+      loadWindows();
+    } catch (error) {
+      $("winSub").textContent = "结束窗口失败：" + error.message;
+    }
+  });
+  refresh();
+  loadBot();
+  setInterval(refresh, 5000);
+  setInterval(loadWindows, 5000);
+</script>
+</body>
+</html>

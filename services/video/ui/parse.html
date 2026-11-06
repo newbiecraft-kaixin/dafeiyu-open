@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>看视频 · 大肥鱼</title>
+<style>
+  :root{
+    --bg:#070a14;
+    --panel:#101731;
+    --panel-2:#131c3c;
+    --line:rgba(102,126,182,.32);
+    --line-strong:rgba(107,143,255,.55);
+    --text:#e9edff;
+    --sub:#8b97bd;
+    --accent:#bfd0ff;
+    --warn:#ffd479;
+    --error:#ff9aa8;
+    --ok:#9ee6b4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;background:var(--bg);color:var(--text);
+    font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 64px}
+  header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+  h1{margin:0 0 4px;font-size:24px;letter-spacing:.5px}
+  .sub{margin:0;color:var(--sub);font-size:13px}
+  .status{
+    align-self:center;padding:6px 12px;border-radius:999px;font-size:12px;white-space:nowrap;
+    border:1px solid var(--line);background:var(--panel);color:var(--sub);
+  }
+  .status.ok{color:var(--ok);border-color:rgba(158,230,180,.35)}
+  .status.warn{color:var(--warn);border-color:rgba(255,212,121,.45);background:rgba(255,212,121,.08)}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:18px 20px;margin-bottom:16px;
+  }
+  label.lbl{display:block;font-size:12px;color:var(--sub);margin-bottom:8px;letter-spacing:.4px}
+  .row{display:flex;gap:10px}
+  input[type=text],input[type=password]{
+    flex:1;min-width:0;padding:11px 14px;border-radius:11px;
+    border:1px solid var(--line);background:#0a0f21;color:var(--text);
+    font:inherit;outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  input[type=text]:focus,input[type=password]:focus{
+    border-color:var(--line-strong);box-shadow:0 0 0 3px rgba(107,143,255,.14);
+  }
+  input::placeholder{color:#5f6c92}
+  button{
+    padding:11px 22px;border-radius:11px;border:1px solid rgba(107,143,255,.5);
+    background:linear-gradient(180deg,#1c2a58,#16214a);color:var(--accent);
+    font:inherit;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button:hover:not(:disabled){border-color:var(--line-strong);background:linear-gradient(180deg,#22336a,#1a2757)}
+  button:disabled{opacity:.55;cursor:progress}
+  button.ghost{
+    background:transparent;border-color:var(--line);color:var(--sub);font-weight:400;padding:7px 14px;font-size:12px;
+  }
+  button.ghost:hover:not(:disabled){color:var(--accent);border-color:var(--line-strong);background:transparent}
+  .opts{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;color:var(--sub);font-size:13px}
+  .opts label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .opts input{accent-color:#6b8fff;width:15px;height:15px;margin:0}
+  .error{
+    margin-top:14px;padding:10px 14px;border-radius:10px;font-size:13px;
+    color:var(--error);background:rgba(255,120,140,.08);border:1px solid rgba(255,120,140,.3);
+    white-space:pre-wrap;
+  }
+  details.card summary{
+    cursor:pointer;font-size:13px;color:var(--accent);list-style:none;outline:none;
+    display:flex;align-items:center;gap:8px;
+  }
+  details.card summary::-webkit-details-marker{display:none}
+  details.card summary::before{content:"▸";color:var(--sub);transition:transform .15s;display:inline-block}
+  details.card[open] summary::before{transform:rotate(90deg)}
+  .hint{color:var(--sub);font-size:12px;margin:10px 0 14px}
+  .cfg-grid{display:grid;gap:10px}
+  .cfg-row{display:grid;grid-template-columns:62px 1fr auto auto;gap:10px;align-items:center}
+  .cfg-row span.name{color:var(--sub);font-size:13px}
+  .cfg-row span.state{font-size:12px;color:var(--sub);min-width:52px;text-align:right}
+  .cfg-row span.state.set{color:var(--ok)}
+  .cfg-actions{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .cfg-msg{font-size:12px;color:var(--ok)}
+  .cfg-msg.bad{color:var(--error)}
+  .res-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .badge{
+    display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;
+    color:var(--accent);background:rgba(107,143,255,.16);border:1px solid rgba(107,143,255,.35);
+  }
+  h2.title{margin:0;font-size:19px;line-height:1.5;flex-basis:100%;word-break:break-word}
+  .meta{color:var(--sub);font-size:13px;display:flex;flex-wrap:wrap;gap:14px}
+  .meta b{color:var(--text);font-weight:500}
+  h3{margin:0 0 10px;font-size:13px;color:var(--accent);letter-spacing:.5px}
+  .desc{white-space:pre-wrap;color:#cfd8f5;font-size:13px;line-height:1.8;margin:0}
+  .scroll{max-height:380px;overflow:auto;padding-right:6px}
+  .sub-title{font-size:12px;color:var(--sub);margin:0 0 8px}
+  .sub-body{white-space:pre-wrap;color:#d7e0ff;font-size:13px;line-height:1.9;margin:0}
+  ol.comments{margin:0;padding-left:22px;color:#d7e0ff;font-size:13px;line-height:1.85}
+  ol.comments li{margin-bottom:7px;word-break:break-word}
+  ul.notes{margin:0;padding-left:20px;color:var(--warn);font-size:13px;line-height:1.8}
+  ul.notes li{margin-bottom:5px}
+  .scroll::-webkit-scrollbar{width:8px}
+  .scroll::-webkit-scrollbar-thumb{background:rgba(107,143,255,.28);border-radius:8px}
+  .scroll::-webkit-scrollbar-track{background:transparent}
+  .empty{color:var(--sub);font-size:13px}
+  [hidden]{display:none!important}
+  @media (max-width:620px){
+    .cfg-row{grid-template-columns:52px 1fr auto;row-gap:6px}
+    .cfg-row span.state{grid-column:2;text-align:left}
+    .cfg-row button{grid-column:3;grid-row:1}
+    .row{flex-direction:column}
+    button{padding:11px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>看视频</h1>
+      <p class="sub">贴 B站 / 抖音 / 快手 / 西瓜 链接，取标题、作者、字幕与评论</p>
+    </div>
+    <div id="status" class="status">正在检查服务状态…</div>
+  </header>
+
+  <section class="card">
+    <label class="lbl" for="url">视频链接</label>
+    <div class="row">
+      <input id="url" type="text" autocomplete="off" spellcheck="false"
+             placeholder="https://www.bilibili.com/video/BV... 或短链、BV 号">
+      <button id="go" type="button">看视频</button>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="optComments" checked> 取评论</label>
+      <label><input type="checkbox" id="optTranscript"> 无字幕时转写音频（较慢）</label>
+    </div>
+    <div id="error" class="error" role="alert" hidden></div>
+  </section>
+
+  <details class="card" id="cfgPanel">
+    <summary>登录配置（Cookie，可选）</summary>
+    <p class="hint">填了才能拿到 B站 AI 字幕、抖音 / 快手评论等。保存后这里只显示「已设置」，不会回显原值；点「清除」删除对应项。</p>
+    <div class="cfg-grid">
+      <div class="cfg-row">
+        <span class="name">B站</span>
+        <input id="ck-bili" type="password" autocomplete="off" placeholder="SESSDATA 或整条 Cookie">
+        <span id="st-bili" class="state">未设置</span>
+        <button class="ghost" type="button" data-clear="bili">清除</button>
+      </div>
+      <div class="cfg-row">
+        <span class="name">抖音</span>
+        <input id="ck-douyin" type="password" autocomplete="off" placeholder="浏览器登录后整条 Cookie">
+        <span id="st-douyin" class="state">未设置</span>
+        <button class="ghost" type="button" data-clear="douyin">清除</button>
+      </div>
+      <div class="cfg-row">
+        <span class="name">快手</span>
+        <input id="ck-kuaishou" type="password" autocomplete="off" placeholder="浏览器登录后整条 Cookie">
+        <span id="st-kuaishou" class="state">未设置</span>
+        <button class="ghost" type="button" data-clear="kuaishou">清除</button>
+      </div>
+      <div class="cfg-row">
+        <span class="name">西瓜</span>
+        <input id="ck-ixigua" type="password" autocomplete="off" placeholder="浏览器登录后整条 Cookie">
+        <span id="st-ixigua" class="state">未设置</span>
+        <button class="ghost" type="button" data-clear="ixigua">清除</button>
+      </div>
+    </div>
+    <div class="cfg-actions">
+      <button id="saveCfg" type="button">保存配置</button>
+      <span id="cfgMsg" class="cfg-msg"></span>
+    </div>
+  </details>
+
+  <section id="result" hidden>
+    <div class="card res-head">
+      <span id="badge" class="badge">视频</span>
+      <h2 id="title" class="title"></h2>
+      <div class="meta">
+        <span>作者 <b id="author">-</b></span>
+        <span>时长 <b id="dur">-</b></span>
+        <span>发布 <b id="pub">-</b></span>
+      </div>
+    </div>
+
+    <div class="card" id="descBox">
+      <h3>简介</h3>
+      <p id="desc" class="desc"></p>
+    </div>
+
+    <details class="card" id="subBox">
+      <summary>字幕 / 转写 <span id="subTag" class="empty"></span></summary>
+      <div class="scroll" style="margin-top:12px">
+        <p id="subtitle" class="sub-body"></p>
+      </div>
+    </details>
+
+    <div class="card" id="cmtBox">
+      <h3>评论</h3>
+      <div class="scroll"><ol id="comments" class="comments"></ol></div>
+    </div>
+
+    <div class="card" id="notesBox">
+      <h3>说明</h3>
+      <ul id="notes" class="notes"></ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var PLATFORM = {
+    bilibili: "B站",
+    douyin: "抖音",
+    kuaishou: "快手",
+    ixigua: "西瓜"
+  };
+  var busy = false;
+
+  function showError(message) {
+    var box = $("error");
+    if (!message) {
+      box.hidden = true;
+      box.textContent = "";
+      return;
+    }
+    box.hidden = false;
+    box.textContent = message;
+  }
+
+  function fmtDuration(seconds) {
+    var total = Number(seconds) || 0;
+    if (total <= 0) return "-";
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = Math.floor(total % 60);
+    var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : pad(m) + ":" + pad(s);
+  }
+
+  function setStatus(text, mode) {
+    var el = $("status");
+    el.textContent = text;
+    el.className = "status" + (mode ? " " + mode : "");
+  }
+
+  function checkHealth() {
+    fetch("/health", { headers: { "Accept": "application/json" } })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        var data = body && body.data ? body.data : null;
+        if (!body || !body.ok || !data) {
+          setStatus("服务状态异常，解析可能不可用", "warn");
+          return;
+        }
+        var parse = data.parse || {};
+        if (!parse.ready) {
+          setStatus("解析模块不可用，请先重启 video 服务", "warn");
+          return;
+        }
+        setStatus("解析服务正常 · 端口 " + (data.port || "23368"), "ok");
+      })
+      .catch(function () {
+        setStatus("连不上 video 服务（23368），解析不可用", "warn");
+      });
+  }
+
+  function paintConfig(data) {
+    var cookie = (data && data.cookie) || {};
+    Object.keys(PLATFORM).forEach(function (key) {
+      var state = $("st-" + key);
+      if (!state) return;
+      var isSet = !!cookie[key];
+      state.textContent = isSet ? "已设置" : "未设置";
+      state.className = "state" + (isSet ? " set" : "");
+    });
+  }
+
+  function loadConfig() {
+    fetch("/video/config", { headers: { "Accept": "application/json" } })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        if (body && body.ok) paintConfig(body.data || {});
+      })
+      .catch(function () { /* 配置读不到不影响解析 */ });
+  }
+
+  function postConfig(payload, okText) {
+    var msg = $("cfgMsg");
+    msg.className = "cfg-msg";
+    msg.textContent = "保存中…";
+    fetch("/video/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        if (!body || !body.ok) {
+          msg.className = "cfg-msg bad";
+          msg.textContent = (body && body.error) || "保存失败";
+          return;
+        }
+        paintConfig(body.data || {});
+        Object.keys(PLATFORM).forEach(function (key) { $("ck-" + key).value = ""; });
+        msg.className = "cfg-msg";
+        msg.textContent = okText || "已保存";
+      })
+      .catch(function () {
+        msg.className = "cfg-msg bad";
+        msg.textContent = "保存失败：连不上服务";
+      });
+  }
+
+  function saveConfig() {
+    var cookie = {};
+    var count = 0;
+    Object.keys(PLATFORM).forEach(function (key) {
+      var value = $("ck-" + key).value.trim();
+      if (value) {
+        cookie[key] = value;
+        count += 1;
+      }
+    });
+    if (!count) {
+      var msg = $("cfgMsg");
+      msg.className = "cfg-msg bad";
+      msg.textContent = "没有填写新的 Cookie";
+      return;
+    }
+    postConfig({ cookie: cookie }, "已保存（只填了 " + count + " 项）");
+  }
+
+  function clearCookie(key) {
+    var payload = { cookie: {} };
+    payload.cookie[key] = "";
+    postConfig(payload, "已清除 " + PLATFORM[key] + " 的 Cookie");
+  }
+
+  function setSection(id, visible) {
+    var el = $(id);
+    if (el) el.hidden = !visible;
+  }
+
+  function render(data) {
+    data = data || {};
+    $("badge").textContent = PLATFORM[data.platform] || "视频";
+    $("title").textContent = data.title || "（没拿到标题）";
+    $("author").textContent = data.author || "-";
+    $("dur").textContent = fmtDuration(data.duration);
+    $("pub").textContent = data.publish_time || "-";
+
+    var desc = (data.desc || "").trim();
+    $("desc").textContent = desc || "没拿到简介";
+    setSection("descBox", true);
+
+    var subtitle = (data.subtitle || "").trim();
+    var source = data.subtitle_source || (subtitle ? "字幕" : "");
+    $("subTag").textContent = source ? "· " + source : "";
+    if (subtitle) {
+      $("subtitle").textContent = subtitle;
+      setSection("subBox", true);
+      $("subBox").open = true;
+    } else {
+      setSection("subBox", false);
+      $("subtitle").textContent = "";
+    }
+
+    var comments = data.comments || [];
+    var list = $("comments");
+    list.textContent = "";
+    if (comments.length) {
+      comments.forEach(function (text) {
+        var li = document.createElement("li");
+        li.textContent = text;
+        list.appendChild(li);
+      });
+      setSection("cmtBox", true);
+    } else {
+      setSection("cmtBox", false);
+    }
+
+    var notes = data.notes || [];
+    var noteList = $("notes");
+    noteList.textContent = "";
+    if (notes.length) {
+      notes.forEach(function (text) {
+        var li = document.createElement("li");
+        li.textContent = text;
+        noteList.appendChild(li);
+      });
+      setSection("notesBox", true);
+    } else {
+      setSection("notesBox", false);
+    }
+
+    setSection("result", true);
+  }
+
+  function parseVideo() {
+    if (busy) return;
+    var url = $("url").value.trim();
+    if (!url) {
+      showError("请先贴一个视频链接");
+      return;
+    }
+    showError("");
+    setSection("result", false);
+    busy = true;
+    var button = $("go");
+    button.disabled = true;
+    button.textContent = "解析中…";
+
+    fetch("/video/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        url: url,
+        with_comments: $("optComments").checked,
+        with_transcript: $("optTranscript").checked
+      })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        if (!body || !body.ok) {
+          showError((body && body.error) || "解析失败，稍后再试");
+          return;
+        }
+        render(body.data || {});
+      })
+      .catch(function () {
+        showError("解析请求失败：连不上 video 服务（23368）");
+      })
+      .finally(function () {
+        busy = false;
+        button.disabled = false;
+        button.textContent = "看视频";
+      });
+  }
+
+  $("go").addEventListener("click", parseVideo);
+  $("url").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") parseVideo();
+  });
+  $("saveCfg").addEventListener("click", saveConfig);
+  Array.prototype.forEach.call(document.querySelectorAll("button[data-clear]"), function (btn) {
+    btn.addEventListener("click", function () { clearCookie(btn.getAttribute("data-clear")); });
+  });
+
+  checkHealth();
+  loadConfig();
+})();
+</script>
+</body>
+</html>
