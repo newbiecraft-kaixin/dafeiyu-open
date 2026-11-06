@@ -1,7 +1,7 @@
 {
   "name": "model",
   "kind": "capability",
-  "layer": "基础层",
+  "layer": "中枢层",
   "port": 23406,
   "ui": "http://127.0.0.1:23406/status",
   "responsibility": "身份 → provider / model / key 的独立调度层：本地、远程与 DSH harness 统一入口",

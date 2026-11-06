@@ -1,7 +1,7 @@
 {
   "name": "napcat",
   "kind": "adapter",
-  "layer": "接入客户端",
+  "layer": "软件层",
   "port": 3000,
   "optional": true,
   "status": "active",

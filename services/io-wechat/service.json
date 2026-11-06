@@ -1,7 +1,7 @@
 {
   "name": "io-wechat",
   "kind": "platform-io",
-  "layer": "输入输出层",
+  "layer": "软件层",
   "port": 23392,
   "ui": "http://127.0.0.1:23392/ui",
   "legacy_port": 23336,

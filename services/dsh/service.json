@@ -1,7 +1,7 @@
 {
   "name": "dsh",
   "kind": "edge",
-  "layer": "接入客户端",
+  "layer": "监控层",
   "port": 3080,
   "optional": true,
   "status": "active",

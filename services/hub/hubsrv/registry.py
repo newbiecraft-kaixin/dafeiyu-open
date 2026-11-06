@@ -209,12 +209,12 @@ def _layer_of(manifest: Dict[str, Any]) -> str:
     if kind in {"registry", "pipeline", "dispatcher"}:
         return "中枢层"
     if kind == "platform-io":
-        return "输入输出层"
+        return "软件层"
     if kind == "edge":
-        return "接入客户端"
+        return "监控层"
     if kind in {"capability", "storage"}:
         return "能力层"
-    return "外部适配"
+    return "输入输出层"
 
 
 def _links(manifest: Dict[str, Any]) -> Dict[str, str]:

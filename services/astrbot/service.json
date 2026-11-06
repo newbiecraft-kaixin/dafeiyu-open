@@ -1,7 +1,7 @@
 {
   "name": "astrbot",
   "kind": "adapter",
-  "layer": "外部适配",
+  "layer": "输入输出层",
   "port": 6185,
   "optional": true,
   "status": "active",

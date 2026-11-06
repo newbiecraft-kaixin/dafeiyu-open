@@ -19,29 +19,27 @@ DATA_DIR = ROOT / "data"
 PORT = int(os.environ.get("HUB_PORT") or port_of("hub", 23408))
 
 LAYERS = [
-    "基础层",
     "输入输出层",
-    "接入客户端",
-    "中枢层",
+    "软件层",
     "能力层",
-    "外部适配",
+    "监控层",
+    "中枢层",
 ]
-# 与 docs/dafeiyu-architecture.html 的分层保持一致；服务清单里写的是旧层名，
-# 这里按服务名归一化，避免 bus/core 被塞进「外部适配」、dsh 掉到页面最底部。
+# 服务清单里写的是层名，这里再按服务名兜底归一化，避免旧清单或新服务落到错误的层。
 LAYER_BY_NAME = {
     "hub": "中枢层",
     "brain": "中枢层",
     "store": "中枢层",
-    "model": "基础层",
-    "math": "基础层",
-    "io-wechat": "输入输出层",
-    "pet": "接入客户端",
-    "gateway": "接入客户端",
-    "dsh": "接入客户端",
-    "napcat": "接入客户端",
+    "model": "中枢层",
+    "astrbot": "输入输出层",
+    "io-wechat": "软件层",
+    "napcat": "软件层",
+    "pet": "监控层",
+    "dsh": "监控层",
+    "audio": "能力层",
     "voice": "能力层",
-    "tts": "能力层",
-    "media": "能力层",
+    "video": "能力层",
+    "stickers": "能力层",
     "subtitle": "能力层",
     "plugins": "能力层",
 }

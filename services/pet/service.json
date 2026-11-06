@@ -1,7 +1,7 @@
 {
   "name": "pet",
   "kind": "edge",
-  "layer": "接入客户端",
+  "layer": "监控层",
   "optional": true,
   "port": 23334,
   "responsibility": "桌宠旁路：/state → brain（→ model）生成旁白 → 桌宠窗口 23335 显示",
