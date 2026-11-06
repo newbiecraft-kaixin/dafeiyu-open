@@ -318,7 +318,7 @@ class MessagingMixin:
             for text in due:
                 await self._remember_sent(umo, text)
 
-    async def _open_listen_window(self, group_id: str, peer_id: str) -> None:
+    async def _open_listen_window(self, event, group_id: str, peer_id: str) -> None:
         """主动私聊成功后，通知 hub 开一个监听窗口：原群 AI 继续盯着这个人的私聊。
 
         默认 300 秒，可用环境变量 LISTEN_WINDOW_SECONDS 覆盖。失败不影响发送。
@@ -404,7 +404,7 @@ class MessagingMixin:
             err = self._retcode_error(resp)
             if err:
                 raise RuntimeError(f"直发私聊被拒：{err}")
-            await self._open_listen_window(gid, uid)
+            await self._open_listen_window(event, gid, uid)
             return f"已私聊发给 {uid}"
 
         async def _temp(group_id: str) -> str:
@@ -415,7 +415,7 @@ class MessagingMixin:
             err = self._retcode_error(resp)
             if err:
                 raise RuntimeError(f"群临时会话被拒：{err}")
-            await self._open_listen_window(group_id, uid)
+            await self._open_listen_window(event, group_id, uid)
             return f"已用群临时会话（群 {group_id}）发给 {uid}"
 
         if await self._is_friend(bot, uid):

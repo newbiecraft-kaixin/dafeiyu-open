@@ -253,6 +253,24 @@ class CoreMixin:
         except OSError as e:
             logger.warning(f"[human_sim] 状态保存失败: {e}")
 
+    def _save_state_soon(self, delay: float = 10.0) -> None:
+        """防抖落盘：高频路径（私聊记账等）先标脏，合并成一次写盘。
+
+        以前每条私聊消息都同步全量写 state.json，连发多条就是连发多次 I/O。
+        最多延迟 delay 秒落盘，丢的只是这几秒内的计数/时间戳，无伤大雅。
+        """
+        self._state_dirty = True
+        loop = asyncio.get_running_loop()
+        handle = getattr(self, "_state_save_handle", None)
+        if handle is not None and not handle.done():
+            return
+        self._state_save_handle = loop.call_later(delay, self._flush_state_if_dirty)
+
+    def _flush_state_if_dirty(self) -> None:
+        if getattr(self, "_state_dirty", False):
+            self._state_dirty = False
+            self._save_state()
+
     def _load_map_faces(self) -> list[int]:
         """从 map.txt 读所有 face 类型条目（183 个官方黄脸），随机冒泡用"""
         out: list[int] = []

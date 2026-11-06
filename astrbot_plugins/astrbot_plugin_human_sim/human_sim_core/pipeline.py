@@ -91,25 +91,37 @@ class PipelineMixin:
         self._is_slash_message(event)
 
     # 监听窗口：主动私聊后 300 秒内，把「这个人」和「原群」当成同一条线。
-    _WIN_CACHE = {"ts": 0.0, "items": []}
+    _WIN_CACHE = {"ts": 0.0, "items": [], "fetching": False}
 
-    def _active_listen_window(self, peer_id: str) -> dict | None:
-        """查 hub 的监听窗口；5 秒缓存，hub 不在线就当没有。"""
+    def _fetch_listen_windows(self) -> list:
+        """拉一次 hub 的监听窗口列表；失败返回空列表。"""
+        try:
+            import json as _json
+            import urllib.request
+
+            with urllib.request.urlopen(
+                "http://127.0.0.1:23408/windows", timeout=1.5
+            ) as resp:
+                data = _json.loads(resp.read().decode("utf-8"))
+            return ((data or {}).get("data") or {}).get("items") or []
+        except Exception:  # noqa: BLE001
+            return []
+
+    async def _active_listen_window(self, peer_id: str) -> dict | None:
+        """查 hub 的监听窗口；5 秒缓存，hub 不在线就当没有。
+
+        HTTP 刷新放进线程池执行：以前同步 urlopen 直接跑在事件循环里，
+        hub 慢/不在线时每条私聊消息都会把整个 bot 卡住最长 1.5 秒。
+        """
         now = time.time()
         cache = self._WIN_CACHE
-        if now - float(cache.get("ts") or 0) > 5:
+        if now - float(cache.get("ts") or 0) > 5 and not cache.get("fetching"):
+            cache["fetching"] = True
             try:
-                import json as _json
-                import urllib.request
-
-                with urllib.request.urlopen(
-                    "http://127.0.0.1:23408/windows", timeout=1.5
-                ) as resp:
-                    data = _json.loads(resp.read().decode("utf-8"))
-                cache["items"] = ((data or {}).get("data") or {}).get("items") or []
-            except Exception:  # noqa: BLE001
-                cache["items"] = []
-            cache["ts"] = now
+                cache["items"] = await asyncio.to_thread(self._fetch_listen_windows)
+                cache["ts"] = time.time()
+            finally:
+                cache["fetching"] = False
         peer = str(peer_id or "")
         for item in cache.get("items") or []:
             if str(item.get("peer_id") or "") == peer:
@@ -165,8 +177,8 @@ class PipelineMixin:
             lines = rec.setdefault("lines", [])
             lines.append(text[:80])
             del lines[:-6]  # 只留最近 6 条，够接话头就行
-            self._save_state()
-            window = self._active_listen_window(qq)
+            self._save_state_soon()  # 高频路径：防抖落盘，别每条私聊都全量写盘
+            window = await self._active_listen_window(qq)
             if window:
                 self._absorb_listen_window(window, text, event)
         except Exception:  # noqa: BLE001

@@ -21,6 +21,9 @@ from .config import DATA_DIR
 STORE = DATA_DIR / "listen_windows.json"
 DEFAULT_SECONDS = max(1, int(os.environ.get("LISTEN_WINDOW_SECONDS") or 300))
 _LOCK = threading.Lock()
+# 进程内缓存：窗口查询是私聊热路径（human_sim 每 5 秒拉一次 /windows），
+# 以前每次都读盘+解析+过期时还写盘，现在只在启动和变更时碰磁盘。
+_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
 
 
 def _load() -> Dict[str, Dict[str, Any]]:
@@ -32,7 +35,16 @@ def _load() -> Dict[str, Dict[str, Any]]:
         return {}
 
 
+def _items() -> Dict[str, Dict[str, Any]]:
+    global _CACHE
+    if _CACHE is None:
+        _CACHE = _load()
+    return _CACHE
+
+
 def _save(items: Dict[str, Dict[str, Any]]) -> None:
+    global _CACHE
+    _CACHE = items
     try:
         STORE.parent.mkdir(parents=True, exist_ok=True)
         STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -58,7 +70,7 @@ def start(
     now = time.time()
     span = max(1, int(seconds or DEFAULT_SECONDS))
     with _LOCK:
-        items = _prune(_load())
+        items = _prune(_items())
         window = {
             "peer_id": peer,
             "group_id": str(group_id or ""),
@@ -75,7 +87,7 @@ def start(
 def stop(peer_id: str) -> bool:
     peer = str(peer_id or "").strip()
     with _LOCK:
-        items = _prune(_load())
+        items = _prune(_items())
         existed = items.pop(peer, None) is not None
         _save(items)
     return existed
@@ -83,16 +95,18 @@ def stop(peer_id: str) -> bool:
 
 def get(peer_id: str) -> Optional[Dict[str, Any]]:
     with _LOCK:
-        items = _prune(_load())
-        _save(items)
+        items = _prune(_items())
+        if len(items) != len(_items()):
+            _save(items)
         return items.get(str(peer_id or "").strip())
 
 
 def snapshot() -> List[Dict[str, Any]]:
     now = time.time()
     with _LOCK:
-        items = _prune(_load())
-        _save(items)
+        items = _prune(_items())
+        if len(items) != len(_items()):
+            _save(items)
         rows = []
         for window in items.values():
             row = dict(window)
