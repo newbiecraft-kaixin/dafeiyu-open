@@ -14,12 +14,19 @@ from infra import Dedupe, EventQueue, Stats
 
 wx: Any = None
 bot_name = os.environ.get("WX_BOT_NAME", "")
+bot_wxid = ""
+# 附着成功的时刻。比它更早的消息是微信库里的历史/停机积压，一律不进管道，
+# 避免重启后机器人把旧对话重放一遍。
+attach_time = 0.0
 wx_lock = threading.Lock()
 queue = EventQueue(maxlen=5000)
 dedupe = Dedupe()
 counts = Stats()
 
 lock = threading.Condition()
+# stats 是普通 dict，计数分布在 attach 线程和多个 HTTP 线程；+= 不是原子操作，
+# 高并发下会丢计数，统一走 stats_lock。
+stats_lock = threading.Lock()
 raw_messages: deque = deque(maxlen=2000)
 raw_seq = 0
 stats: Dict[str, Any] = {

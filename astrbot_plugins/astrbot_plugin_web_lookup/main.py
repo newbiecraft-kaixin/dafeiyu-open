@@ -16,7 +16,8 @@ import time
 from difflib import SequenceMatcher
 
 from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.event import AstrMessageEvent, MessageChain, filter
+from astrbot.api.message_components import Plain
 from astrbot.api.star import Context, Star, register
 
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -467,10 +468,17 @@ class WebLookupPlugin(Star):
             or [str(t) for t in (self.cfg.get("bili_tags") or []) if str(t).strip()]
             or ["热门"]
         )
-        return (
-            await self._deliver_feed(event, text, picked, use_tags)
-            + "\n（上面这份原样整段发出去，别改写、别省略链接、别自己补话。）"
-        )
+        lines = await self._deliver_feed(event, text, picked, use_tags)
+        # 清单由代码直接发出；交给模型复述时它常把链接省掉，用户就只剩一堆标题
+        try:
+            await event.send(MessageChain([Plain(lines)]))
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[web_lookup] 直发清单失败: {type(e).__name__}: {str(e)[:120]}")
+            return (
+                lines
+                + "\n（上面这份原样整段发出去，别改写、别省略链接、别自己补话。）"
+            )
+        return "带直链的清单已经直接发给用户了。你只需顺着说一句自己的感受，不要重复清单、不要补链接。"
 
     @filter.llm_tool(name="bili_pool")
     async def bili_pool_tool(
@@ -527,18 +535,22 @@ class WebLookupPlugin(Star):
         umo = str(getattr(event, "unified_msg_origin", "") or "")
         try:
             prov = self.context.get_using_provider(umo)
-            resp = await prov.text_chat(
-                prompt=(
-                    "下面是刚刷到的一批 B站视频，条目里带标题、简介、标签、字幕节选和前 10 条评论。\n"
-                    "只输出一个 JSON 对象，不要解释、不要 markdown：\n"
-                    '{"items":[{"i":1,"video":"这条讲什么、好玩或有用在哪（40字内）",'
-                    '"comment":"评论区态度或关注点（30字内）"}],'
-                    '"thought":"以你自己（肥鱼）的口吻写1-2句真实想法"}\n'
-                    "i 是条目序号；只依据给到的信息，信息不足写「信息太少」，绝不编造。\n\n"
-                    + text
-                    + extra
+            # 模型就算挂着（连不上、排队），也不能把整条清单拖死
+            resp = await asyncio.wait_for(
+                prov.text_chat(
+                    prompt=(
+                        "下面是刚刷到的一批 B站视频，条目里带标题、简介、标签、字幕节选和前 10 条评论。\n"
+                        "只输出一个 JSON 对象，不要解释、不要 markdown：\n"
+                        '{"items":[{"i":1,"video":"这条讲什么、好玩或有用在哪（40字内）",'
+                        '"comment":"评论区态度或关注点（30字内）"}],'
+                        '"thought":"以你自己（肥鱼）的口吻写1-2句真实想法"}\n'
+                        "i 是条目序号；只依据给到的信息，信息不足写「信息太少」，绝不编造。\n\n"
+                        + text
+                        + extra
+                    ),
+                    system_prompt="你只输出合法 JSON，不要输出别的任何东西。",
                 ),
-                system_prompt="你只输出合法 JSON，不要输出别的任何东西。",
+                timeout=25,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning(f"[web_lookup] 刷B站总结失败: {type(e).__name__}: {str(e)[:120]}")
@@ -586,14 +598,19 @@ class WebLookupPlugin(Star):
         if not picked:
             return text
         sums, thought = await self._bili_tldr(event, text, picked)
-        html = self.core.bili_page_html(
-            picked,
-            tags,
-            summaries=sums,
-            thought=thought,
-            note="页面只保留最近 20 份；想换口味直接跟我说个词，不想看了就说停。",
-        )
-        url = _write_share_page(html)
+        # 页面只是附赠；写不出来也不能拖累直链清单，清单才是用户要的
+        url = ""
+        try:
+            html = self.core.bili_page_html(
+                picked,
+                tags,
+                summaries=sums,
+                thought=thought,
+                note="页面只保留最近 20 份；想换口味直接跟我说个词，不想看了就说停。",
+            )
+            url = _write_share_page(html)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[web_lookup] 刷B站页面生成失败: {type(e).__name__}: {str(e)[:120]}")
         label = "、".join(str(t) for t in tags if str(t).strip()) or "默认"
 
         lines = [f"刷到 {len(picked)} 条（{label}）"]
@@ -609,7 +626,8 @@ class WebLookupPlugin(Star):
         thought = _clean_ai_line(thought)
         if thought and _line_is_fresh(thought):
             lines.append(f"我的看法：{thought}")
-        lines.append(f"完整页面：{url}")
+        if url:
+            lines.append(f"完整页面：{url}")
         return "\n".join(lines)
 
     async def _bili_qr_flow(self, event: AstrMessageEvent):
@@ -860,7 +878,11 @@ class WebLookupPlugin(Star):
             logger.warning(f"[web_lookup] 刷视频失败: {type(e).__name__}: {str(e)[:120]}")
             text = f"刷视频失败（{type(e).__name__}），没刷出来。"
         if str(text).startswith("【刷B站】"):
-            text = await self._deliver_feed(event, text, picked, use_tags)
+            try:
+                text = await self._deliver_feed(event, text, picked, use_tags)
+            except Exception as e:  # noqa: BLE001
+                # 排版失败也要把带直链的原始清单发出去
+                logger.warning(f"[web_lookup] 清单排版失败: {type(e).__name__}: {str(e)[:120]}")
             yield event.plain_result(text)
             return
         yield event.plain_result(text)
@@ -1256,10 +1278,13 @@ class WebLookupPlugin(Star):
         if not csum:
             csum = cmts[0][:80] if cmts else "没抓到评论。"
 
+        url = str(data.get("url") or "").strip()
         lines = [
             f"标题：{title}｜时长：{dur}｜作者：{author}",
-            f"视频总结：{vsum}",
         ]
+        if url:
+            lines.append(f"链接：{url}")
+        lines.append(f"视频总结：{vsum}")
         if points:
             lines.append(f"要点：{points}")
         lines.append(f"评论总结：{csum}")

@@ -32,7 +32,8 @@ def handle_send(req) -> Any:
 
     proactive = bool(payload.get("proactive"))
     if in_quiet() and not night_reply_allowed(uid, proactive):
-        state.stats["blocked_night"] += 1
+        with state.stats_lock:
+            state.stats["blocked_night"] += 1
         state.counts.inc("send_blocked_night")
         log("夜间拦截主动消息:", uid, "proactive=", proactive)
         return fail(

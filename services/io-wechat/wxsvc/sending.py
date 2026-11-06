@@ -91,7 +91,8 @@ def send_uid(uid: str, text: str, exact: bool = False) -> str:
                     window.end_window_op(prev)
             status = getattr(resp, "status", None)
             if status is not False:
-                state.stats["sent"] += 1
+                with state.stats_lock:
+                    state.stats["sent"] += 1
                 state.counts.inc("sent")
                 return str(status if status is not None else resp)
             gui = window.gui()

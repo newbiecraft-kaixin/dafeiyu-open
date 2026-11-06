@@ -195,8 +195,9 @@ def on_message(msg, chat) -> None:
         return
 
     if muted(item["chat"], item["sender"]):
-        state.stats["received"] += 1
-        state.stats["muted"] = state.stats.get("muted", 0) + 1
+        with state.stats_lock:
+            state.stats["received"] += 1
+            state.stats["muted"] = state.stats.get("muted", 0) + 1
         state.counts.inc("event_muted")
         return
 
@@ -245,7 +246,8 @@ def on_message(msg, chat) -> None:
         state.lock.notify_all()
 
     if state.dedupe.seen(env):
-        state.stats["duplicate"] += 1
+        with state.stats_lock:
+            state.stats["duplicate"] += 1
         state.counts.inc("event_duplicate")
         return
 
