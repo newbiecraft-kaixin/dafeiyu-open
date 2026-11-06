@@ -152,33 +152,49 @@ class PipelineMixin:
         return None
 
     def _absorb_listen_window(self, window: dict, text: str, event) -> None:
-        """窗口内：私聊内容并入原群上下文；需要时用原群身份接话。"""
+        """窗口内：私聊内容并入原群上下文，由原群这个会话直接接管回复。"""
         group_umo = str(window.get("group_umo") or "")
         if not group_umo:
             return
         logger.info(
-            f"[human_sim] 监听窗口命中：私聊 {window.get('peer_id')} → {group_umo}，已并入群上下文"
+            f"[human_sim] 监听窗口命中：私聊 {window.get('peer_id')} → {group_umo}，由原群会话接管回复"
         )
         sender = str(event.get_sender_name() or window.get("peer_id") or "")
         self._history.setdefault(group_umo, deque(maxlen=30)).append(
             f"{sender}（私聊）：{text[:120]}"
         )
-        if bool(self.cfg.get("listen_window_reply_group", True)):
-            asyncio.create_task(self._reply_in_listen_window(group_umo, text))
+        if not bool(self.cfg.get("listen_window_reply_group", True)):
+            return
+        private_umo = str(getattr(event, "unified_msg_origin", "") or "")
+        if not private_umo:
+            return
+        peer = str(window.get("peer_id") or "")
+        if peer:
+            # 对方没加好友时，_send 会按这里记的群走「群临时会话」
+            self.state[f"last_group_of:{peer}"] = group_umo
+        # 接管：这条私聊不再交给默认流程，否则私聊会回一遍、这里又回一遍
+        try:
+            event.stop_event()
+        except Exception:  # noqa: BLE001
+            pass
+        asyncio.create_task(self._reply_in_listen_window(group_umo, text, private_umo))
 
-    async def _reply_in_listen_window(self, group_umo: str, text: str) -> None:
+    async def _reply_in_listen_window(
+        self, group_umo: str, text: str, private_umo: str
+    ) -> None:
+        """用原群的人设和上下文生成，但把话回到这个私聊窗口。"""
         try:
             prompt = (
-                "对方在私聊里接着说：\n"
+                "对方刚在群里和你聊过，现在在私聊里接着说：\n"
                 f"{text[:300]}\n"
-                "你正在原群里和他继续这个话题。用一句自然的话接住"
-                "（不要提「私聊」两个字），"
+                "用一句自然的话接住（不要提「私聊」两个字，"
+                "也不要解释你是从群里过来的），"
                 f"不超过{int(self.cfg.get('max_chars', 60))}字。"
             )
             reply = await self._generate(prompt, group_umo)
             reply = self._humanize(reply)
             if reply:
-                await self._send(group_umo, [Plain(reply)])
+                await self._send(private_umo, [Plain(reply)])
                 self._note_act(group_umo, reply, spoken=True)
         except Exception as e:  # noqa: BLE001
             logger.debug(f"[human_sim] 监听窗口接话失败: {type(e).__name__}: {e}")
@@ -209,6 +225,10 @@ class PipelineMixin:
                 return
             if text.startswith(("/", "#", "!")):
                 return
+            # 监听窗口优先：对方就算没加好友（群临时会话），也由原群会话接管
+            window = await self._active_listen_window(qq)
+            if window:
+                self._absorb_listen_window(window, text, event)
             # 没加好友的陌生人/临时会话不记账：免得之后主动去私聊一个陌生人
             if self._private_is_stranger(event):
                 return
@@ -219,9 +239,6 @@ class PipelineMixin:
             lines.append(text[:80])
             del lines[:-6]  # 只留最近 6 条，够接话头就行
             self._save_state_soon()  # 高频路径：防抖落盘，别每条私聊都全量写盘
-            window = await self._active_listen_window(qq)
-            if window:
-                self._absorb_listen_window(window, text, event)
         except Exception:  # noqa: BLE001
             pass
 
