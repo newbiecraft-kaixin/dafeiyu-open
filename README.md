@@ -304,6 +304,9 @@ A：QQ 走 NapCat、微信走 UIA 模拟操作，都属于非官方接入，平�
 **Q：仓库里有作者的账号、配置或聊天记录吗？**
 A：没有。所有 Token、Cookie、账号、聊天库都在运行目录的 `data/` 下，已被 `.gitignore` 排除，首次运行需自行登录生成。
 
+**Q：桌宠没有海草和背景泡泡？**
+A：先跑 `.\pet\dsh-pet\install.ps1 -Backdrop check`，确认 dsh-pet 版本是 0.4.1、`bubbleBackdropEnabled` 不为 `false`；再跑 `-Backdrop on` 打开。详见 [pet/dsh-pet/README.md](pet/dsh-pet/README.md)。
+
 **Q：这个项目是完全原创的吗？**
 A：不是。核心代码原创，桌宠桥接、微信自动化、语音链路改造自上游项目，逐项来源见上文「来源与改编」与 [NOTICE](NOTICE)。
 

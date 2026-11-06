@@ -308,6 +308,9 @@ A: QQ goes through NapCat and WeChat through UIA simulation — both are unoffic
 **Q: Does the repo contain the author's accounts, config, or chat logs?**
 A: No. All tokens, cookies, accounts and chat databases live under `data/` at runtime and are excluded by `.gitignore`; you generate your own by logging in.
 
+**Q: The pet has no seaweed / background bubbles?**
+A: Run `.\pet\dsh-pet\install.ps1 -Backdrop check` first — make sure dsh-pet is 0.4.1 and `bubbleBackdropEnabled` is not `false`; then `-Backdrop on`. Details in [pet/dsh-pet/README.md](pet/dsh-pet/README.md) (Chinese).
+
 **Q: Is this project fully original?**
 A: No. The core code is original; the pet bridge, WeChat automation and voice chain are adapted from upstream projects — see "Upstream projects" above and [NOTICE](NOTICE).
 

@@ -68,6 +68,20 @@ CosyVoice2 大约要 2~4G 显存，装不上时不用反复重试，直接按降
 - 桌宠只是展示层，不参与对话；不装不影响聊天、语音、QQ 空间
 - 前提提醒：dsh-pet 依赖 DeepSeek Harness，而 DSH 目前未公开发布，多数机器本来就走这条降级
 
+### 装了桌宠但没有海草 / 背景泡泡
+
+这两层是同一套背景层，由 `bubbleBackdropEnabled` 控制。在第二台机器上装完却看不到，按顺序查：
+
+```powershell
+.\pet\dsh-pet\install.ps1 -Backdrop check   # 只读：打印版本与四个背景层字段
+.\pet\dsh-pet\install.ps1 -Backdrop on      # 打开（数量为 0 会改成 9，非法取值拉回默认）
+```
+
+- dsh-pet 低于 **0.4.1** 没有这层渲染代码，改配置无效，要重跑完整 `install.ps1`
+- `bubbleBackdropEnabled: false` 整层隐藏；`bubbleBackdropCount: 0` 只关泡泡，海草仍在
+- 配置在 `%USERPROFILE%\.dsh\dsh-pet\main-config.jsonc`；脚本只改这几个字段，注释保留
+- 桌宠每 30 秒拉一次配置，等半分钟；不生效就右键桌宠重启
+
 ## 微信桥：只接 QQ
 
 - 微信桥走 Windows UIA，必须有**已登录、窗口可见**的桌面会话；服务器、无桌面环境、或者不想担风控风险，就整块不装

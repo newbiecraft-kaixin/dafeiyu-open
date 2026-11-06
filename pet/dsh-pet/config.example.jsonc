@@ -43,7 +43,7 @@
   "bubbleRiseSfxEnabled": true,      // 泡泡上浮音效
   "bubbleBurstSfxEnabled": true,     // 戳破泡泡的爆裂声
   "bubbleBackdropCount": 9,          // 泡泡数量
-  "bubbleBackdropMotion": "normal",  // normal | slow | lively
+  "bubbleBackdropMotion": "normal",  // calm | normal | lively
   "bubbleBackdropPalette": "candy",  // 配色主题
 
   // 全局开关（都是必填布尔值：缺失会被判「配置错误」，右键菜单/设置页的开关也存不回去）
