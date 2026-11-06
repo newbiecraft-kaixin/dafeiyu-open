@@ -14,9 +14,26 @@ QQ / WeChat chat · Local expressive TTS · Desktop pet · Model routing · Unif
 > **Not "yet another QQ bot"**: it lurks by default and only speaks up when the group goes quiet; it attaches stickers on its own; it pokes you back when poked; and after it DMs you first, it keeps listening with the group context.
 
 **Download** → [Latest release](https://github.com/newbiecraft-kaixin/dafeiyu-open/releases/latest): plugin pack `dafeiyu-plugins-v0.1.0.zip` + desktop pet `dsh-pet-0.4.1.tgz`
-**Install** → double-click `install.bat` in the repo root and pick what you need (core / AstrBot / plugins / NapCat / WeChat bridge / voice / pet); for just the desktop pet run `powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1` (requires DeepSeek Harness to be installed already)
+**Install** → double-click `install.bat` in the repo root and pick what you need (core / AstrBot / plugins / NapCat / WeChat bridge / voice / pet)
+**License** → AGPL-3.0. This project is a derivative of several upstream open-source projects; credits, modification date and redistribution terms are in [NOTICE](NOTICE)
+
+Want to see the pet first? One command (requires DeepSeek Harness already installed):
+
+```powershell
+git clone https://github.com/newbiecraft-kaixin/dafeiyu-open.git
+cd dafeiyu-open
+powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1
+```
 
 > **Note**: this project is built around Chinese platforms (QQ / WeChat / Bilibili) and Chinese TTS voices. The bot's persona and prompts are Chinese-first — international users should expect to adapt personas, platform access, and voice references.
+
+## Who it is for (and who it is not)
+
+| Good fit | Not a fit |
+|---|---|
+| You keep an always-on Windows box and want a companion that speaks up on QQ/WeChat | You need Linux / macOS or a one-command Docker setup (the pet and WeChat bridge are Windows-only) |
+| You are fine bringing your own model API key or local Ollama, and have an NVIDIA GPU for local voice | You want a zero-config, out-of-the-box product |
+| You want to study how human-like chat + stickers + desktop pet + voice fit together | You need multi-tenant or commercial accounts (this is a personal project) |
 
 ## How it differs from a typical QQ bot
 
@@ -265,6 +282,26 @@ Entry: the `/ui/train` page of the audio service, backed by `POST /train/jobs`. 
 - Model keys are injected via environment variables (e.g. `DEEPSEEK_API_KEY`), see `services/model/providers.json`.
 - Local config for voice/WeChat/QQ lives in each service's `config.json` or `service.json`.
 - **This repo contains no real tokens, cookies, accounts, chat logs, or runtime databases.** First run requires you to log in to QQ/WeChat and generate your own config.
+
+## FAQ
+
+**Q: Does it have to be Windows?**
+A: Yes. The pet runs on Electron and uses a DSH profile, and the WeChat bridge uses Windows UIA. The core four services (hub/model/store/brain) are Python and could in principle run elsewhere, but that is neither supported nor tested.
+
+**Q: Can it run without a GPU?**
+A: Yes. Without local voice, models go through cloud APIs or local Ollama and no GPU is needed. Local CosyVoice2 wants an NVIDIA GPU with roughly 2–4 GB VRAM; if unavailable it falls back to edge-tts.
+
+**Q: Where do I download DeepSeek Harness (DSH)?**
+A: It is not publicly released and is not distributed here, so the pet installer only works on machines that already have DSH. Without DSH you can still run the chat half (bundles ① + ②).
+
+**Q: Will my account get banned?**
+A: QQ goes through NapCat and WeChat through UIA simulation — both are unofficial integrations. Platform risk control and ToS risk are yours to assess; a secondary account is recommended.
+
+**Q: Does the repo contain the author's accounts, config, or chat logs?**
+A: No. All tokens, cookies, accounts and chat databases live under `data/` at runtime and are excluded by `.gitignore`; you generate your own by logging in.
+
+**Q: Is this project fully original?**
+A: No. The core code is original; the pet bridge, WeChat automation and voice chain are adapted from upstream projects — see "Upstream projects" above and [NOTICE](NOTICE).
 
 ## Known limitations
 

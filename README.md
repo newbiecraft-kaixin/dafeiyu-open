@@ -14,7 +14,24 @@ QQ / 微信双端聊天 · 本地情感语音 · 桌面桌宠 · 模型路由 ·
 > **不是「又一个 QQ 机器人」**：它平时潜水，冷场才冒泡；会自己补一张表情包；被拍会回拍；主动私聊你之后，还会接着用群里的上下文听你说话。
 
 **下载** → [最新 Release](https://github.com/newbiecraft-kaixin/dafeiyu-open/releases/latest)：插件包 `dafeiyu-plugins-v0.1.0.zip` + 桌宠 `dsh-pet-0.4.1.tgz`
-**安装** → 双击仓库根目录的 `install.bat`，按菜单勾选要装的能力（核心 / AstrBot / 插件 / NapCat / 微信桥 / 语音 / 桌宠）；只想要桌宠也可以跑 `powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1`（前提是本机已有 DeepSeek Harness）
+**安装** → 双击仓库根目录的 `install.bat`，按菜单勾选要装的能力（核心 / AstrBot / 插件 / NapCat / 微信桥 / 语音 / 桌宠）
+**许可** → AGPL-3.0。本项目是在多个上游开源项目上改造而来，署名、修改时间与再分发要求见 [NOTICE](NOTICE)
+
+只想先看看桌宠长什么样——一条命令装好（前提是本机已装 DeepSeek Harness）：
+
+```powershell
+git clone https://github.com/newbiecraft-kaixin/dafeiyu-open.git
+cd dafeiyu-open
+powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1
+```
+
+## 适合谁 / 不适合谁
+
+| 适合 | 不适合 |
+|---|---|
+| 有一台常开的 Windows 机器，想养一只会主动说话的 QQ/微信伙伴 | 需要 Linux / macOS 或 Docker 一键跑通的人（桌宠与微信桥都绑 Windows） |
+| 愿意自己准备模型 API Key 或本地 Ollama，接受本地跑语音要 NVIDIA 显卡 | 想要开箱即用、零配置产品的人 |
+| 想研究「拟人聊天 + 表情包 + 桌宠 + 语音」整套链路怎么搭 | 需要多租户、商业化账号体系的人（这是个人向项目） |
 
 ## 它和普通 QQ 机器人有什么不同
 
@@ -261,6 +278,26 @@ AstrBot、NapCat、CosyVoice 由安装器下载；DeepSeek Harness 未公开发�
 - 模型密钥通过环境变量注入（如 `DEEPSEEK_API_KEY`），见 `services/model/providers.json`。
 - 语音/微信/QQ 的本地配置在各自服务的 `config.json` 或 `service.json` 中。
 - **本仓库不包含任何真实 Token、Cookie、账号、聊天记录或运行数据库。** 首次运行需要自行登录 QQ/微信并生成配置。
+
+## 常见问题
+
+**Q：一定要 Windows 吗？**
+A：是。桌宠基于 Electron 且用 DSH profile，微信桥走 Windows UIA；核心四服务（hub/model/store/brain）本身是 Python，理论上能跑在别的系统上，但没有适配也没有测试。
+
+**Q：没有显卡能跑吗？**
+A：能。不装本地语音时模型走云端 API 或本地 Ollama，无 GPU 即可；要本地 CosyVoice2 需要 NVIDIA 显卡约 2~4GB 显存，装不上会自动回退 edge-tts。
+
+**Q：DeepSeek Harness（DSH）在哪下载？**
+A：目前未公开发布，本仓库也不分发，所以桌宠安装脚本只对已装过 DSH 的机器有效。没有 DSH 可以先跑聊天部分（安装包①+②）。
+
+**Q：会封号吗？**
+A：QQ 走 NapCat、微信走 UIA 模拟操作，都属于非官方接入，平台风控与条款风险请自行评估，建议用小号。
+
+**Q：仓库里有作者的账号、配置或聊天记录吗？**
+A：没有。所有 Token、Cookie、账号、聊天库都在运行目录的 `data/` 下，已被 `.gitignore` 排除，首次运行需自行登录生成。
+
+**Q：这个项目是完全原创的吗？**
+A：不是。核心代码原创，桌宠桥接、微信自动化、语音链路改造自上游项目，逐项来源见上文「来源与改编」与 [NOTICE](NOTICE)。
 
 ## 已知限制
 
