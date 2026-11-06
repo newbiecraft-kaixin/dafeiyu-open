@@ -382,7 +382,15 @@ class PipelineMixin:
                 # 普通照片（没字的图）仍然按纯媒体处理，免得每条图都硬回一张。
                 is_sticker = bool(event.get_extra("_fy_sticker_hint")) or bool(
                     re.search(r"表情包|动画表情", text)
-                ) or any(isinstance(c, Face) for c in chain)
+                ) or any(isinstance(c, Face) for c in chain) or any(
+                    # 动图斗图（capoo 这类）是裸 Image 组件、一个字都没有，
+                    # 靠 .gif 后缀认出来，不然整场斗图机器人只会装死
+                    isinstance(c, Image)
+                    and str(getattr(c, "file", "") or getattr(c, "url", "") or "")
+                    .lower()
+                    .endswith(".gif")
+                    for c in chain
+                )
                 if is_sticker:
                     await self._maybe_sticker_back(event, umo)
                 logger.info(

@@ -8,7 +8,8 @@ import random
 import re
 import time
 from datetime import datetime, timedelta, timezone
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.message_components import (
@@ -89,7 +90,10 @@ class SendMixin:
                 elif isinstance(comp, Image):
                     path = getattr(comp, "file", None) or ""
                     if path.startswith("file://"):
-                        path = unquote(urlparse(path).path)
+                        # urlparse().path 在 Windows 上给出 /C:/... —— 本地 open
+                        # 和 NapCat（识别URL失败 retcode=1200）都认不出这个格式，
+                        # 必须用 url2pathname 转回 C:\...，否则表情永远发不出去
+                        path = url2pathname(urlparse(path).path)
                     blob = None
                     try:
                         with open(path, "rb") as f:
