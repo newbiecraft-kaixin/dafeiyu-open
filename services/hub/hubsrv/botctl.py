@@ -1610,7 +1610,7 @@ def handle_tts(req: Any) -> Any:
         "fmt": "wav",
         "speed": 1.0,
     }
-    status, data = http_call("POST", "http://127.0.0.1:8714/tts", body, timeout=90.0)
+    status, data = http_call("POST", "http://127.0.0.1:8714/tts", body, timeout=240.0)
     if status != 200 or not isinstance(data, (bytes, bytearray)):
         message = data.get("error") if isinstance(data, dict) else "CosyVoice 未响应"
         return fail("合成失败：" + str(message or "未知错误"), 502)

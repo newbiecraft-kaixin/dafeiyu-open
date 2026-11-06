@@ -55,7 +55,11 @@ third_party/
 .DS_Store
 Thumbs.db
 
-# 素材入库例外：表情包与声线参考音（部署结构照搬，克隆即可用）
+# 素材/配置入库例外（部署结构照搬，克隆后按原路径覆盖即可）
 !astrbot-win/AstrBot-4.29.3/data/
+astrbot-win/AstrBot-4.29.3/data/*
 !astrbot-win/AstrBot-4.29.3/data/stickers/
+!astrbot-win/AstrBot-4.29.3/data/config/
+!astrbot-win/AstrBot-4.29.3/data/local_tools/
+!astrbot-win/AstrBot-4.29.3/data/t2i_templates/
 !cosyvoice_ref/**/*.wav

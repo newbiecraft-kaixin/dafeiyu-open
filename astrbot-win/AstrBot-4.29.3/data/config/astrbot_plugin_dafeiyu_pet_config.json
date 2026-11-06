@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "relay_url": "http://127.0.0.1:23334/state",
+  "notify_qq": true,
+  "notify_wechat": true,
+  "min_interval": 1.5
+}

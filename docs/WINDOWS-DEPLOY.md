@@ -18,6 +18,25 @@ QQ ⇄ NapCat(napcat-win, Shell 版) ⇄ WebSocket 反向(6199, token) ⇄ AstrB
   - `napcat/config/onebot11_1000000000.json`：反向 WS → `ws://127.0.0.1:6199/ws`，token `change-me-6199-token`
   - `napcat/config/webui.json`：WebUI 6099 端口，token `change-me-webui-token`
 
+## 仓库内随附的素材与配置
+
+克隆后下列文件已就位，不需要额外下载；**与代码里的相对路径完全对应**，按原路径覆盖即可：
+
+| 路径 | 内容 | 说明 |
+|---|---|---|
+| `astrbot-win/AstrBot-4.29.3/data/stickers/` | 472 个表情包 + `map.txt`（412 行索引）+ `fav/` 收藏库 | 表情包插件开箱可用 |
+| `astrbot-win/AstrBot-4.29.3/data/config/*.json` | pet / humanizer / livingmemory / web_lookup 四个插件配置 | **token、cookie 等密钥字段已清空**，按需填写 |
+| `astrbot-win/AstrBot-4.29.3/data/local_tools/tool_names.json` | 本地工具名册 | 工具调用路由用 |
+| `astrbot-win/AstrBot-4.29.3/data/t2i_templates/*.html` | 文生图 HTML 模板 | 回复转图片用 |
+| `cosyvoice_ref/profiles/<声线>/` | `ref.wav` + `prompt.txt`（5 组） | 克隆声线参考音；`.pth` 微调权重不入库 |
+
+仍需自行准备（体积过大或含账号信息，不入库）：
+
+- `CosyVoice/` 与模型权重、`cosyvoice_models/` 下的 `.pth`
+- Ollama 模型（识图用 `qwen2.5vl:3b`，约 3.2GB）
+- AstrBot 主程序的 `cmd_config.json`（JWT 密钥、provider 密钥都在这里，首次启动自动生成后按需填）
+- 运行期数据：`data/plugin_data/`（语音缓存、记忆库）、`data/logs/`、`data/temp/`
+
 ## 启动
 
 双击（或命令行运行）：
