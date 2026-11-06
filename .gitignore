@@ -54,3 +54,8 @@ third_party/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# 素材入库例外：表情包与声线参考音（部署结构照搬，克隆即可用）
+!astrbot-win/AstrBot-4.29.3/data/
+!astrbot-win/AstrBot-4.29.3/data/stickers/
+!cosyvoice_ref/**/*.wav

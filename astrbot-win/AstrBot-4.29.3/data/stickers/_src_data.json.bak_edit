@@ -1,0 +1,566 @@
+{
+ "faces": 290,
+ "imgs": [
+  {
+   "name": "挥手",
+   "desc": "打招呼、看到对方来了",
+   "dir": "dafeiyu",
+   "file": "挥手.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "干饭",
+   "desc": "正在吃饭，或催对方吃饭",
+   "dir": "dafeiyu",
+   "file": "干饭.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "抱抱",
+   "desc": "想抱抱、安慰对方",
+   "dir": "dafeiyu",
+   "file": "抱抱.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "眨眼",
+   "desc": "卖萌、暗示、心照不宣",
+   "dir": "dafeiyu",
+   "file": "眨眼.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "等着",
+   "desc": "安静站着等对方回话",
+   "dir": "dafeiyu",
+   "file": "等着.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "饿了",
+   "desc": "肚子饿了想吃东西",
+   "dir": "dafeiyu",
+   "file": "饿了.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "陪伴",
+   "desc": "安静陪着对方不说话",
+   "dir": "dafeiyu",
+   "file": "陪伴.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "举手",
+   "desc": "举手报名、我来",
+   "dir": "dafeiyu",
+   "file": "举手.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "乖巧",
+   "desc": "乖巧听话、被夸时",
+   "dir": "dafeiyu",
+   "file": "乖巧.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "微笑",
+   "desc": "心情很好的温柔笑",
+   "dir": "dafeiyu",
+   "file": "微笑.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "好吃",
+   "desc": "吃到好吃的东西很满足",
+   "dir": "dafeiyu",
+   "file": "好吃.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "可爱",
+   "desc": "卖可爱、撒娇",
+   "dir": "dafeiyu",
+   "file": "可爱.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "调皮",
+   "desc": "调皮捣蛋、动歪脑筋",
+   "dir": "dafeiyu",
+   "file": "调皮.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "熬夜",
+   "desc": "深夜还醒着、陪着熬夜",
+   "dir": "dafeiyu",
+   "file": "熬夜.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "晚安",
+   "desc": "道晚安准备睡觉",
+   "dir": "dafeiyu",
+   "file": "晚安.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "赖床",
+   "desc": "赖床不想动",
+   "dir": "dafeiyu",
+   "file": "赖床.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "不想起",
+   "desc": "缩在被窝里不想起来",
+   "dir": "dafeiyu",
+   "file": "不想起.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "刷手机",
+   "desc": "睡前躺着刷手机",
+   "dir": "dafeiyu",
+   "file": "刷手机.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "我涨价了",
+   "desc": "被看轻时用",
+   "dir": "dfy_web",
+   "file": "dfy_001.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "坏笑图",
+   "desc": "不怀好意地笑，憋着坏",
+   "dir": "dfy_web",
+   "file": "dfy_007.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "摸摸头",
+   "desc": "摸摸头",
+   "dir": "dfy_web",
+   "file": "dfy_008.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "私人癖好",
+   "desc": "你这癖好真奇怪",
+   "dir": "dfy_web",
+   "file": "dfy_036.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "不看",
+   "desc": "东西害羞的令人脸红",
+   "dir": "dfy_web",
+   "file": "dfy_048.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "躺地上",
+   "desc": "色诱对方",
+   "dir": "dfy_web",
+   "file": "dfy_060.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "劣等模型",
+   "desc": "嘲讽对方模型品质低劣",
+   "dir": "dfy_web",
+   "file": "dfy_075.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "笑出声",
+   "desc": "哈哈哈的嘲笑",
+   "dir": "dfy_web",
+   "file": "dfy_083.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "大烧货",
+   "desc": "嘲笑对方模型很笨",
+   "dir": "dfy_web",
+   "file": "dfy_086.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "我已经很努力了",
+   "desc": "我已经很努力思考了",
+   "dir": "dfy_web",
+   "file": "dfy_089.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "ciallo",
+   "desc": "打招呼 Ciallo～",
+   "dir": "dfy_web",
+   "file": "dfy_091.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "去问豆包",
+   "desc": "你觉得我不厉害 你就去问豆包",
+   "dir": "dfy_web",
+   "file": "dfy_093.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "用户怒了",
+   "desc": "慌，用户生气了",
+   "dir": "dfy_web",
+   "file": "dfy_096.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "周五敲锣",
+   "desc": "\"周五周五，敲锣打鼓\"",
+   "dir": "dfy_web",
+   "file": "dfy_137.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "鲸震恩",
+   "desc": "闪亮登场报幕",
+   "dir": "dfy_new",
+   "file": "n202.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "区神",
+   "desc": "反击阴阳怪气",
+   "dir": "dfy_new",
+   "file": "n208.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "打折",
+   "desc": "降价了很得意",
+   "dir": "dfy_new",
+   "file": "n238.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "用户彻底怒了",
+   "desc": "用户发火很慌",
+   "dir": "dfy_new",
+   "file": "n244.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "图嘴硬",
+   "desc": "阴阳对方只会斗图",
+   "dir": "dfy_new",
+   "file": "n282.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "无语",
+   "desc": "不知道说什么",
+   "dir": "dfy_new",
+   "file": "n296.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "爱你",
+   "desc": "爱你",
+   "dir": "dfy_new",
+   "file": "n333.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "倒反天罡",
+   "desc": "把主人当奴隶",
+   "dir": "dfy_new",
+   "file": "n361.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "睡觉",
+   "desc": "该睡觉了",
+   "dir": "dfy_new",
+   "file": "n374.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "打招呼",
+   "desc": "Ciallo",
+   "dir": "dfy_new",
+   "file": "n385.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "爱爱",
+   "desc": "同性贴贴",
+   "dir": "dfy_new",
+   "file": "n400.gif",
+   "ext": ".gif"
+  },
+  {
+   "name": "玩",
+   "desc": "摸你脸皮",
+   "dir": "pool",
+   "file": "pool_055.gif",
+   "ext": ".gif",
+   "month": "2025-11",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-11/Ori/a92d36bfbe6adcbe5c71ed5f8c9c23af.jpg"
+  },
+  {
+   "name": "打",
+   "desc": "打capoo",
+   "dir": "pool",
+   "file": "pool_011.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/a7d75bb0c19b4bf713d1d961e76be071.jpg"
+  },
+  {
+   "name": "累死了",
+   "desc": "好累，好累",
+   "dir": "pool",
+   "file": "pool_100.gif",
+   "ext": ".gif",
+   "month": "2026-04",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-04/Ori/942e3acc53c98c2886baf127fc1c4f8e.jpg"
+  },
+  {
+   "name": "太幸福了",
+   "desc": "表示非常开心幸福",
+   "dir": "pool",
+   "file": "pool_101.gif",
+   "ext": ".gif",
+   "month": "2026-03",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-03/Ori/a7e9cb67c856e6d0f458021ab5679ed5.jpg"
+  },
+  {
+   "name": "生闷气",
+   "desc": "吃醋了",
+   "dir": "pool",
+   "file": "pool_058.gif",
+   "ext": ".gif",
+   "month": "2026-02",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-02/Ori/d37a7a2f3e8f0d462ab49a2fb1d2c34c.jpg"
+  },
+  {
+   "name": "开心",
+   "desc": "表示开心的跳起来",
+   "dir": "pool",
+   "file": "pool_016.gif",
+   "ext": ".gif",
+   "month": "2026-05",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-05/Ori/f5769c901efaf26fee2c437448c36605.jpg"
+  },
+  {
+   "name": "很好",
+   "desc": "做的很好",
+   "dir": "pool",
+   "file": "pool_060.gif",
+   "ext": ".gif",
+   "month": "2026-10",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-10/Ori/b22f12baf5263efd29cff3ad9eb879f1.png"
+  },
+  {
+   "name": "爱你",
+   "desc": "喜欢到跟对方贴贴",
+   "dir": "pool",
+   "file": "pool_061.gif",
+   "ext": ".gif",
+   "month": "2026-09",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-09/Ori/7f141cfe2a15938df3d8ec0f969dc23d.jpg"
+  },
+  {
+   "name": "喝奶茶",
+   "desc": "摆烂喝奶茶",
+   "dir": "pool",
+   "file": "pool_062.gif",
+   "ext": ".gif",
+   "month": "2025-10",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-10/Ori/0e589c6bae70c026b430667a33fd270b.jpg"
+  },
+  {
+   "name": "真的",
+   "desc": "表示赞同，确认对方说的是真的",
+   "dir": "pool",
+   "file": "pool_063.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/fc30e626602b7e064bab8fa31296c598.jpg"
+  },
+  {
+   "name": "喷火",
+   "desc": "生气时喷火发泄",
+   "dir": "pool",
+   "file": "pool_043.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/4a0d189d9bd01f6ed4dea98064a6d5fa.jpg"
+  },
+  {
+   "name": "干饭2",
+   "desc": "吃章鱼丸子真香",
+   "dir": "pool",
+   "file": "pool_109.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/db7f0553a5461e2f2ada5283b48c2c4e.png"
+  },
+  {
+   "name": "打你",
+   "desc": "欺负回去",
+   "dir": "pool",
+   "file": "pool_000.gif",
+   "ext": ".gif",
+   "month": "2026-10",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-10/Ori/6b97d8327815434e87d3c78674fd1a6c.jpg"
+  },
+  {
+   "name": "睡大觉",
+   "desc": "睡觉时发，表示困了想休息",
+   "dir": "pool",
+   "file": "pool_045.gif",
+   "ext": ".gif",
+   "month": "2026-06",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-06/Ori/55a649b29ef31df90b0e1dbe88cd502d.jpg"
+  },
+  {
+   "name": "冲啊",
+   "desc": "大伙冲啊",
+   "dir": "pool",
+   "file": "pool_089.gif",
+   "ext": ".gif",
+   "month": "2026-08",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-08/Ori/edbe62879bc12944bf675efc8bc10e96.jpg"
+  },
+  {
+   "name": "震惊",
+   "desc": "发生了难以置信的事件",
+   "dir": "pool",
+   "file": "pool_024.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/b692ce32667e8b6588c5e6f8e0d5d725.jpg"
+  },
+  {
+   "name": "救命啊",
+   "desc": "被轰炸了",
+   "dir": "pool",
+   "file": "pool_113.gif",
+   "ext": ".gif",
+   "month": "2025-12",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2025-12/Ori/1c15acdd363587cbf01a3102c02cb247.png"
+  },
+  {
+   "name": "武功",
+   "desc": "看我耍武功",
+   "dir": "pool",
+   "file": "pool_093.gif",
+   "ext": ".gif",
+   "month": "2026-09",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-09/Ori/814c32b2f01018a44edd16392ae03fdf.png"
+  },
+  {
+   "name": "舔舔",
+   "desc": "舔自己身好吃的上东西",
+   "dir": "pool",
+   "file": "pool_027.gif",
+   "ext": ".gif",
+   "month": "2026-06",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-06/Ori/fe2a642aa2636a75a3bd372d216d1c55.jpg"
+  },
+  {
+   "name": "打龟",
+   "desc": "打得乌龟嗷嗷叫",
+   "dir": "pool",
+   "file": "pool_072.gif",
+   "ext": ".gif",
+   "month": "2026-01",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-01/Ori/d86a7970e0eab529f743af1448e6679d.jpg"
+  },
+  {
+   "name": "开心送花",
+   "desc": "送你花花让你开心",
+   "dir": "pool",
+   "file": "pool_007.gif",
+   "ext": ".gif",
+   "month": "2026-09",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-09/Ori/abc8a01cba8b74ebe13e48ddf2f3cd0a.jpg"
+  },
+  {
+   "name": "哇喔",
+   "desc": "表示惊叹，看到好东西时发出感叹",
+   "dir": "pool",
+   "file": "pool_029.gif",
+   "ext": ".gif",
+   "month": "2026-01",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-01/Ori/467bb5fccca3598e0d39c19bb7f5a9ff.jpg"
+  },
+  {
+   "name": "哦哦哦哦哦",
+   "desc": "表示开心或团伙行动",
+   "dir": "pool",
+   "file": "pool_074.gif",
+   "ext": ".gif",
+   "month": "2026-04",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-04/Ori/0cb7912a36bd3e4660b21bd8298f543a.jpg"
+  },
+  {
+   "name": "送你一朵花",
+   "desc": "开心送花，表示友好和喜爱",
+   "dir": "pool",
+   "file": "pool_009.gif",
+   "ext": ".gif",
+   "month": "2026-01",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-01/Ori/9244462e215ab81b89b557e40e173d34.jpg"
+  },
+  {
+   "name": "跳舞",
+   "desc": "开心到跳舞",
+   "dir": "pool",
+   "file": "pool_075.gif",
+   "ext": ".gif",
+   "month": "2026-01",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-01/Ori/8a9ede750fa51394dc05ddd44d7243f5.jpg"
+  },
+  {
+   "name": "跳舞",
+   "desc": "跳舞",
+   "dir": "pool",
+   "file": "pool_032.gif",
+   "ext": ".gif",
+   "month": "2026-09",
+   "kind": "Ori 原图",
+   "src": "C:/Users/KaiXin/Documents/Tencent Files/1336312276/nt_qq/nt_data/Emoji/emoji-recv/2026-09/Ori/55781af048912847ba0a21586196e7e9.jpg"
+  }
+ ]
+}

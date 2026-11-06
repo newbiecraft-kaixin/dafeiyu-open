@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>接入管理 · 大肥鱼表情库</title>
+<style>
+  :root{
+    --bg:#15120c; --panel:#1f1a11; --panel2:#262013;
+    --line:#3a3122; --gold:#c9a227; --gold-dim:#8a7326; --cyan:#4db8c4;
+    --text:#e8dfc8; --muted:#9a8f74; --green:#5fae5f; --red:#c05b4d; --purple:#8f7ad6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text);
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; padding:24px 16px 60px;}
+  .wrap{width:100%; margin:0 auto;}
+  h1{font-size:22px; letter-spacing:2px; display:flex; align-items:center; gap:10px; color:var(--gold);}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);}
+  .nav{margin:10px 0 4px; font-size:13px; color:var(--muted);}
+  .nav a{color:var(--cyan); text-decoration:none; margin-right:14px;}
+  .nav a:hover{text-decoration:underline;}
+  /* 三页统一置顶导航 */
+  .topnav{position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:6px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; margin-bottom:16px; box-shadow:0 1px 8px rgba(0,0,0,.35);}
+  .topnav .brand{font-weight:bold; color:var(--gold); margin-right:14px; letter-spacing:1px; font-size:13px;}
+  .topnav a.navlink{color:var(--muted); text-decoration:none; font-size:13px;
+    padding:4px 12px; border-radius:14px; border:1px solid transparent;}
+  .topnav a.navlink:hover{color:var(--cyan); background:#262013;}
+  .topnav a.navlink.active{color:#15120c; background:var(--gold); border-color:var(--gold);}
+  .topnav a.navlink.right{margin-left:auto; color:var(--cyan);}
+  .hint{font-size:12.5px; color:var(--muted); margin:6px 0 18px; line-height:1.7;}
+  .hint b{color:var(--gold);}
+  .sec{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; margin-bottom:18px; box-shadow:0 1px 6px rgba(0,0,0,.3);}
+  .sec>h2{font-size:15px; color:var(--gold); margin-bottom:12px; letter-spacing:1px;}
+  .prov-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:10px;}
+  .prov{border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:#1f1a11; font-size:12.5px;}
+  .prov .pid{font-weight:bold; color:var(--cyan); font-size:13.5px;}
+  .prov .tag{display:inline-block; font-size:11px; padding:1px 7px; border-radius:8px; margin-left:6px;}
+  .tag.on{background:rgba(95,174,95,.16); color:var(--green);}
+  .tag.off{background:rgba(192,91,77,.16); color:var(--red);}
+  .tag.def{background:rgba(201,162,39,.16); color:var(--gold);}
+  .prov .row{color:var(--muted); margin-top:4px; word-break:break-all;}
+  /* 群卡 */
+  .gcard{border:1px solid var(--line); border-radius:8px; background:#1f1a11;
+    padding:12px 14px; margin-bottom:12px;}
+  .gcard .head{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .gcard .head input.gid{width:150px;}
+  .ghead-title{font-weight:bold; color:var(--cyan); font-size:14px; min-width:40px;}
+  .gcard .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; margin-top:10px;}
+  .gcard label{font-size:12px; color:var(--muted); display:block; margin-bottom:3px;}
+  .gcard input[type=text], .gcard select, .gcard textarea{
+    width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:6px;
+    background:#15120c; font-size:12.5px; color:var(--text);}
+  .gcard textarea{min-height:30px; resize:vertical;}
+  .gcard input:focus,.gcard select:focus,.gcard textarea:focus{outline:none; border-color:var(--gold);}
+  .tools-box{grid-column:1/3;}
+  .tools-box .chk{display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:4px;}
+  .tools-box label.ck{font-size:12px; color:var(--text); display:flex; align-items:center; gap:4px;}
+  .del{color:var(--red); border:1px solid var(--red); background:none; border-radius:6px;
+    padding:3px 10px; cursor:pointer; font-size:12px; margin-left:auto;}
+  .del:hover{background:var(--red); color:#fff;}
+  .tres{font-size:12px; line-height:1.5; margin-top:6px; word-break:break-all;}
+  .tres.ok{color:var(--green);}
+  .tres.bad{color:var(--red);}
+  .tres.warn{color:var(--gold);}
+  .switch{position:relative; width:36px; height:20px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; cursor:pointer; inset:0; background:#4a4030; border-radius:20px; transition:.2s;}
+  .slider:before{content:""; position:absolute; height:14px; width:14px; left:3px; top:3px;
+    background:#e8dfc8; border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{background:var(--cyan);}
+  .switch input:checked + .slider:before{transform:translateX(16px);}
+  .btnbar{display:flex; gap:10px; align-items:center; margin:16px 0 6px;}
+  button.primary{background:var(--gold); color:#1a1508; border:none; border-radius:8px;
+    padding:8px 22px; font-size:14px; cursor:pointer; letter-spacing:2px;}
+  button.primary:hover{filter:brightness(1.08);}
+  button.ghost{background:none; border:1px solid var(--gold); color:var(--gold);
+    border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer;}
+  #toast{position:fixed; top:18px; left:50%; transform:translateX(-50%);
+    background:var(--cyan); color:#15120c; padding:8px 20px; border-radius:20px;
+    font-size:13px; opacity:0; transition:.25s; pointer-events:none; z-index:9;}
+  #toast.show{opacity:1;}
+  #toast.err{background:var(--red);}
+  .lvl-note{font-size:11.5px; color:var(--muted); grid-column:1/3; line-height:1.6;
+    background:#262013; border-radius:6px; padding:6px 10px;}
+  .empty{color:var(--muted); font-size:13px; padding:12px; text-align:center;}
+  /* 一键预设 */
+  .preset-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; padding-top:10px;
+    border-top:1px dashed var(--line); grid-column:1/3;}
+  .preset-row .pt{font-size:11.5px; color:var(--muted); width:100%;}
+  .preset{border:1px solid var(--gold); background:#262013; color:var(--gold);
+    border-radius:14px; padding:4px 14px; font-size:12.5px; cursor:pointer;}
+  .preset:hover{background:var(--gold); color:#1a1508;}
+  /* 备用链 */
+  .fb-chain{display:flex; flex-direction:column; gap:6px; max-width:520px;}
+  .fb-item{display:flex; align-items:center; gap:8px; background:#1f1a11;
+    border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:12.5px;}
+  .fb-item .ord{color:var(--gold); font-weight:bold; width:26px;}
+  .fb-item .mv{border:1px solid var(--line); background:#15120c; border-radius:5px;
+    cursor:pointer; font-size:11px; padding:1px 7px;}
+  .fb-item .rm{border:1px solid var(--red); background:none; color:var(--red);
+    border-radius:5px; cursor:pointer; font-size:11px; padding:1px 7px;}
+  .fb-add{display:flex; gap:8px; margin-top:8px; max-width:520px;}
+  .fb-add select{flex:1; padding:5px 8px; border:1px solid var(--line); border-radius:6px;
+    background:#15120c; font-size:12.5px;}
+  /* 人设管理 */
+  .ps-layout{display:grid; grid-template-columns:240px 1fr; gap:16px;}
+  .ps-list{border:1px solid var(--line); border-radius:8px; overflow:auto; max-height:420px;}
+  .ps-item{padding:8px 12px; border-bottom:1px solid #3a3122; cursor:pointer; font-size:13px;}
+  .ps-item:hover{background:#2a2415;}
+  .ps-item.sel{background:#262013; border-left:3px solid var(--gold);}
+  .ps-item .pid{font-weight:bold; color:var(--cyan);}
+  .ps-item .plen{color:var(--muted); font-size:11px; margin-left:6px;}
+  .ps-item .pflag{font-size:10.5px; background:rgba(201,162,39,.16); color:var(--gold);
+    border-radius:8px; padding:1px 6px; margin-left:6px;}
+  .ps-item .pflag.tool{background:rgba(143,122,214,.16); color:var(--purple);}
+  .ps-editor textarea{width:100%; min-height:300px; padding:10px; border:1px solid var(--line);
+    border-radius:8px; background:#15120c; font-size:12.5px; line-height:1.7;
+    color:var(--text); font-family:inherit; resize:vertical;}
+  .ps-editor textarea:focus{outline:none; border-color:var(--gold);}
+  .ps-bar{display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  .ps-bar .plen{font-size:12px; color:var(--muted);}
+  .ps-new{background:#262013; border-radius:8px; padding:10px 12px; margin-top:12px;
+    display:grid; grid-template-columns:180px 1fr; gap:8px;}
+  .ps-new input{padding:5px 8px; border:1px solid var(--line); border-radius:6px;
+    font-size:12.5px; background:#15120c;}
+  .ps-new button{grid-column:1/3;}
+  /* 手动新增 provider */
+  details.pv-add{margin-top:12px; border:1px dashed var(--line); border-radius:8px; padding:8px 12px;}
+  details.pv-add summary{cursor:pointer; font-size:13px; color:var(--cyan); user-select:none;}
+  .mini-form{background:#262013; border-radius:8px; padding:10px 12px; font-size:12.5px;}
+  .mini-form b{font-size:12.5px; color:var(--cyan);}
+  .mini-form label{font-size:11px; color:var(--muted); display:block; margin:7px 0 2px;}
+  .mini-form input, .mini-form select{width:100%; padding:5px 8px; border:1px solid var(--line);
+    border-radius:6px; background:#15120c; font-size:12.5px; color:var(--text);}
+  .mini-form .mod-chk{display:flex; gap:12px; margin-top:4px;}
+  .mini-form .mod-chk label{display:flex; align-items:center; gap:4px; margin:0; font-size:12px; color:var(--text);}
+  .pact{border:1px solid var(--line); background:#1f1a11; border-radius:6px; padding:2px 9px;
+    font-size:11.5px; cursor:pointer; color:var(--cyan); margin-top:6px; margin-right:4px;}
+  .pact:hover{border-color:var(--cyan);}
+  .pact.d{color:var(--red);}
+  .pact.d:hover{border-color:var(--red);}
+  /* 弹窗（替代原生 confirm/prompt，兼容预览 webview） */
+  .modal-mask{position:fixed; inset:0; background:rgba(30,22,10,.45); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:16px;}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    width:min(460px,100%); max-height:88vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,.25);}
+  .modal h3{font-size:15px; color:var(--gold); padding:14px 18px; border-bottom:1px solid var(--line); letter-spacing:1px;}
+  .modal .mbody{padding:16px 18px;}
+  .modal .ml{font-size:12px; color:var(--muted); display:block; margin:10px 0 4px;}
+  .modal .ml:first-child{margin-top:0;}
+  .modal input[type=text], .modal select, .modal textarea, .modal input[type=file]{
+    width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:7px;
+    background:#15120c; font-size:13px; color:var(--text); box-sizing:border-box;}
+  .modal input:focus, .modal select:focus, .modal textarea:focus{outline:none; border-color:var(--gold);}
+  .modal .mcode{display:block; font-family:Consolas,monospace; font-size:12px; color:var(--cyan);
+    background:#262013; border-radius:6px; padding:6px 8px; word-break:break-all; margin-top:4px;}
+  .modal .mmsg{font-size:13.5px; color:var(--text); line-height:1.7;}
+  .modal .mmsg code{font-family:Consolas,monospace; color:var(--cyan); background:#262013; padding:1px 5px; border-radius:4px; word-break:break-all;}
+  .modal .mfoot{padding:12px 18px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+    position:sticky; bottom:0; background:var(--panel); border-radius:0 0 12px 12px;}
+  .modal .mfoot button{border-radius:8px; padding:7px 18px; font-size:13px; cursor:pointer;
+    border:1px solid var(--line); background:#1f1a11; color:var(--cyan);}
+  .modal .mfoot button:hover{border-color:var(--cyan);}
+  .modal .mfoot button.primary{background:var(--gold); color:#1a1508; border-color:var(--gold);}
+  .modal .mfoot button.primary:hover{filter:brightness(1.08);}
+  .modal .mfoot button.del{background:var(--red); color:#fff; border-color:var(--red);}
+  .modal .mfoot button.del:hover{filter:brightness(1.08);}
+  .modal .mhint{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span>接入管理 · 群 / 模型 / 人设 / 工具</h1>
+  <div class="topnav">
+    <span class="brand">🐟 大肥鱼表情库</span>
+    <a class="navlink active" href="/access">接入</a>
+    <a class="navlink" href="/storage">存储</a>
+    <a class="navlink right" href="/access" onclick="location.reload();return false;">↻ 刷新本页</a>
+  </div>
+
+  <div class="sec">
+    <h2>① 接入一览（provider / API key）与备用链</h2>
+    <div class="hint" style="margin:-6px 0 12px;">这里列出所有接入源和模型实例。<b>开关打开</b>表示可用于对话；备用链决定主 provider 失败后按顺序回退。</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;">
+      <span style="font-size:12.5px;color:var(--muted);">测试问题</span>
+      <input type="text" id="testQ" value="你好，请用一句话介绍你自己" maxlength="200"
+        style="flex:1;min-width:240px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#15120c;color:var(--text);font-size:13px;">
+      <span style="font-size:12px;color:var(--muted);">测连通 = 真发这条提问，拿到回复才算通</span>
+    </div>
+    <div class="prov-grid" id="provGrid"></div>
+    <div style="margin-top:14px;">
+      <b style="font-size:13px;color:var(--cyan);">全局备用链</b>
+      <div class="fb-chain" id="fbChain"></div>
+      <div class="fb-add">
+        <select id="fbAdd"><option value="">选择要追加的 provider…</option></select>
+        <button class="ghost" style="padding:5px 14px;" onclick="fbAddItem()">＋ 追加</button>
+        <button class="primary" style="padding:5px 14px; font-size:12.5px; letter-spacing:1px;" onclick="fbSave()">存备用链</button>
+      </div>
+    </div>
+    <details class="pv-add">
+      <summary>➕ 手动新增接入源 / 模型实例</summary>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px;">
+        <div class="mini-form">
+          <b>新增接入源（API 提供方）</b>
+          <label>源 ID（字母数字-_，如 siliconflow）</label>
+          <input type="text" id="nsId" placeholder="siliconflow">
+          <label>类型</label>
+          <select id="nsType">
+            <option value="openai_chat_completion">openai_chat_completion（聊天，最常见）</option>
+            <option value="openai_embedding">openai_embedding（向量）</option>
+          </select>
+          <label>API 地址（base_url，通常以 /v1 结尾）</label>
+          <input type="text" id="nsBase" placeholder="https://api.xxx.com/v1">
+          <label>密钥（可留空，本地服务如 Ollama 留空即可）</label>
+          <input type="password" id="nsKey" placeholder="sk-...">
+          <div style="margin-top:10px;"><button class="ghost" onclick="srcAdd()">＋ 新增接入源</button></div>
+        </div>
+        <div class="mini-form">
+          <b>新增模型实例（具体模型）</b>
+          <label>所属接入源</label>
+          <select id="niSrc"></select>
+          <label>模型名（供应商文档里的 model 名）</label>
+          <input type="text" id="niModel" placeholder="如 deepseek-v4-pro">
+          <label>实例 ID（留空 = 源ID/模型名）</label>
+          <input type="text" id="niId" placeholder="zhipu/glm-4.7-flash">
+          <label>能力声明</label>
+          <div class="mod-chk">
+            <label><input type="checkbox" id="niText" checked> text</label>
+            <label><input type="checkbox" id="niImage"> image</label>
+            <label><input type="checkbox" id="niTool" checked> tool_use</label>
+          </div>
+          <div style="margin-top:10px;"><button class="ghost" onclick="instAdd()">＋ 新增模型实例</button></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="sec">
+    <h2>② 会话接入配置（只选档位）</h2>
+    <div class="hint" style="margin:-6px 0 12px;">每个群 / 好友 / 个人只需选一个「档位」，不用逐个配工具。没单独配置的会话按下面的<b>角色默认档位</b>走。</div>
+    <div style="display:flex; align-items:flex-end; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:3px;">普通群聊</label>
+        <select id="roleGroup" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#15120c;color:var(--text);"></select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:3px;">好友私聊</label>
+        <select id="roleFriend" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#15120c;color:var(--text);"></select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:3px;">非好友私聊（陌生人）</label>
+        <select id="roleStranger" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#15120c;color:var(--text);"></select>
+      </div>
+      <span style="font-size:12px;color:var(--muted);">　默认人设：<b id="globalPersona" style="color:var(--gold);">-</b>（改：WebUI → 人设情景）</span>
+    </div>
+    <div id="groupList"></div>
+    <button class="ghost" onclick="addGroup()">＋ 添加群 / 好友（单独指定档位）</button>
+  </div>
+
+  <div class="sec">
+    <h2>③ 人设管理</h2>
+    <div class="hint" style="margin:-6px 0 12px;">左侧选一个人设，右侧改提示词后点「保存人设」即生效；带 <b>工具</b> 标记的人设可调用工具。</div>
+    <div class="ps-layout">
+      <div class="ps-list" id="psList"></div>
+      <div class="ps-editor">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <b id="psTitle" style="color:var(--cyan);">-</b>
+          <span class="hint" style="margin:0;" id="psMeta"></span>
+        </div>
+        <textarea id="psPrompt" spellcheck="false" placeholder="选左侧人设编辑，或在下方新增"></textarea>
+        <div class="ps-bar">
+          <button class="primary" style="padding:6px 18px; font-size:13px;" onclick="psSave()">保存人设</button>
+          <button class="ghost" style="padding:6px 14px;" onclick="psRevert()">还原</button>
+          <button class="del" style="margin-left:0;" onclick="psDelete()">删除此人设</button>
+          <span class="plen" id="psLen"></span>
+        </div>
+        <div class="ps-new">
+          <div><label>新人设 ID（字母数字-_）</label><input type="text" id="psNewId" placeholder="如 himeko-cool"></div>
+          <div><label>人设内容（建议写清：身份/性格/说话习惯/底线，几百字起步效果最好）</label>
+            <textarea id="psNewPrompt" style="width:100%; min-height:70px; border:1px solid var(--line); border-radius:6px; font-size:12.5px; padding:8px; background:#15120c;" placeholder="你是「××」…"></textarea></div>
+          <button class="ghost" onclick="psAdd()">＋ 新增人设</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btnbar">
+    <button class="primary" onclick="saveAll()">保 存（群接入）</button>
+    <span id="saveState" style="font-size:12px;color:var(--muted);"></span>
+  </div>
+</div>
+<div class="modal-mask" id="modalMask" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modalTitle">标题</h3>
+    <div class="mbody" id="modalBody"></div>
+    <div class="mfoot" id="modalFoot"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const LEVELS = {
+  full:    "全量工具（全部工具，云端强模型适用）",
+  standard:"日常聊天（人设白名单；没设白名单时收敛到常用 18 个）",
+  lite:    "小模型精简（13 个低风险工具：表情/语音/社交 + 时间/联网/天气/头像/记忆）",
+  media:   "表情语音组（表情包 / 超级表情 / 语音 / 唱歌 / 贴表情 / +1）",
+  admin:   "群管通知组（提醒 / 入退群通知 / 群成员 / 跨群发送 / 私聊 / 戳一戳）",
+  info:    "只读查询组（时间 / 天气 / 联网 / 头像 / 长期记忆 / 空间动态）",
+  guest:   "陌生人档（只聊天，仅时间 / 天气 / 头像）",
+  none:    "纯聊天（禁用所有工具）",
+  custom:  "自定义白名单（勾选工具）",
+};
+const LEVEL_ORDER = ["full","standard","lite","media","admin","info","guest","none","custom"];
+/* 一键预设：点一下 = provider + 档位 + 人设 整套切换 */
+const PRESETS = [
+  {key:"official",  label:"官方 API · 全量",  provider_id:"deepseek/deepseek-flash", model:"", level:"full",     persona:"dafeiyu"},
+  {key:"daily",     label:"日常聊天",         provider_id:"",                        model:"", level:"standard", persona:""},
+  {key:"zhipu",     label:"免费智谱（省经费）", provider_id:"zhipu/glm-4-flash",       model:"", level:"standard", persona:"dafeiyu"},
+  {key:"local",     label:"本地小模型（零成本）", provider_id:"ollama-chat/qwen3.5-9b",  model:"", level:"lite",     persona:"dafeiyu"},
+  {key:"chitchat",  label:"纯聊天（无工具）",   provider_id:"",                        model:"", level:"none",     persona:""},
+  {key:"dushe",     label:"毒舌损友",         provider_id:"",                        model:"", level:"standard", persona:"dushe-dafeiyu"},
+];
+let PROVIDERS = [], TOOLS = [], PERSONAS = [], GLOBAL_PERSONA = "";
+let ACCESS = {groups:{}, default_level:"standard", roles:{group:"standard",friend:"standard",stranger:"guest"}};
+let psSel = null, psOrig = "";
+
+function toast(msg, isErr){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show" + (isErr ? " err" : "");
+  setTimeout(()=>t.className="", 2600);
+}
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- 弹窗（替代原生 confirm/prompt） ---------- */
+function openModal(title, bodyHtml, buttons){
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = bodyHtml;
+  const foot = document.getElementById("modalFoot");
+  foot.innerHTML = "";
+  (buttons && buttons.length ? buttons : [{label:"关闭", cls:""}]).forEach(b=>{
+    const el = document.createElement("button");
+    el.textContent = b.label;
+    el.className = b.cls || "";
+    el.onclick = async ()=>{
+      if(b.onClick){
+        const res = await b.onClick();
+        if(res === false) return;   // 校验失败 / 出错，保持弹窗打开
+      }
+      closeModal();
+    };
+    foot.appendChild(el);
+  });
+  document.getElementById("modalMask").style.display = "flex";
+}
+function closeModal(){ document.getElementById("modalMask").style.display = "none"; }
+async function postJSON(path, obj){
+  try{
+    const r = await fetch(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(obj)});
+    try{ return await r.json(); }catch(e){ return {err:"响应解析失败"}; }
+  }catch(e){ return {err:"请求失败：" + e}; }
+}
+
+async function init(){
+  try{
+    const [p, t, a, ps] = await Promise.all([
+      fetch("/api/providers").then(r=>r.json()),
+      fetch("/api/tools").then(r=>r.json()),
+      fetch("/api/access").then(r=>r.json()),
+      fetch("/api/personas").then(r=>r.json()),
+    ]);
+    PROVIDERS = p.providers || []; window.SRC = p;
+    TOOLS = t.tools || [];
+    ACCESS = a;
+    PERSONAS = ps.personas || [];
+    GLOBAL_PERSONA = ps.global_persona_id || "";
+    window.FALLBACK = ps.fallback || [];
+    ACCESS.roles = Object.assign(
+      {group:"standard", friend:"standard", stranger:"guest"}, a.roles || {});
+    const roleIds = ["roleGroup","roleFriend","roleStranger"];
+    roleIds.forEach(id=>{
+      document.getElementById(id).innerHTML = LEVEL_ORDER
+        .map(k=>`<option value="${k}">${k} — ${esc(LEVELS[k])}</option>`).join("");
+    });
+    document.getElementById("roleGroup").value = ACCESS.roles.group;
+    document.getElementById("roleFriend").value = ACCESS.roles.friend;
+    document.getElementById("roleStranger").value = ACCESS.roles.stranger;
+    document.getElementById("globalPersona").textContent = GLOBAL_PERSONA || "-";
+    renderProviders(); renderFallback(); renderGroups(); renderPersonas();
+  }catch(e){
+    toast("加载失败：" + e, true);
+    const tip = `<div class="empty">没能连上本地服务（127.0.0.1:8712）<br>在 stickers 目录执行 <code>python tools_source_server.py</code> 后刷新本页</div>`;
+    document.getElementById("provGrid").innerHTML = tip;
+    document.getElementById("groupList").innerHTML = tip;
+    document.getElementById("psList").innerHTML = tip;
+  }
+}
+
+/* ---------- 模型 / 接入源可用性测试 ---------- */
+async function testModel(kind, id, btn){
+  const card = btn.closest(".prov");
+  const box = card ? card.querySelector(".tres") : null;
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = "测试中…";
+  if(box){ box.className = "tres"; box.textContent = "正在用你输入的问题真实发一次请求…"; }
+  const t0 = Date.now();
+  const timer = box ? setInterval(()=>{
+    box.className = "tres";
+    box.textContent = `正在等回复…已 ${Math.round((Date.now()-t0)/1000)}s（推理模型 / 限流重试可能要几十秒）`;
+  }, 1000) : null;
+  const question = (document.getElementById("testQ")?.value || "").trim();
+  let j = {ok:false, err:"无响应"};
+  try{
+    const r = await fetch("/api/provider/test", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({kind, id, question}),
+    });
+    j = await r.json();
+  }catch(e){ j = {ok:false, err:String(e)}; }
+  if(timer) clearInterval(timer);
+  if(box){
+    if(j.ok){
+      box.className = "tres ok";
+      box.textContent = j.note ? j.note
+        : `可用 · ${j.ms}ms · 回复「${j.reply||"-"}」`;
+    }else{
+      const lim = /限流|429/.test(j.err || "");
+      box.className = "tres " + (lim ? "warn" : "bad");
+      box.textContent = (lim ? "" : "不可用：") + (j.err || "未知错误");
+    }
+  }
+  toast(j.ok ? "测试通过" : "测试失败", !j.ok);
+  btn.disabled = false; btn.textContent = old;
+}
+
+/* ---------- ① provider 一览 + 手动管理 + 备用链 ---------- */
+function renderProviders(){
+  const g = document.getElementById("provGrid");
+  const def = window.SRC?.default_provider_id || "";
+  g.innerHTML = (window.SRC?.sources ? Object.values(window.SRC.sources) : [])
+    .filter(s=>s.provider_type!=="text_to_speech" && !/tts/i.test(s.id))
+    .map(s=>`
+      <div class="prov">
+        <span class="pid">${esc(s.id)}</span>
+        <span class="tag ${s.enable?"on":"off"}">${s.enable?"启用":"停用"}</span>
+        <div class="row">类型：${esc(s.type||"-")}　密钥：${s.key?esc(s.key):"<i>无需</i>"}</div>
+        <div class="row">API：${esc(s.api_base||"-")}</div>
+        <div>
+          <button class="pact" onclick="srcEdit('${esc(s.id)}')">改密钥/地址</button>
+          <button class="pact" onclick="srcToggle('${esc(s.id)}', ${!s.enable})">${s.enable?"停用":"启用"}</button>
+          <button class="pact" onclick="testModel('src','${esc(s.id)}',this)">测试连通</button>
+          <button class="pact d" onclick="srcDelete('${esc(s.id)}')">删除</button>
+        </div>
+        <div class="tres"></div>
+      </div>`).join("")
+    + PROVIDERS.map(p=>`
+      <div class="prov">
+        <span class="pid">${esc(p.id)}</span>
+        ${p.id===def?'<span class="tag def">默认</span>':""}
+        <span class="tag ${p.enable?"on":"off"}">${p.enable?"启用":"停用"}</span>
+        <div class="row">模型：${esc(p.model||"-")}</div>
+        <div class="row">能力：${esc((p.modalities||[]).join(" / ")||"-")}</div>
+        <div>
+          <button class="pact" onclick="instEdit('${esc(p.id)}')">改模型名</button>
+          <button class="pact" onclick="instToggle('${esc(p.id)}', ${!p.enable})">${p.enable?"停用":"启用"}</button>
+          <button class="pact" onclick="testModel('inst','${esc(p.id)}',this)">测试可用</button>
+          ${p.id===def?"":`<button class="pact" onclick="instDefault('${esc(p.id)}')">设为默认</button>`}
+          ${p.id===def?"":`<button class="pact d" onclick="instDelete('${esc(p.id)}')">删除</button>`}
+        </div>
+        <div class="tres"></div>
+      </div>`).join("");
+  // 备用链追加下拉
+  const sel = document.getElementById("fbAdd");
+  sel.innerHTML = '<option value="">选择要追加的 provider…</option>'
+    + PROVIDERS.map(p=>`<option value="${esc(p.id)}">${esc(p.id)}（${esc(p.model||"-")}）</option>`).join("");
+  // 新增实例的所属源下拉
+  const ni = document.getElementById("niSrc");
+  if(ni) ni.innerHTML = (window.SRC?.sources ? Object.values(window.SRC.sources) : [])
+    .filter(s=>s.type==="openai_chat_completion")
+    .map(s=>`<option value="${esc(s.id)}">${esc(s.id)}</option>`).join("");
+}
+async function srcAdd(){
+  const body = {
+    id: document.getElementById("nsId").value.trim(),
+    type: document.getElementById("nsType").value,
+    api_base: document.getElementById("nsBase").value.trim(),
+    key: document.getElementById("nsKey").value.trim(),
+  };
+  if(!body.id || !body.api_base) return toast("源 ID / API 地址必填", true);
+  try{
+    const j = await (await fetch("/api/provider/source/add", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body),
+    })).json();
+    if(j.ok){ toast(j.note || "已新增"); ["nsId","nsBase","nsKey"].forEach(i=>document.getElementById(i).value=""); await reloadProviders(); }
+    else toast(j.err || "新增失败", true);
+  }catch(e){ toast("新增失败：" + e, true); }
+}
+async function instAdd(){
+  const body = {
+    source_id: document.getElementById("niSrc").value,
+    model: document.getElementById("niModel").value.trim(),
+    inst_id: document.getElementById("niId").value.trim(),
+    modalities: ["text","image","tool_use"].filter(m=>document.getElementById(
+      {text:"niText", image:"niImage", tool_use:"niTool"}[m]).checked),
+  };
+  if(!body.source_id || !body.model) return toast("所属源 / 模型名必填", true);
+  try{
+    const j = await (await fetch("/api/provider/inst/add", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body),
+    })).json();
+    if(j.ok){ toast(j.note || "已新增"); ["niModel","niId"].forEach(i=>document.getElementById(i).value=""); await reloadProviders(); }
+    else toast(j.err || "新增失败", true);
+  }catch(e){ toast("新增失败：" + e, true); }
+}
+async function srcEdit(sid){
+  const cur = (window.SRC?.sources||{})[sid] || {};
+  openModal(`修改接入源「${sid}」`, `
+    <label class="ml">API 地址（留空 = 不改）</label>
+    <input type="text" id="se-base" value="${esc(cur.api_base||"")}" placeholder="留空 = 不改">
+    <label class="ml">密钥（留空 = 不改；本地服务如 Ollama 可留空）</label>
+    <input type="text" id="se-key" placeholder="留空 = 不改">
+    <div class="mhint">改完需重启 AstrBot 生效。密钥只显示掩码。</div>
+  `, [
+    {label:"取消", cls:""},
+    {label:"保存", cls:"primary", onClick: async ()=>{
+      const base=document.getElementById("se-base").value.trim();
+      const key=document.getElementById("se-key").value.trim();
+      const j = await postJSON("/api/provider/source/save", {id:sid, api_base:base, key:key});
+      if(j.ok){ toast(j.note||"已保存"); await reloadProviders(); }
+      else { toast(j.err||"保存失败", true); return false; }
+    }}
+  ]);
+}
+async function srcToggle(sid, on){
+  await providerPost("/api/provider/source/save", {id: sid, enable: on});
+}
+function srcDelete(sid){
+  openModal("删除接入源", `<p class="mmsg">确定删除接入源「<b>${esc(sid)}</b>」？<br>（有模型实例引用时会被拒绝）</p>`, [
+    {label:"取消", cls:""},
+    {label:"删除", cls:"del", onClick: async ()=>{ await providerPost("/api/provider/source/delete", {id:sid}); }}
+  ]);
+}
+async function instEdit(pid){
+  const cur = PROVIDERS.find(p=>p.id===pid) || {};
+  openModal(`修改模型实例「${pid}」`, `
+    <label class="ml">模型名</label>
+    <input type="text" id="ie-model" value="${esc(cur.model||"")}">
+    <div class="mhint">改完需重启 AstrBot 生效。</div>
+  `, [
+    {label:"取消", cls:""},
+    {label:"保存", cls:"primary", onClick: async ()=>{
+      const m=document.getElementById("ie-model").value.trim();
+      if(!m){ toast("模型名不能为空", true); return false; }
+      const j = await postJSON("/api/provider/inst/save", {id:pid, model:m});
+      if(j.ok){ toast(j.note||"已保存"); await reloadProviders(); }
+      else { toast(j.err||"保存失败", true); return false; }
+    }}
+  ]);
+}
+async function instToggle(pid, on){
+  await providerPost("/api/provider/inst/save", {id: pid, enable: on});
+}
+function instDefault(pid){
+  openModal("设为默认模型", `<p class="mmsg">把默认模型切到「<b>${esc(pid)}</b>」？<br>（重启机器人后生效）</p>`, [
+    {label:"取消", cls:""},
+    {label:"确定", cls:"primary", onClick: async ()=>{ await providerPost("/api/provider/inst/default", {id:pid}); }}
+  ]);
+}
+function instDelete(pid){
+  openModal("删除模型实例", `<p class="mmsg">确定删除模型实例「<b>${esc(pid)}</b>」？<br>（默认模型 / 备用链中的会被拒绝）</p>`, [
+    {label:"取消", cls:""},
+    {label:"删除", cls:"del", onClick: async ()=>{ await providerPost("/api/provider/inst/delete", {id:pid}); }}
+  ]);
+}
+async function providerPost(url, body){
+  try{
+    const j = await (await fetch(url, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body),
+    })).json();
+    if(j.ok){ toast(j.note || "已写入（重启机器人后生效）"); await reloadProviders(); }
+    else toast(j.err || "操作失败", true);
+  }catch(e){ toast("操作失败：" + e, true); }
+}
+async function reloadProviders(){
+  const p = await fetch("/api/providers").then(r=>r.json());
+  PROVIDERS = p.providers || []; window.SRC = p;
+  renderProviders();
+}
+function renderFallback(){
+  const chain = window.FALLBACK || [];
+  const el = document.getElementById("fbChain");
+  el.innerHTML = chain.length ? chain.map((pid,i)=>`
+    <div class="fb-item">
+      <span class="ord">#${i+1}</span><span>${esc(pid)}</span>
+      <span style="margin-left:auto; display:flex; gap:4px;">
+        <button class="mv" onclick="fbMove(${i},-1)" ${i===0?"disabled":""}>↑</button>
+        <button class="mv" onclick="fbMove(${i},1)" ${i===chain.length-1?"disabled":""}>↓</button>
+        <button class="rm" onclick="fbRemove(${i})">移除</button>
+      </span>
+    </div>`).join("")
+    : '<div class="empty" style="padding:8px;">（空 —— 主 provider 挂了直接报错，不回退）</div>';
+}
+function fbMove(i, d){
+  const c = window.FALLBACK;
+  [c[i], c[i+d]] = [c[i+d], c[i]];
+  renderFallback();
+}
+function fbRemove(i){ window.FALLBACK.splice(i,1); renderFallback(); }
+function fbAddItem(){
+  const v = document.getElementById("fbAdd").value;
+  if(!v) return toast("先选一个 provider", true);
+  if((window.FALLBACK||[]).includes(v)) return toast("已在链中", true);
+  window.FALLBACK.push(v); renderFallback();
+}
+async function fbSave(){
+  try{
+    const j = await (await fetch("/api/fallback", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({fallback_provider_ids: window.FALLBACK}),
+    })).json();
+    if(j.ok) toast("备用链已保存（重启机器人后生效）");
+    else toast(j.err || "保存失败", true);
+  }catch(e){ toast("保存失败：" + e, true); }
+}
+
+/* ---------- ② 群接入 ---------- */
+function modelOptions(gid){
+  const c = ACCESS.groups[gid] || {};
+  const pid = c.provider_id || "";
+  const list = pid ? PROVIDERS.filter(p=>p.id===pid) : PROVIDERS;
+  let opts = ['<option value="">（provider 默认模型）</option>'];
+  const seen = new Set();
+  list.forEach(p=>{
+    if(p.model && !seen.has(p.model)){ seen.add(p.model);
+      opts.push(`<option value="${esc(p.model)}" ${c.model===p.model?"selected":""}>${esc(p.model)}（${esc(p.id)}）</option>`);}
+  });
+  if(c.model && !seen.has(c.model))
+    opts.push(`<option value="${esc(c.model)}" selected>${esc(c.model)}（当前值）</option>`);
+  opts.push('<option value="__custom__">自定义…</option>');
+  return opts.join("");
+}
+function personaOptions(gid){
+  const c = ACCESS.groups[gid] || {};
+  let opts = [`<option value="" ${!c.persona_id?"selected":""}>（跟随全局默认：${esc(GLOBAL_PERSONA||"-")}）</option>`];
+  PERSONAS.forEach(p=>{
+    opts.push(`<option value="${esc(p.persona_id)}" ${c.persona_id===p.persona_id?"selected":""}>${esc(p.persona_id)}（${p.prompt_len}字${p.tools?"·限工具":""}）</option>`);
+  });
+  return opts.join("");
+}
+function toolChkHtml(gid, sel){
+  return TOOLS.map(t=>`
+    <label class="ck"><input type="checkbox" ${sel.includes(t)?"checked":""}
+      onchange="setTool('${esc(gid)}','${esc(t)}',this.checked)"> ${esc(t)}</label>`).join("")
+    || '<span class="hint">（未取到工具清单，机器人启动并触发一次对话后自动导出）</span>';
+}
+function groupCard(gid, c){
+  const provOpts = ['<option value="">（跟随全局）</option>']
+    .concat(PROVIDERS.map(p=>`<option value="${esc(p.id)}" ${c.provider_id===p.id?"selected":""}>${esc(p.id)}${p.model?" · "+esc(p.model):""}</option>`))
+    .join("");
+  const lvlOpts = LEVEL_ORDER.map(k=>`<option value="${k}" ${c.level===k?"selected":""}>${k} — ${LEVELS[k]}</option>`).join("");
+  return `
+  <div class="gcard" data-gid="${esc(gid)}">
+    <div class="head">
+      <span class="ghead-title">会话</span>
+      <input type="text" class="gid" value="${esc(gid)}" placeholder="群号 / 私聊QQ号"
+        onchange="renameGroup('${esc(gid)}', this.value)">
+      <input type="text" value="${esc(c.name||"")}" placeholder="备注名" style="width:200px;"
+        onchange="setF('${esc(gid)}','name',this.value)">
+      <label class="switch" title="启用/停用该配置">
+        <input type="checkbox" ${c.enabled!==false?"checked":""} onchange="setF('${esc(gid)}','enabled',this.checked)">
+        <span class="slider"></span>
+      </label>
+      <button class="del" onclick="delGroup('${esc(gid)}')">删除</button>
+    </div>
+    <div class="grid">
+      <div><label>接入（provider 绑定，主节点）</label>
+        <select onchange="onProvChange('${esc(gid)}', this)">${provOpts}</select></div>
+      <div><label>模型覆盖（下拉选，或自定义）</label>
+        <select data-modelsel="1" onchange="onModelSel('${esc(gid)}', this)">${modelOptions(gid)}</select>
+        <input type="text" id="modelCustom-${esc(gid)}" placeholder="输入模型名后回车"
+          style="display:none; margin-top:4px;"
+          onchange="setF('${esc(gid)}','model',this.value); renderGroups();"></div>
+      <div><label>人设（对该会话所有对话生效）</label>
+        <select onchange="setF('${esc(gid)}','persona_id',this.value)">${personaOptions(gid)}</select></div>
+      <div><label>工具能力档位</label>
+        <select onchange="setF('${esc(gid)}','level',this.value)">${lvlOpts}</select></div>
+      <div class="tools-box" id="tools-${esc(gid)}" style="${c.level==="custom"?"":"display:none"}">
+        <label>custom 白名单（勾选 = 该会话可用）</label>
+        <div class="chk">${toolChkHtml(gid, c.tools||[])}</div>
+      </div>
+      <div class="preset-row">
+        <span class="pt">一键预设（点 = provider + 档位 + 人设 整套切换；纯聊天不动 provider）：</span>
+        ${PRESETS.map(p=>`<button class="preset" onclick="applyPreset('${esc(gid)}','${p.key}')">${esc(p.label)}</button>`).join("")}
+      </div>
+      <div class="lvl-note">档位说明：full=全量；standard=日常聊天（人设白名单）；lite=小模型精简；
+        media=表情语音；admin=群管通知；info=只读查询；guest=陌生人；none=纯聊天；custom=自定义勾选。
+        备注：<textarea style="margin-top:4px;" onchange="setF('${esc(gid)}','note',this.value)">${esc(c.note||"")}</textarea></div>
+    </div>
+  </div>`;
+}
+function renderGroups(){
+  const el = document.getElementById("groupList");
+  const gids = Object.keys(ACCESS.groups||{});
+  el.innerHTML = gids.map(g=>groupCard(g, ACCESS.groups[g]||{})).join("")
+    || `<div class="empty">还没有配置 — 点下方「＋ 添加群 / 私聊」，或用默认档位直接开聊</div>`;
+}
+function applyPreset(gid, key){
+  const p = PRESETS.find(x=>x.key===key); if(!p) return;
+  const c = ACCESS.groups[gid];
+  if(p.provider_id !== undefined && p.key!=="chitchat") c.provider_id = p.provider_id;
+  c.model = p.model || "";
+  c.level = p.level;
+  c.persona_id = p.persona || "";
+  renderGroups();
+  toast(`已套用「${p.label}」— 记得点底部「保存」`);
+}
+function onProvChange(gid, sel){
+  ACCESS.groups[gid].provider_id = sel.value;
+  ACCESS.groups[gid].model = "";
+  renderGroups();
+}
+function onModelSel(gid, sel){
+  if(sel.value === "__custom__"){
+    const inp = document.getElementById("modelCustom-" + CSS.escape(gid));
+    inp.style.display = ""; inp.focus();
+  } else {
+    ACCESS.groups[gid].model = sel.value;
+    const inp = document.getElementById("modelCustom-" + CSS.escape(gid));
+    if(inp) inp.style.display = "none";
+  }
+}
+function addGroup(){
+  openModal("添加群 / 私聊接入", `
+    <label class="ml">群号或私聊对象 QQ 号（纯数字）</label>
+    <input type="text" id="ag-id" placeholder="如 1170476042 或 1336312276">
+    <div class="mhint">私聊按对方 QQ 号作为接入键（如主人 1336312276）。</div>
+  `, [
+    {label:"取消", cls:""},
+    {label:"添加", cls:"primary", onClick: ()=>{
+      const gid = document.getElementById("ag-id").value.trim();
+      if(!gid) { toast("不能为空", true); return false; }
+      if(!/^\d+$/.test(gid)) { toast("必须是纯数字", true); return false; }
+      if(ACCESS.groups[gid]) { toast("该配置已存在", true); return false; }
+      ACCESS.groups[gid] = {name:"", provider_id:"", model:"", level:"standard", tools:[], enabled:true, note:"", persona_id:""};
+      renderGroups();
+    }}
+  ]);
+}
+function renameGroup(old, v){
+  v = String(v||"").trim();
+  if(!v || v===old) { renderGroups(); return; }
+  if(ACCESS.groups[v]) { toast("已存在", true); renderGroups(); return; }
+  ACCESS.groups[v] = ACCESS.groups[old]; delete ACCESS.groups[old];
+  renderGroups();
+}
+function delGroup(gid){
+  openModal("删除接入配置", `<p class="mmsg">确定删除「<b>${esc(gid)}</b>」的接入配置？</p>`, [
+    {label:"取消", cls:""},
+    {label:"删除", cls:"del", onClick: ()=>{
+      delete ACCESS.groups[gid]; renderGroups();
+    }}
+  ]);
+}
+function setF(gid, k, v){ ACCESS.groups[gid][k] = v;
+  if(k==="level") document.getElementById("tools-"+CSS.escape(gid)).style.display = v==="custom"?"":"none"; }
+function setTool(gid, t, on){
+  const arr = ACCESS.groups[gid].tools || (ACCESS.groups[gid].tools=[]);
+  const i = arr.indexOf(t);
+  if(on && i<0) arr.push(t);
+  if(!on && i>=0) arr.splice(i,1);
+}
+async function saveAll(){
+  const s = document.getElementById("saveState");
+  s.textContent = "保存中…";
+  try{
+    ACCESS.roles = {
+      group: document.getElementById("roleGroup").value,
+      friend: document.getElementById("roleFriend").value,
+      stranger: document.getElementById("roleStranger").value,
+    };
+    ACCESS.default_level = ACCESS.roles.group;
+    const r = await fetch("/api/access", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(ACCESS),
+    });
+    const j = await r.json();
+    if(j.ok){ s.textContent = "已保存 ✓ " + j.groups + " 条（插件 3 秒内生效）"; toast("保存成功"); }
+    else { s.textContent = ""; toast(j.err || "保存失败", true); }
+  }catch(e){ s.textContent = ""; toast("保存失败：" + e, true); }
+}
+
+/* ---------- ③ 人设管理 ---------- */
+function renderPersonas(){
+  const el = document.getElementById("psList");
+  el.innerHTML = PERSONAS.map(p=>`
+    <div class="ps-item ${psSel===p.persona_id?"sel":""}" onclick="psPick('${esc(p.persona_id)}')">
+      <span class="pid">${esc(p.persona_id)}</span>
+      <span class="plen">${p.prompt_len} 字</span>
+      ${p.persona_id===GLOBAL_PERSONA?'<span class="pflag">全局默认</span>':""}
+      ${p.tools?'<span class="pflag tool">限工具</span>':""}
+    </div>`).join("") || '<div class="empty">还没有人设 — 在右侧输入提示词后点「保存人设」即可新建</div>';
+}
+function psPick(pid){
+  const p = PERSONAS.find(x=>x.persona_id===pid); if(!p) return;
+  psSel = pid; psOrig = p.prompt || "";
+  document.getElementById("psTitle").textContent = pid;
+  document.getElementById("psMeta").textContent =
+    `${p.prompt_len} 字 ${p.tools?"· 绑定工具白名单("+p.tools.length+"个)":""}`;
+  document.getElementById("psPrompt").value = psOrig;
+  updateLen(); renderPersonas();
+}
+function updateLen(){
+  const v = document.getElementById("psPrompt").value;
+  document.getElementById("psLen").textContent = v.length + " 字" +
+    (v.length < 200 ? "（建议 300 字以上：身份/性格/说话习惯/底线）" : "");
+}
+document.getElementById("psPrompt").addEventListener("input", updateLen);
+async function psSave(){
+  if(!psSel) return toast("先选一个人设", true);
+  const prompt = document.getElementById("psPrompt").value.trim();
+  if(!prompt) return toast("内容不能为空", true);
+  try{
+    const j = await (await fetch("/api/persona/save", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({persona_id: psSel, prompt}),
+    })).json();
+    if(j.ok){ toast("已保存，下轮对话生效"); await reloadPersonas(psSel); }
+    else toast(j.err || "保存失败", true);
+  }catch(e){ toast("保存失败：" + e, true); }
+}
+function psRevert(){ document.getElementById("psPrompt").value = psOrig; updateLen(); }
+async function psAdd(){
+  const pid = document.getElementById("psNewId").value.trim();
+  const prompt = document.getElementById("psNewPrompt").value.trim();
+  if(!pid || !prompt) return toast("ID 和内容都要填", true);
+  try{
+    const j = await (await fetch("/api/persona/add", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({persona_id: pid, prompt}),
+    })).json();
+    if(j.ok){ toast("已新增"); document.getElementById("psNewId").value=""; document.getElementById("psNewPrompt").value="";
+      await reloadPersonas(pid); }
+    else toast(j.err || "新增失败", true);
+  }catch(e){ toast("新增失败：" + e, true); }
+}
+async function psDelete(){
+  if(!psSel) return toast("先选一个人设", true);
+  openModal("删除人设", `<p class="mmsg">确定删除人设「<b>${esc(psSel)}</b>」？</p>`, [
+    {label:"取消", cls:""},
+    {label:"删除", cls:"del", onClick: async ()=>{
+      const j = await postJSON("/api/persona/delete", {persona_id: psSel});
+      if(j.ok){ toast("已删除"); psSel=null; await reloadPersonas(); }
+      else { toast(j.err||"删除失败", true); return false; }
+    }}
+  ]);
+}
+async function reloadPersonas(pick){
+  const ps = await fetch("/api/personas").then(r=>r.json());
+  PERSONAS = ps.personas || []; GLOBAL_PERSONA = ps.global_persona_id || "";
+  window.FALLBACK = ps.fallback || [];
+  document.getElementById("globalPersona").textContent = GLOBAL_PERSONA || "-";
+  if(pick && PERSONAS.some(p=>p.persona_id===pick)) psPick(pick);
+  else { psSel=null; document.getElementById("psTitle").textContent="-"; document.getElementById("psPrompt").value=""; }
+  renderPersonas(); renderFallback(); renderGroups();
+}
+
+init();
+</script>
+</body>
+</html>
