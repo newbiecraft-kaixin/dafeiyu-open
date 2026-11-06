@@ -1,0 +1,57 @@
+{
+  "strip_markdown": {
+    "description": "清洗 markdown 结构（# 标题 / **粗体** / - 列表 / 表格 / 行内代码）",
+    "type": "bool",
+    "default": true
+  },
+  "strip_ai_tone": {
+    "description": "丢弃 AI 样板句（作为一个AI / 首先 / 综上 / 希望对你有帮助 / 我理解你的感受 …）",
+    "type": "bool",
+    "default": true
+  },
+  "strip_emoji": {
+    "description": "剥掉 Unicode emoji（😊🐟🌊💤 等，免费小模型最爱用它们收尾）",
+    "type": "bool",
+    "default": true
+  },
+  "drop_period_prob": {
+    "description": "句末句号被抹掉的概率（真人打字很少打句号）",
+    "type": "float",
+    "default": 0.75
+  },
+  "oral_noise_prob": {
+    "description": "单条回复注入口语噪声（嗯/其实/就/诶）的概率",
+    "type": "float",
+    "default": 0.15
+  },
+  "max_sentences": {
+    "description": "单条回复最多保留几句（群聊里一条说完最像人，0=不限）",
+    "type": "int",
+    "default": 2
+  },
+  "long_bypass_chars": {
+    "description": "内容型长文豁免阈值：回复超过这么多字就当成「讲故事/写东西」，跳过句数封顶做完整输出（0=永不豁免）",
+    "type": "int",
+    "default": 150
+  },
+  "tail_split_probability": {
+    "description": "偶尔补一句的概率：把一段纯文本拆成两条发（0=永不拆，默认 0.12）",
+    "type": "float",
+    "default": 0.12
+  },
+  "typing_delay": {
+    "description": "读一眼再打字：按回复字数模拟 0.8~3.2 秒的反应时间",
+    "type": "bool",
+    "default": true
+  },
+  "repeat_guard": {
+    "description": "复读拦截：与最近 6 条发言字符相似度 >72% 时改口",
+    "type": "bool",
+    "default": true
+  },
+  "consecutive_cap": {
+    "description": "3 分钟内最多连续自发言条数（0=不限）",
+    "type": "int",
+    "default": 3
+  }
+}

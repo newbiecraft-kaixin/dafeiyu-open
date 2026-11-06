@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 歌曲管理</title>
+<style>
+  :root{
+    --bg:#070a14;--card:#101731;--line:rgba(122,152,222,.22);
+    --text:#e9edff;--muted:#8b97bd;--acc:#bfd0ff;--blue:#6b8fff;
+    --good:#3ddc97;--bad:#ff617b;--warn:#ffcc66;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);
+    font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(900px 520px at 10% -12%,rgba(107,143,255,.16),transparent 60%),
+               linear-gradient(180deg,#0c1122,#070a14 46%)}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+  header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+    align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:20px;letter-spacing:.5px}
+  .sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+  a.back{color:var(--acc);text-decoration:none;font-size:13px}
+  a.back:hover{text-decoration:underline}
+  .status{margin-top:16px;padding:10px 14px;border-radius:10px;font-size:13px;
+    border:1px solid var(--line);background:rgba(122,152,222,.06);color:#cfdcff}
+  .status.warn{color:#ffe3a3;border-color:rgba(255,204,102,.4);background:rgba(255,204,102,.08)}
+  .status.err{color:#ffc2cd;border-color:rgba(255,97,123,.4);background:rgba(255,97,123,.08)}
+  .panel{margin-top:22px;padding:18px 20px;border-radius:16px;
+    background:var(--card);border:1px solid var(--line)}
+  h2{margin:0 0 6px;font-size:16px}
+  .hint,.muted{color:var(--muted);font-size:12.5px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:12px;margin-top:14px}
+  .src-card{padding:12px 14px;border-radius:12px;border:1px solid var(--line);
+    background:#0c1328;transition:.15s}
+  .src-card.off{opacity:.55}
+  .src-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .src-head b{font-size:14.5px;color:var(--acc)}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--line);color:#cfdcff;white-space:nowrap}
+  .tag.remote{color:#bfd0ff;background:rgba(107,143,255,.12)}
+  .tag.local{color:#b9f5dd;background:rgba(61,220,151,.1)}
+  .tag.builtin{color:#8b97bd}
+  .src-id{font-family:Consolas,monospace;font-size:12px;color:#636d95;margin:6px 0 10px}
+  .src-foot{display:flex;align-items:center;gap:10px}
+  .switch{position:relative;display:inline-block;width:38px;height:20px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .switch span{position:absolute;inset:0;border-radius:999px;background:#2a3452;
+    transition:.2s;cursor:pointer}
+  .switch span:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;
+    border-radius:50%;background:#8b97bd;transition:.2s}
+  .switch input:checked + span{background:rgba(107,143,255,.65)}
+  .switch input:checked + span:before{transform:translateX(18px);background:#eaf0ff}
+  .btn{cursor:pointer;border-radius:9px;border:1px solid var(--line);
+    background:#121a35;color:#dfe8ff;padding:7px 14px;font-size:13px;transition:.15s}
+  .btn:hover{border-color:rgba(107,143,255,.6);background:#16203f}
+  .btn.primary{background:linear-gradient(180deg,#4f74e8,#3a5bd0);
+    border-color:transparent;color:#fff}
+  .btn.primary:hover{background:linear-gradient(180deg,#5c81f2,#4466dc)}
+  .btn.tiny{padding:4px 10px;font-size:12px}
+  .btn.danger{color:#ffc2cd;border-color:rgba(255,97,123,.35)}
+  .btn.danger:hover{background:rgba(255,97,123,.15)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  input[type=text],select{flex:1;min-width:130px;padding:8px 11px;border-radius:9px;
+    border:1px solid var(--line);background:#0a1124;color:var(--text);
+    font-size:13px;outline:none;font-family:inherit}
+  input[type=text]:focus,select:focus{border-color:rgba(107,143,255,.7)}
+  input[type=text]:disabled{opacity:.45}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .row > *{flex:0 1 auto}
+  .row input[type=text]{flex:1 1 220px}
+  .hidden{display:none}
+  .msg{margin-top:10px;font-size:13px;min-height:20px}
+  .msg.err{color:var(--bad)}
+  .msg.warn{color:var(--warn)}
+  .msg.good{color:var(--good)}
+  .player-box{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0c1328}
+  .player-title{color:var(--acc);font-size:13px}
+  audio{height:34px;flex:1;min-width:240px}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;
+    gap:12px;flex-wrap:wrap}
+  .count{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+  .table-wrap{overflow:auto;margin-top:12px;border-radius:12px;
+    border:1px solid var(--line);background:#0b1225}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid rgba(122,152,222,.12);
+    vertical-align:middle}
+  th{color:#636d95;font-size:12px;font-weight:600;background:rgba(10,17,36,.6)}
+  tbody tr:hover{background:rgba(107,143,255,.05)}
+  td.ops,th.ops{white-space:nowrap;text-align:right}
+  td.ops .btn + .btn{margin-left:6px}
+  td.empty{text-align:center;color:var(--muted);padding:22px}
+  .name-cell{color:#dfe8ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>大肥鱼 · 歌曲管理</h1>
+      <p class="sub">可选音频扩展能力：装了就能搜歌、入库、试听；不装不影响桌宠对话。</p>
+    </div>
+    <a class="back" href="/">← 音频能力</a>
+  </header>
+
+  <div id="status-bar" class="status">正在读取服务状态…</div>
+
+  <section class="panel">
+    <h2>音源配置</h2>
+    <p class="hint">内置酷狗、咪咕、本地音频。远程音源可随时停用；停用后仍可用本地音频入库。</p>
+    <div id="sources" class="cards"></div>
+    <div class="row">
+      <input type="text" id="src-id" placeholder="音源标识，如 netease">
+      <input type="text" id="src-name" placeholder="显示名称，如 网易云音乐">
+      <select id="src-type">
+        <option value="remote">远程音源</option>
+        <option value="local">本地目录</option>
+      </select>
+      <button class="btn" onclick="addSource()">新增音源</button>
+    </div>
+    <div id="sources-msg" class="msg"></div>
+  </section>
+
+  <section class="panel">
+    <h2>搜索入库</h2>
+    <p class="hint">远程音源需要关键词；本地音频会直接扫描目录里的音频文件。</p>
+    <div class="row">
+      <select id="search-source"></select>
+      <input type="text" id="search-q" placeholder="输入歌名 / 歌手">
+      <button class="btn primary" onclick="doSearch()">搜索</button>
+    </div>
+    <div id="local-row" class="row hidden">
+      <input type="text" id="local-dir" placeholder="留空则扫描默认目录（sing_ab/songs）">
+      <button class="btn" onclick="doSearch()">扫描目录</button>
+    </div>
+    <div id="search-msg" class="msg"></div>
+    <div id="player-box" class="player-box hidden">
+      <span id="player-title" class="player-title"></span>
+      <audio id="player" controls preload="none"></audio>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>歌名</th><th>歌手</th><th>专辑</th><th>时长</th><th class="ops">操作</th></tr>
+        </thead>
+        <tbody id="search-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>已入库歌曲 <span id="song-total" class="count">0 首</span></h2>
+      <input type="text" id="filter-q" placeholder="按歌名 / 歌手过滤" oninput="renderSongs()">
+    </div>
+    <div id="songs-msg" class="msg"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>歌名</th><th>歌手</th><th>来源</th><th>时长</th><th class="ops">操作</th></tr>
+        </thead>
+        <tbody id="songs-body"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+const state = {
+  sources: [],
+  songs: [],
+  searchItems: [],
+  health: null,
+};
+
+function $(id) { return document.getElementById(id); }
+
+function setMsg(target, text, kind) {
+  const node = typeof target === "string" ? $(target) : target;
+  if (!node) return;
+  node.textContent = text || "";
+  node.className = "msg" + (kind ? " " + kind : "");
+}
+
+async function api(path, options) {
+  const response = await fetch(path, Object.assign({ cache: "no-store" }, options || {}));
+  let body = null;
+  try { body = await response.json(); } catch (err) { body = null; }
+  if (!response.ok || !body || body.ok === false) {
+    const error = new Error((body && body.error) || ("请求失败（HTTP " + response.status + "）"));
+    error.status = response.status;
+    throw error;
+  }
+  return body.data !== undefined ? body.data : body;
+}
+
+function postJSON(path, data) {
+  return api(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data || {}),
+  });
+}
+
+function fmtDuration(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  if (!total) return "—";
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h ? (h + ":" + mm + ":" + ss) : (mm + ":" + ss);
+}
+
+function makeButton(text, cls, onClick) {
+  const btn = document.createElement("button");
+  btn.className = "btn" + (cls ? " " + cls : "");
+  btn.textContent = text;
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
+function makeCell(text) {
+  const td = document.createElement("td");
+  td.className = "name-cell";
+  td.textContent = text;
+  return td;
+}
+
+function emptyRow(tableBody, cols, text) {
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = cols;
+  td.className = "empty";
+  td.textContent = text;
+  tr.appendChild(td);
+  tableBody.appendChild(tr);
+}
+
+/* ---------- 音源 ---------- */
+
+async function loadSources() {
+  try {
+    state.sources = (await api("/songs/sources")) || [];
+    renderSources();
+    renderSourceSelect();
+  } catch (err) {
+    setMsg("sources-msg", "读取音源失败：" + err.message, "err");
+  }
+}
+
+function renderSources() {
+  const box = $("sources");
+  box.innerHTML = "";
+  if (!state.sources.length) {
+    box.innerHTML = '<p class="muted">暂无音源配置</p>';
+    return;
+  }
+  state.sources.forEach(function (src) {
+    const card = document.createElement("div");
+    card.className = "src-card" + (src.enabled ? "" : " off");
+
+    const head = document.createElement("div");
+    head.className = "src-head";
+    const name = document.createElement("b");
+    name.textContent = src.name || src.id;
+    const typeTag = document.createElement("span");
+    typeTag.className = "tag " + (src.type === "local" ? "local" : "remote");
+    typeTag.textContent = src.type === "local" ? "本地" : "远程";
+    head.appendChild(name);
+    head.appendChild(typeTag);
+    if (src.builtin) {
+      const builtinTag = document.createElement("span");
+      builtinTag.className = "tag builtin";
+      builtinTag.textContent = "内置";
+      head.appendChild(builtinTag);
+    }
+
+    const idLine = document.createElement("div");
+    idLine.className = "src-id";
+    idLine.textContent = src.id;
+
+    const foot = document.createElement("div");
+    foot.className = "src-foot";
+    const label = document.createElement("label");
+    label.className = "switch";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = !!src.enabled;
+    checkbox.addEventListener("change", function () {
+      toggleSource(src.id, checkbox.checked);
+    });
+    const slider = document.createElement("span");
+    label.appendChild(checkbox);
+    label.appendChild(slider);
+    const stateText = document.createElement("span");
+    stateText.className = "muted";
+    stateText.textContent = src.enabled ? "已启用" : "已停用";
+    foot.appendChild(label);
+    foot.appendChild(stateText);
+    if (!src.builtin) {
+      foot.appendChild(makeButton("删除", "tiny danger", function () {
+        removeSource(src.id);
+      }));
+    }
+
+    card.appendChild(head);
+    card.appendChild(idLine);
+    card.appendChild(foot);
+    box.appendChild(card);
+  });
+}
+
+function renderSourceSelect() {
+  const select = $("search-source");
+  const prev = select.value;
+  select.innerHTML = "";
+  const enabled = state.sources.filter(function (src) { return src.enabled; });
+  const pool = enabled.length
+    ? enabled
+    : state.sources.filter(function (src) { return src.id === "local"; });
+  pool.forEach(function (src) {
+    const option = document.createElement("option");
+    option.value = src.id;
+    option.textContent = (src.name || src.id) + "（" + (src.type === "local" ? "本地" : "远程") + "）";
+    select.appendChild(option);
+  });
+  if (prev && pool.some(function (src) { return src.id === prev; })) {
+    select.value = prev;
+  }
+  syncLocalRow();
+}
+
+function currentSource() {
+  const id = $("search-source").value;
+  return state.sources.find(function (src) { return src.id === id; })
+    || { id: id, name: id, type: "remote", enabled: true };
+}
+
+function isLocalSource(src) {
+  return src.id === "local" || src.type === "local";
+}
+
+function syncLocalRow() {
+  const src = currentSource();
+  const local = isLocalSource(src);
+  $("local-row").classList.toggle("hidden", !local);
+  $("search-q").disabled = local;
+  $("search-q").placeholder = local ? "本地目录扫描无需关键词" : "输入歌名 / 歌手";
+}
+
+async function toggleSource(id, enabled) {
+  const src = state.sources.find(function (item) { return item.id === id; });
+  if (!src) return;
+  setMsg("sources-msg", "正在保存…", "");
+  try {
+    await postJSON("/songs/sources", {
+      id: src.id, name: src.name, type: src.type, enabled: enabled,
+    });
+    setMsg("sources-msg", (enabled ? "已启用 " : "已停用 ") + (src.name || src.id), "good");
+    await loadSources();
+    await loadHealth();
+  } catch (err) {
+    setMsg("sources-msg", "保存失败：" + err.message, "err");
+    await loadSources();
+  }
+}
+
+async function removeSource(id) {
+  const src = state.sources.find(function (item) { return item.id === id; });
+  try {
+    await api("/songs/sources?id=" + encodeURIComponent(id), { method: "DELETE" });
+    setMsg("sources-msg", "已删除音源：" + (src ? src.name : id), "good");
+    await loadSources();
+    await loadHealth();
+  } catch (err) {
+    setMsg("sources-msg", "删除失败：" + err.message, "err");
+  }
+}
+
+async function addSource() {
+  const id = $("src-id").value.trim().toLowerCase();
+  const name = $("src-name").value.trim();
+  const type = $("src-type").value;
+  if (!id) { setMsg("sources-msg", "请填写音源标识", "err"); return; }
+  if (!name) { setMsg("sources-msg", "请填写音源名称", "err"); return; }
+  try {
+    await postJSON("/songs/sources", { id: id, name: name, type: type, enabled: true });
+    $("src-id").value = "";
+    $("src-name").value = "";
+    setMsg("sources-msg", "已新增音源：" + name, "good");
+    await loadSources();
+    await loadHealth();
+  } catch (err) {
+    setMsg("sources-msg", "新增失败：" + err.message, "err");
+  }
+}
+
+/* ---------- 搜索 ---------- */
+
+async function doSearch() {
+  const src = currentSource();
+  const local = isLocalSource(src);
+  const keyword = $("search-q").value.trim();
+  const dir = $("local-dir").value.trim();
+  if (!local && !keyword) {
+    setMsg("search-msg", "请输入搜索关键词", "err");
+    return;
+  }
+  state.searchItems = [];
+  renderSearchResults();
+  setMsg("search-msg", local ? "正在扫描本地目录…" : "正在搜索「" + keyword + "」…", "");
+  try {
+    const params = new URLSearchParams({ source: src.id });
+    if (local) params.set("dir", dir || "");
+    else params.set("q", keyword);
+    const data = await api("/songs/search?" + params.toString());
+    state.searchItems = (data && data.items) || [];
+    if (!state.searchItems.length) {
+      setMsg("search-msg", local ? "目录里没有找到音频文件" : "没有找到结果，换个关键词试试", "warn");
+    } else {
+      setMsg("search-msg", "共 " + state.searchItems.length + " 条结果", "good");
+    }
+  } catch (err) {
+    const unavailable = /音源不可用/.test(err.message) || /已停用/.test(err.message);
+    setMsg("search-msg",
+      unavailable ? "该音源暂不可用，可直接用本地音频入库" : "搜索失败：" + err.message,
+      unavailable ? "warn" : "err");
+  }
+  renderSearchResults();
+}
+
+function renderSearchResults() {
+  const body = $("search-body");
+  body.innerHTML = "";
+  if (!state.searchItems.length) {
+    emptyRow(body, 5, "暂无搜索结果");
+    return;
+  }
+  state.searchItems.forEach(function (item, index) {
+    const tr = document.createElement("tr");
+    tr.appendChild(makeCell(item.title || "（无名）"));
+    tr.appendChild(makeCell(item.artist || "—"));
+    tr.appendChild(makeCell(item.album || "—"));
+    tr.appendChild(makeCell(fmtDuration(item.duration)));
+    const ops = document.createElement("td");
+    ops.className = "ops";
+    ops.appendChild(makeButton("试听", "tiny", function () { previewItem(index); }));
+    ops.appendChild(makeButton("入库", "tiny primary", function () { saveItem(index); }));
+    tr.appendChild(ops);
+    body.appendChild(tr);
+  });
+}
+
+function previewItem(index) {
+  const item = state.searchItems[index];
+  if (item && item.url) {
+    playUrl(item.url, item.title);
+  } else if (item && item.path) {
+    setMsg("search-msg", "本地音频入库后才能试听；点「入库」会自动播放", "warn");
+  } else {
+    setMsg("search-msg", "该结果没有可用的试听地址，可直接用本地音频入库", "warn");
+  }
+}
+
+async function saveItem(index) {
+  const item = state.searchItems[index];
+  if (!item) return;
+  const src = currentSource();
+  const payload = {
+    title: item.title,
+    artist: item.artist || "",
+    album: item.album || "",
+    source: src.id,
+    source_id: item.source_id || "",
+    duration: Number(item.duration) || 0,
+  };
+  if (item.path) payload.path = item.path;
+  else if (item.url) payload.url = item.url;
+  else {
+    setMsg("search-msg", "该结果没有可用的播放地址，无法入库；可直接用本地音频入库", "err");
+    return;
+  }
+  try {
+    const saved = await postJSON("/songs", payload);
+    setMsg("search-msg", "已入库：" + (saved && saved.title ? saved.title : payload.title), "good");
+    await loadSongs();
+    await loadHealth();
+    if (saved) playSong(saved);
+  } catch (err) {
+    setMsg("search-msg", "入库失败：" + err.message, "err");
+  }
+}
+
+/* ---------- 已入库 ---------- */
+
+async function loadSongs() {
+  try {
+    state.songs = (await api("/songs")) || [];
+    renderSongs();
+  } catch (err) {
+    setMsg("songs-msg", "读取歌曲库失败：" + err.message, "err");
+  }
+}
+
+function sourceName(sourceId) {
+  const src = state.sources.find(function (item) { return item.id === sourceId; });
+  return src ? (src.name || src.id) : (sourceId || "—");
+}
+
+function renderSongs() {
+  const body = $("songs-body");
+  body.innerHTML = "";
+  const keyword = $("filter-q").value.trim().toLowerCase();
+  const all = state.songs;
+  const rows = keyword
+    ? all.filter(function (song) {
+        return [song.title, song.artist, song.album].join(" ").toLowerCase().indexOf(keyword) >= 0;
+      })
+    : all;
+  $("song-total").textContent = keyword
+    ? rows.length + " / 共 " + all.length + " 首"
+    : all.length + " 首";
+  if (!rows.length) {
+    emptyRow(body, 5, keyword ? "没有匹配的歌曲" : "还没有入库歌曲，先在上方搜索或扫描本地目录");
+    return;
+  }
+  rows.forEach(function (song) {
+    const tr = document.createElement("tr");
+    tr.appendChild(makeCell(song.title || "（无名）"));
+    tr.appendChild(makeCell(song.artist || "—"));
+    tr.appendChild(makeCell(sourceName(song.source)));
+    tr.appendChild(makeCell(fmtDuration(song.duration)));
+    const ops = document.createElement("td");
+    ops.className = "ops";
+    ops.appendChild(makeButton("试听", "tiny", function () { playSong(song); }));
+    ops.appendChild(makeButton("删除", "tiny danger", function () { deleteSong(song.id); }));
+    tr.appendChild(ops);
+    body.appendChild(tr);
+  });
+}
+
+async function deleteSong(id) {
+  const song = state.songs.find(function (item) { return item.id === id; });
+  try {
+    await api("/songs?id=" + encodeURIComponent(id), { method: "DELETE" });
+    setMsg("songs-msg", "已删除记录：" + (song ? song.title : id) + "（本地文件未删除）", "good");
+    await loadSongs();
+    await loadHealth();
+  } catch (err) {
+    setMsg("songs-msg", "删除失败：" + err.message, "err");
+  }
+}
+
+function playSong(song) {
+  if (song.url) {
+    playUrl(song.url, song.title);
+  } else if (song.id) {
+    playUrl("/songs/audio?id=" + encodeURIComponent(song.id),
+      song.title + (song.artist ? " · " + song.artist : ""));
+  } else {
+    setMsg("songs-msg", "该歌曲没有可试听的音频", "err");
+  }
+}
+
+function playUrl(url, title) {
+  const player = $("player");
+  $("player-box").classList.remove("hidden");
+  $("player-title").textContent = "正在试听：" + (title || "");
+  player.src = url;
+  const result = player.play();
+  if (result && result.catch) result.catch(function () { /* 浏览器拦截自动播放时用播放键 */ });
+}
+
+/* ---------- 顶部状态 ---------- */
+
+async function loadHealth() {
+  const bar = $("status-bar");
+  try {
+    const response = await fetch("/health", { cache: "no-store" });
+    state.health = await response.json();
+  } catch (err) {
+    bar.className = "status err";
+    bar.textContent = "音频服务未响应：功能可能未安装或未启动，不影响桌宠对话。";
+    return;
+  }
+  renderStatus();
+}
+
+function renderStatus() {
+  const bar = $("status-bar");
+  const songs = (state.health && state.health.songs) || {};
+  const total = Number(songs.songs ?? 0);
+  const enabledSources = Number(songs.sources_enabled ?? 0);
+  const allSources = Number(songs.sources ?? 0);
+  const remoteTotal = state.sources.filter(function (src) { return src.type === "remote"; }).length;
+  const remoteEnabled = state.sources.filter(function (src) {
+    return src.type === "remote" && src.enabled;
+  }).length;
+  bar.className = "status";
+  bar.textContent = "可选扩展已加载 · 已入库 " + total + " 首 · 启用音源 "
+    + enabledSources + "/" + allSources + " 个";
+  if (remoteTotal > 0 && remoteEnabled === 0) {
+    bar.className = "status warn";
+    bar.textContent = "第三方音源不可用，可直接用本地音频入库";
+  }
+}
+
+/* ---------- 启动 ---------- */
+
+document.addEventListener("DOMContentLoaded", async function () {
+  $("search-source").addEventListener("change", syncLocalRow);
+  $("player").addEventListener("error", function () {
+    if ($("player").src) {
+      setMsg("search-msg", "试听失败：该地址暂时无法播放（可能已过期或需要登录）", "err");
+    }
+  });
+  await loadSources();
+  await loadHealth();
+  await loadSongs();
+  renderSearchResults();
+});
+</script>
+<script src="/i18n.js" defer></script>
+</body>
+</html>

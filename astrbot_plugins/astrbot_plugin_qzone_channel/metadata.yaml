@@ -1,0 +1,6 @@
+name: astrbot_plugin_qzone_channel
+desc: QQ 空间独立信道：轮询自己说说下的新评论，用独立上下文回复，不混入群聊/私聊记忆
+help: 后台自动运行；有空间评论时按大肥鱼口吻回评；/看空间 QQ号或@某人 [条数] 逐条点赞+评论，做过的不重复
+version: v1.0.0
+author: dafeiyu-local
+repo: local

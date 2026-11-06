@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+dist/
+build/
+out/
+npm-debug.log*
+
+# 运行数据 / 日志
+data/
+logs/
+*.log
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pkl
+*.npy
+*.wav
+*.mp3
+wechatauto_logs/
+
+# 配置与密钥
+.env
+.env.*
+!.env.example
+config.local.json
+*.secret.json
+cookies.json
+*.pem
+*.key
+
+# 模型与素材
+models/
+cosyvoice_models/
+cosyvoice_env/
+CosyVoice/
+third_party/
+*.onnx
+*.safetensors
+*.vrm
+*.glb
+*.fbx
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 素材/配置入库例外（部署结构照搬，克隆后按原路径覆盖即可）
+!astrbot-win/AstrBot-4.29.3/data/
+astrbot-win/AstrBot-4.29.3/data/*
+!astrbot-win/AstrBot-4.29.3/data/stickers/
+!astrbot-win/AstrBot-4.29.3/data/config/
+!astrbot-win/AstrBot-4.29.3/data/local_tools/
+!astrbot-win/AstrBot-4.29.3/data/t2i_templates/
+!cosyvoice_ref/**/*.wav
+
+# 表情包运行时目录：插件自动生成的预览缓存、审核暂存、删除回收站，不入库
+astrbot-win/AstrBot-4.29.3/data/stickers/_gif_preview/
+astrbot-win/AstrBot-4.29.3/data/stickers/_static_archive/
+astrbot-win/AstrBot-4.29.3/data/stickers/fav/_review/
+astrbot-win/AstrBot-4.29.3/data/stickers/*.bak*
+astrbot-win/AstrBot-4.29.3/data/stickers/*.broken
+
+# 桌宠前端产物已预构建入库（index.html 直接引用 dist/dafeiyu.iife.js，仓库未提供构建脚本）
+!pet/dafeiyu-web/dist/
+!pet/dafeiyu-web/dist/**

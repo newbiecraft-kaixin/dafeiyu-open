@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 翻唱管理</title>
+<style>
+  :root{
+    --bg:#070a14;--card:#101731;--line:rgba(122,152,222,.22);
+    --text:#e9edff;--muted:#8b97bd;--acc:#bfd0ff;--blue:#6b8fff;
+    --good:#3ddc97;--bad:#ff617b;--warn:#ffcc66;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);
+    font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(900px 520px at 10% -12%,rgba(107,143,255,.16),transparent 60%),
+               linear-gradient(180deg,#0c1122,#070a14 46%)}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+  header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+    align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:20px;letter-spacing:.5px}
+  .sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+  a.back{color:var(--acc);text-decoration:none;font-size:13px}
+  a.back:hover{text-decoration:underline}
+  .path{margin-top:12px;font-family:Consolas,monospace;font-size:12px;color:#8b97bd;
+    word-break:break-all;padding:8px 12px;border-radius:9px;background:rgba(122,152,222,.06);
+    border:1px solid var(--line)}
+  .panel{margin-top:18px;padding:16px 18px;border-radius:16px;
+    background:var(--card);border:1px solid var(--line)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .stat{font-size:13px;color:var(--muted)}
+  .stat b{color:var(--acc)}
+  .spacer{flex:1}
+  .btn{cursor:pointer;border-radius:9px;border:1px solid var(--line);
+    background:#121a35;color:#dfe8ff;padding:7px 14px;font-size:13px;transition:.15s}
+  .btn:hover{border-color:rgba(107,143,255,.6);background:#16203f}
+  .btn.primary{background:linear-gradient(180deg,#4f74e8,#3a5bd0);
+    border-color:transparent;color:#fff}
+  .btn.tiny{padding:4px 10px;font-size:12px}
+  .btn.danger{color:#ffc2cd;border-color:rgba(255,97,123,.35)}
+  .btn.danger:hover{background:rgba(255,97,123,.15)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.on{border-color:rgba(107,143,255,.7);background:rgba(107,143,255,.18)}
+  .msg{margin-top:10px;font-size:13px;min-height:20px;color:var(--muted)}
+  .msg.err{color:var(--bad)}.msg.good{color:var(--good)}
+  .player-box{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0c1328}
+  .player-title{color:var(--acc);font-size:13px}
+  audio{height:34px;flex:1 1 320px;min-width:220px}
+  .list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:#0c1328}
+  .item:hover{border-color:rgba(107,143,255,.45)}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+  .tag.cover{color:#bfd0ff;background:rgba(107,143,255,.12)}
+  .tag.sing{color:#b9f5dd;background:rgba(61,220,151,.1)}
+  .name{font-size:13.5px;color:var(--text)}
+  .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>翻唱管理</h1>
+      <p class="sub">机器人在 QQ 里唱过的成品都在这；试听、清理都在本页完成。</p>
+    </div>
+    <a class="back" href="/">← 返回音频能力</a>
+  </header>
+
+  <div class="path" id="path">读取目录中…</div>
+
+  <div class="panel">
+    <div class="bar">
+      <span class="stat" id="stat">—</span>
+      <span class="spacer"></span>
+      <button class="btn tiny on" data-filter="all">全部</button>
+      <button class="btn tiny" data-filter="cover">翻唱</button>
+      <button class="btn tiny" data-filter="sing">唱歌</button>
+      <button class="btn" id="openDir">打开目录</button>
+      <button class="btn primary" id="refresh">刷新</button>
+    </div>
+    <div class="player-box">
+      <span class="player-title" id="nowPlaying">未选择</span>
+      <audio id="player" controls preload="none"></audio>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="list" id="list"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+const state = {items: [], filter: 'all'};
+const $ = (id) => document.getElementById(id);
+
+async function api(path, options) {
+  const response = await fetch(path, Object.assign({cache: 'no-store'}, options || {}));
+  let body = null;
+  try { body = await response.json(); } catch (err) { body = null; }
+  if (!response.ok || !body || body.ok === false) {
+    throw new Error((body && body.error) || ('请求失败（HTTP ' + response.status + '）'));
+  }
+  return body.data !== undefined ? body.data : body;
+}
+
+const fmtSize = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB'
+  : (n / 1024).toFixed(0) + ' KB';
+
+function setMsg(text, kind) {
+  const el = $('msg');
+  el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+function paint() {
+  const box = $('list');
+  const items = state.items.filter((it) => state.filter === 'all' || it.kind === state.filter);
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">这里还没有成品。先在 QQ 里让肥鱼唱一首，或点右上角刷新。</div>';
+    return;
+  }
+  box.innerHTML = items.map((it) => `
+    <div class="item" data-name="${it.name}">
+      <span class="tag ${it.kind}">${it.kind === 'cover' ? '翻唱' : '唱歌'}</span>
+      <span class="name">${it.name}</span>
+      <span class="meta">
+        <span>${it.stamp}</span>
+        <span>${fmtSize(it.size)}</span>
+        <button class="btn tiny" data-act="play">试听</button>
+        <button class="btn tiny danger" data-act="del">删除</button>
+      </span>
+    </div>`).join('');
+}
+
+async function load() {
+  setMsg('读取中…');
+  try {
+    const data = await api(API + '/covers');
+    state.items = data.items || [];
+    $('path').textContent = '存储目录：' + (data.dir || '—');
+    $('stat').innerHTML = `共 <b>${data.count}</b> 首 · 翻唱 <b>${data.cover}</b> · 唱歌 <b>${data.sing}</b> · 占用 <b>${fmtSize(data.total_size || 0)}</b>`;
+    setMsg(data.exists ? '' : '目录还没生成，先在 QQ 里唱一首吧。', data.exists ? '' : 'err');
+    paint();
+  } catch (err) {
+    setMsg('读取失败：' + err.message, 'err');
+  }
+}
+
+function play(name, stamp) {
+  const player = $('player');
+  $('nowPlaying').textContent = (name.startsWith('cover_') ? '翻唱 · ' : '唱歌 · ') + stamp;
+  player.src = API + '/covers/audio?name=' + encodeURIComponent(name);
+  player.play().catch(() => {});
+}
+
+async function del(name) {
+  if (!confirm('删除这个成品？\n' + name)) return;
+  try {
+    await api(API + '/covers?name=' + encodeURIComponent(name), {method: 'DELETE'});
+    if ($('player').src.includes(encodeURIComponent(name))) {
+      $('player').pause();
+      $('player').removeAttribute('src');
+      $('nowPlaying').textContent = '未选择';
+    }
+    setMsg('已删除 ' + name, 'good');
+    load();
+  } catch (err) {
+    setMsg('删除失败：' + err.message, 'err');
+  }
+}
+
+$('list').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button');
+  if (!btn) return;
+  const row = btn.closest('.item');
+  const name = row.dataset.name;
+  const item = state.items.find((it) => it.name === name);
+  if (btn.dataset.act === 'play') play(name, item ? item.stamp : '');
+  if (btn.dataset.act === 'del') del(name);
+});
+
+document.querySelectorAll('[data-filter]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.filter = btn.dataset.filter;
+    document.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b === btn));
+    paint();
+  });
+});
+
+$('refresh').addEventListener('click', load);
+$('openDir').addEventListener('click', async () => {
+  try {
+    const data = await api(API + '/covers/open', {method: 'POST'});
+    setMsg('已在资源管理器中打开：' + data.dir, 'good');
+  } catch (err) {
+    setMsg('打开失败：' + err.message, 'err');
+  }
+});
+
+load();
+</script>
+<script src="/i18n.js" defer></script>
+</body>
+</html>

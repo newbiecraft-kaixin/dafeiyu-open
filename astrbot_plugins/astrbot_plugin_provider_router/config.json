@@ -1,0 +1,46 @@
+{
+    "enabled":  true,
+    "deepseek_group_ids":  [
+
+                           ],
+    "deepseek_provider_id":  "deepseek/deepseek-flash",
+    "private_provider_id":  "deepseek/deepseek-flash",
+    "stranger_private_provider_id":  "ollama-chat/qwen3.5-9b",
+    "wechat_provider_id":  "deepseek/deepseek-flash",
+    "wechat_persona_id":  "dafeiyu-wechat",
+    "group_provider_id":  "deepseek/deepseek-flash",
+    "group_provider_chain":  [
+                                 "deepseek/deepseek-flash"
+                             ],
+    "health_probe_enabled":  false,
+    "health_probe_interval":  300,
+    "health_cooldown":  600,
+    "health_probe_timeout":  8,
+    "smart_route_enabled":  false,
+    "use_classifier":  false,
+    "simple_provider_id":  "ollama-chat/qwen3.5-9b",
+    "strong_len_threshold":  40,
+    "short_len_threshold":  8,
+    "classify_timeout":  2.5,
+    "block_users":  [
+
+                    ],
+    "block_groups":  [
+
+                     ],
+    "listen_groups":  [
+
+                      ],
+    "user_provider_ids":  {
+
+                          },
+    "group_provider_ids":  {
+
+                           },
+    "group_persona_ids":  {
+
+                          },
+    "user_persona_ids":  {
+
+                         }
+}

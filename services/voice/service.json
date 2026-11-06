@@ -1,0 +1,26 @@
+{
+  "name": "voice",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 8714,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "domain": "audio",
+  "merged_into": "audio",
+  "responsibility": "语音合成（归入音频域展示）：CosyVoice TTS、三套角色音色（himeko / xiaoyi / liuying）；依赖独立 venv 与 GPU，故保留 8714 独立进程，桌宠与中枢照旧直连",
+  "ui": "http://127.0.0.1:8714/health",
+  "links": {
+    "健康检查": "http://127.0.0.1:8714/health"
+  },
+  "entry": "cosyvoice_tts_server.py",
+  "runtime": {
+    "cwd": ".",
+    "entry": "cosyvoice_tts_server.py",
+    "python": "cosyvoice_env/Scripts/python.exe",
+    "args": [],
+    "env": {
+      "COSYVOICE_REPO_DIR": "CosyVoice"
+    }
+  }
+}

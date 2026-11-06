@@ -1,0 +1,30 @@
+{
+  "search_timeout_s": 10,
+  "timeout_s": 12,
+  "max_results": 16,
+  "keep_n": 10,
+  "page_cap_kb": 512,
+  "max_chars": 1500,
+  "concurrency": 4,
+  "trust_env": false,
+  "bili_cookie": "",
+  "bili_subtitle_chars": 4000,
+  "bili_tags": [
+    "搞笑",
+    "pvz"
+  ],
+  "bili_pool_max": 60,
+  "bili_browse_default": 5,
+  "bili_browse_max": 10,
+  "bili_dwell_ratio": 0.34,
+  "bili_dwell_max": 90,
+  "bili_dwell_total_max": 300,
+  "video_comment_n": 10,
+  "video_audio_max_s": 300,
+  "video_parse_timeout_s": 180,
+  "video_transcript_chars": 4000,
+  "video_audio_max_mb": 60,
+  "video_read_ratio": 0.34,
+  "video_read_min_s": 6,
+  "video_read_max_s": 300
+}

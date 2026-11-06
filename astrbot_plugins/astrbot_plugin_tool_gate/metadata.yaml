@@ -1,0 +1,7 @@
+name: astrbot_plugin_tool_gate
+display_name: "群接入与工具档位"
+desc: "按群接入配置决定模型/人设/工具集：支持一键预设、私聊接入、人设绑定（可视化页维护）。"
+version: v1.2.0
+author: dafeiyu-local
+support_platforms:
+  - aiocqhttp

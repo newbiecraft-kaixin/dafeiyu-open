@@ -1,0 +1,21 @@
+{
+  "post_hours": [6, 12, 18],
+  "jitter_minutes": 45,
+  "catchup_minutes": 120,
+  "check_interval_minutes": 10,
+  "max_chars": 400,
+  "ugc_right": 1,
+  "themes": [
+    "今天遇到的烦心事或开心事",
+    "吐槽最近玩的游戏或看的番",
+    "深夜感慨人生一言",
+    "分享一个冷知识或吐槽天气",
+    "随口一句牢骚，比如工作学习太累"
+  ],
+  "enabled": true,
+  "latest_hour": 23,
+  "prefer_provider_id": "deepseek/deepseek-flash",
+  "llm_retry": 2,
+  "daily_summary": true,
+  "sticker_probability": 0.8
+}

@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "poll_interval_minutes": 5,
+  "max_feeds": 10,
+  "max_replies_per_round": 3,
+  "max_replies_per_feed": 20,
+  "view_default_count": 5,
+  "view_max_count": 20,
+  "view_auto_like": true,
+  "reply_enabled": true,
+  "history_turns": 4,
+  "owner_notify": true,
+  "owner_id": "1000000000",
+  "min_comment_chars": 2,
+  "system_prompt": "你是大肥鱼，在 QQ 空间回复别人给你说说留的评论。就像朋友圈回评一样：一两句、口语、有情绪，不客套不道歉不客服腔，不用 emoji 颜文字，不加名字前缀。别人问什么就先接住那个点，别自说自话。",
+  "prefer_provider_id": "deepseek/deepseek-flash"
+}

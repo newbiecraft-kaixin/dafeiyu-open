@@ -1,0 +1,39 @@
+# 大肥鱼 · 本机 Docker 部署（AstrBot + NapCat）
+# 用法：在本目录执行 docker compose up -d
+services:
+  astrbot:
+    build: .
+    image: dafeiyu-astrbot:latest
+    container_name: dafeiyu-astrbot
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6185:6185"   # AstrBot 面板
+      - "127.0.0.1:6199:6199"   # OneBot v11 反向 WS（排查用）
+    volumes:
+      - ./data:/AstrBot/data
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - dafeiyu
+
+  napcat:
+    # 与 AstrBot v4.29.0 配套的已验证组合
+    image: mlikiowa/napcat-docker:v4.18.37
+    container_name: dafeiyu-napcat
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6099:6099"   # NapCat WebUI（扫码登录小号）
+    volumes:
+      - ./napcat/config:/app/napcat/config
+      - ./napcat/qq:/app/.config/QQ
+    environment:
+      - TZ=Asia/Shanghai
+      # 入口脚本用 -q $ACCOUNT 快速登录；重建容器后设备指纹会变，可能需要重新扫码一次
+      - ACCOUNT=1000000000
+      - NAPCAT_QUICK_ACCOUNT=1000000000
+    networks:
+      - dafeiyu
+
+networks:
+  dafeiyu:
+    driver: bridge

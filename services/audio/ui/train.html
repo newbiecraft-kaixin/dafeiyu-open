@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 音色训练</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#070a14;color:#e9edff;
+font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:34px 24px 60px}
+h1{margin:0 0 6px;font-size:23px;letter-spacing:.5px}
+.sub{margin:0 0 6px;color:#8b97bd;font-size:13px}
+.opt{margin:0 0 18px;color:#7f8db5;font-size:12.5px}
+.card{background:#101731;border:1px solid rgba(102,126,182,.32);border-radius:16px;padding:20px 22px;margin-bottom:18px}
+.card h2{margin:0 0 4px;font-size:16px;font-weight:600}
+.card p.tip{margin:0 0 16px;color:#8b97bd;font-size:12.5px}
+.health{border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;
+border:1px solid rgba(102,126,182,.3);background:#0c1226;color:#9aa7cc}
+.health.ok{border-color:rgba(96,200,150,.35);color:#a9e6c6}
+.health.warn{border-color:rgba(230,190,80,.45);background:rgba(230,190,80,.08);color:#f5d98a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 18px}
+label.f{display:block;font-size:12.5px;color:#9aa7cc;margin-bottom:6px}
+input[type=text],input[type=number],select{width:100%;padding:9px 11px;border-radius:9px;
+background:#0b1124;border:1px solid rgba(102,126,182,.38);color:#e9edff;font-size:13px;outline:none}
+input[type=text]:focus,input[type=number]:focus,select:focus{border-color:rgba(107,143,255,.75)}
+select{appearance:none}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.check{display:flex;align-items:center;gap:8px;color:#cfd8f5;font-size:13px}
+.check input{width:16px;height:16px;accent-color:#6b8fff}
+button{font:inherit;cursor:pointer;border-radius:10px;padding:9px 18px;border:1px solid rgba(107,143,255,.45);
+background:rgba(107,143,255,.18);color:#dbe5ff;transition:.15s}
+button:hover{background:rgba(107,143,255,.3);border-color:rgba(107,143,255,.75)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:#2b47b8;border-color:#4a6bff;color:#fff;font-weight:600;padding:10px 22px}
+button.primary:hover{background:#3654d6}
+button.ghost{background:transparent;color:#9aa7cc;border-color:rgba(102,126,182,.4);padding:5px 12px;font-size:12px}
+button.danger{background:rgba(220,80,100,.14);border-color:rgba(220,80,100,.5);color:#ffb9c3;padding:5px 12px;font-size:12px}
+.err{display:none;margin-top:14px;padding:10px 13px;border-radius:10px;font-size:13px;
+background:rgba(220,80,100,.12);border:1px solid rgba(220,80,100,.45);color:#ffb2bd;white-space:pre-wrap}
+.jobs-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.jobs-head h2{margin:0}
+.muted{color:#7f8db5;font-size:12.5px}
+.job{background:#101731;border:1px solid rgba(102,126,182,.32);border-radius:14px;padding:16px 18px;margin-top:14px}
+.job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.job-name{font-size:15px;font-weight:600}
+.job-meta{color:#7f8db5;font-size:12px;margin-top:3px;word-break:break-all}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;border:1px solid transparent;white-space:nowrap}
+.b-queued{background:rgba(140,150,180,.14);color:#aab4d4;border-color:rgba(140,150,180,.35)}
+.b-running{background:rgba(90,150,255,.16);color:#bfd0ff;border-color:rgba(90,150,255,.5)}
+.b-completed{background:rgba(72,200,150,.14);color:#a9e6c6;border-color:rgba(72,200,150,.45)}
+.b-failed{background:rgba(220,80,100,.14);color:#ffb2bd;border-color:rgba(220,80,100,.45)}
+.b-cancelled{background:rgba(160,160,160,.14);color:#b9bcc9;border-color:rgba(160,160,160,.4)}
+.bar{margin:13px 0 4px;height:8px;border-radius:999px;background:#0b1124;overflow:hidden;
+border:1px solid rgba(102,126,182,.25)}
+.bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4a6bff,#8fb4ff);transition:width .4s}
+.bar-row{display:flex;justify-content:space-between;font-size:12px;color:#8b97bd}
+.art{margin-top:10px;padding:9px 12px;border-radius:10px;background:#0b1124;
+border:1px solid rgba(72,200,150,.3);font-size:12.5px;color:#a9e6c6;word-break:break-all}
+.art b{color:#d7ffe9;font-weight:600}
+.job-err{margin-top:10px;padding:9px 12px;border-radius:10px;background:rgba(220,80,100,.1);
+border:1px solid rgba(220,80,100,.4);color:#ffb2bd;font-size:12.5px;white-space:pre-wrap}
+.job-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+pre.log{display:none;margin:12px 0 0;max-height:340px;overflow:auto;padding:12px 14px;border-radius:10px;
+background:#060a15;border:1px solid rgba(102,126,182,.3);color:#b9c6e6;
+font:12px/1.55 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-all}
+pre.log.on{display:block}
+.empty{color:#7f8db5;font-size:13px;padding:22px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>音色训练</h1>
+  <p class="sub">填人声/参考音频路径 → 后台跑 seed-vc 微调 → 产物 ft_model.pth</p>
+  <p class="opt">可选音频扩展能力：装了就能训练音色、管理歌曲；不装不影响桌宠对话。</p>
+
+  <div id="health" class="health">正在检查训练后端…</div>
+
+  <div class="card">
+    <h2>新建训练任务</h2>
+    <p class="tip">可以传单个音频文件（1~30 秒 wav/mp3/flac/m4a/ogg），也可以直接传一个装满音频的数据集目录。</p>
+    <div class="grid">
+      <div><label class="f" for="name">音色名（必填）</label>
+        <input id="name" type="text" placeholder="例如：大肥鱼" autocomplete="off">
+      </div>
+      <div><label class="f" for="ref">人声路径 / 数据集目录</label>
+        <input id="ref" type="text" placeholder="C:\Users\...\voice.wav 或某个音频目录" autocomplete="off">
+      </div>
+      <div><label class="f" for="refSel">从已有参考音频快选</label>
+        <select id="refSel"><option value="">加载中…</option></select>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div><label class="f" for="steps">训练步数</label>
+        <input id="steps" type="number" value="1000" min="1" max="500000" step="1">
+      </div>
+      <div><label class="f" for="batch">batch size</label>
+        <input id="batch" type="number" value="2" min="1" max="32" step="1">
+      </div>
+      <div><label class="f" for="gpu">GPU 编号</label>
+        <input id="gpu" type="number" value="0" min="0" max="15" step="1">
+      </div>
+      <div><label class="f">显存选项</label>
+        <div class="check" style="padding-top:8px"><input id="bf16" type="checkbox" checked>
+          <label for="bf16">启用 bf16（省显存，Blackwell 等新卡更快）</label></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:18px">
+      <button id="submitBtn" class="primary" type="button">开始训练</button>
+      <span class="muted">提交后立即返回任务号，训练在后台进行，可随时看日志或取消。</span>
+    </div>
+    <div id="formErr" class="err"></div>
+  </div>
+
+  <div class="card">
+    <div class="jobs-head">
+      <h2>任务列表</h2>
+      <span id="jobsMeta" class="muted">正在读取…</span>
+    </div>
+    <div id="jobs"><div class="empty">暂无任务</div></div>
+  </div>
+</div>
+<script>
+//SCRIPT
+const STATUS_TEXT = {queued: "排队", running: "运行中", completed: "完成", failed: "失败", cancelled: "已取消"};
+const openLogs = new Set();
+const jobCache = {};
+const logText = {};
+let timerJobs = null;
+
+function esc(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function api(path, options) {
+  const resp = await fetch(path, options);
+  let body = null;
+  try { body = await resp.json(); } catch (e) { body = null; }
+  if (!body || body.ok !== true) {
+    throw new Error((body && body.error) || ("请求失败 HTTP " + resp.status));
+  }
+  return body.data;
+}
+
+function showFormError(msg) {
+  const box = document.getElementById("formErr");
+  if (!msg) { box.style.display = "none"; box.textContent = ""; return; }
+  box.textContent = msg;
+  box.style.display = "block";
+}
+
+async function loadHealth() {
+  const box = document.getElementById("health");
+  try {
+    const h = await api("/health");
+    const train = h.train || {};
+    if (train.ready) {
+      box.className = "health ok";
+      box.textContent = "训练后端就绪：解释器 " + (train.python || "已找到") +
+        "；seed-vc 目录 " + (train.seedvc_dir || "");
+    } else {
+      box.className = "health warn";
+      const why = (train.problems || []).join("；") || "后端信息缺失";
+      box.textContent = "训练后端未就绪，可先完成登记/配置：" + why;
+    }
+  } catch (e) {
+    box.className = "health warn";
+    box.textContent = "训练后端未就绪，可先完成登记/配置（读取 /health 失败：" + e.message + "）";
+  }
+}
+
+async function loadRefs() {
+  const sel = document.getElementById("refSel");
+  try {
+    const data = await api("/train/refs");
+    const refs = data.refs || [];
+    if (!refs.length) {
+      sel.innerHTML = '<option value="">未找到参考音频</option>';
+      return;
+    }
+    let html = '<option value="">共 ' + refs.length + ' 条，点选填入路径</option>';
+    for (const r of refs) {
+      html += '<option value="' + esc(r.path) + '">' + esc(r.name) + ' — ' + esc(r.dir) + '</option>';
+    }
+    sel.innerHTML = html;
+  } catch (e) {
+    sel.innerHTML = '<option value="">参考音频读取失败</option>';
+  }
+}
+
+function badge(status) {
+  const cls = "badge b-" + (STATUS_TEXT[status] ? status : "queued");
+  return '<span class="' + cls + '">' + esc(STATUS_TEXT[status] || status || "未知") + "</span>";
+}
+
+function renderJob(job) {
+  jobCache[job.id] = job;
+  const open = openLogs.has(job.id);
+  const running = job.status === "running" || job.status === "queued";
+  let html = '<div class="job" data-id="' + esc(job.id) + '">';
+  html += '<div class="job-top"><div><div class="job-name">' + esc(job.name) + ' ' + badge(job.status) + "</div>";
+  html += '<div class="job-meta">任务号 ' + esc(job.id) + ' · 创建 ' + esc(job.created || "-") +
+    ' · ' + job.steps + ' 步 · batch ' + job.batch_size + ' · GPU ' + job.gpu +
+    (job.bf16 ? " · bf16" : "") + "</div></div>";
+  html += '<div class="job-actions">';
+  if (running) html += '<button type="button" class="danger" data-act="cancel" data-id="' + esc(job.id) + '">取消</button>';
+  html += '<button type="button" class="ghost" data-act="log" data-id="' + esc(job.id) + '">' +
+    (open ? "收起日志" : "展开日志") + "</button></div></div>";
+  html += '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, job.progress || 0)) + '%"></i></div>';
+  html += '<div class="bar-row"><span>进度 ' + (job.progress || 0) + '%</span><span>' +
+    (job.status === "running" ? "训练中…" : esc(STATUS_TEXT[job.status] || "")) + "</span></div>";
+  if (job.error) html += '<div class="job-err">' + esc(job.error) + "</div>";
+  if (job.artifact) html += '<div class="art">产物：<b>' + esc(job.artifact) + "</b></div>";
+  html += '<pre class="log' + (open ? " on" : "") + '" id="log-' + esc(job.id) + '">' +
+    (open ? esc(logText[job.id] || "加载日志…") : "") + "</pre>";
+  html += "</div>";
+  return html;
+}
+
+function renderJobs(jobs) {
+  const box = document.getElementById("jobs");
+  const meta = document.getElementById("jobsMeta");
+  if (!jobs.length) {
+    box.innerHTML = '<div class="empty">暂无任务</div>';
+    meta.textContent = "共 0 个任务";
+    return;
+  }
+  const running = jobs.filter(function (j) { return j.status === "running" || j.status === "queued"; }).length;
+  meta.textContent = "共 " + jobs.length + " 个任务，进行中 " + running + " 个";
+  box.innerHTML = jobs.map(renderJob).join("");
+  for (const id of openLogs) {
+    const pre = document.getElementById("log-" + id);
+    if (!pre) continue;
+    pre.classList.add("on");
+    pre.textContent = logText[id] || "加载日志…";
+    pre.scrollTop = pre.scrollHeight;
+  }
+}
+
+async function loadJobs() {
+  try {
+    const data = await api("/train/jobs");
+    renderJobs(data.jobs || []);
+  } catch (e) {
+    document.getElementById("jobsMeta").textContent = "任务列表读取失败：" + e.message;
+  }
+}
+
+async function toggleLog(id) {
+  const pre = document.getElementById("log-" + id);
+  if (!pre) return;
+  if (openLogs.has(id)) {
+    openLogs.delete(id);
+    pre.classList.remove("on");
+    const btn = document.querySelector('button[data-act="log"][data-id="' + id + '"]');
+    if (btn) btn.textContent = "展开日志";
+    return;
+  }
+  openLogs.add(id);
+  pre.classList.add("on");
+  pre.textContent = "加载日志…";
+  const btn = document.querySelector('button[data-act="log"][data-id="' + id + '"]');
+  if (btn) btn.textContent = "收起日志";
+  await pollLog(id);
+}
+
+async function pollLog(id) {
+  if (!openLogs.has(id)) return;
+  const pre = document.getElementById("log-" + id);
+  if (!pre) return;
+  try {
+    const data = await api("/train/jobs/" + encodeURIComponent(id) + "/log?tail=200");
+    const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
+    logText[id] = (data.lines || []).join("\n") || "（还没有日志输出）";
+    pre.textContent = logText[id];
+    if (atBottom) pre.scrollTop = pre.scrollHeight;
+  } catch (e) {
+    pre.textContent = "日志读取失败：" + e.message;
+  }
+}
+
+async function submitJob() {
+  const btn = document.getElementById("submitBtn");
+  showFormError("");
+  const name = document.getElementById("name").value.trim();
+  const refPath = document.getElementById("ref").value.trim();
+  if (!name) { showFormError("请先填写音色名"); return; }
+  if (!refPath) { showFormError("请填写人声路径或数据集目录"); return; }
+  const payload = {
+    name: name,
+    ref_path: refPath,
+    steps: Number(document.getElementById("steps").value || 1000),
+    batch_size: Number(document.getElementById("batch").value || 2),
+    bf16: document.getElementById("bf16").checked,
+    gpu: Number(document.getElementById("gpu").value || 0)
+  };
+  btn.disabled = true;
+  btn.textContent = "提交中…";
+  try {
+    const job = await api("/train/jobs", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    showFormError("");
+    await loadJobs();
+    if (job && job.id) await toggleLog(job.id);
+  } catch (e) {
+    showFormError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "开始训练";
+  }
+}
+
+async function cancelJob(id) {
+  const job = jobCache[id];
+  if (!job) return;
+  if (!confirm("确定取消任务「" + job.name + "」？训练进程会被终止。")) return;
+  try {
+    await api("/train/jobs/" + encodeURIComponent(id) + "/cancel", {method: "POST"});
+    await loadJobs();
+  } catch (e) {
+    showFormError(e.message);
+    const pre = document.getElementById("log-" + id);
+    if (pre) { pre.classList.add("on"); pre.textContent = "取消失败：" + e.message; }
+  }
+}
+
+function bindEvents() {
+  document.getElementById("submitBtn").addEventListener("click", submitJob);
+  document.getElementById("refSel").addEventListener("change", function (ev) {
+    if (ev.target.value) document.getElementById("ref").value = ev.target.value;
+  });
+  document.getElementById("jobs").addEventListener("click", function (ev) {
+    const btn = ev.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    if (btn.getAttribute("data-act") === "cancel") cancelJob(id);
+    else toggleLog(id);
+  });
+}
+
+function startPolling() {
+  if (timerJobs) clearInterval(timerJobs);
+  timerJobs = setInterval(loadJobs, 3000);
+  setInterval(function () {
+    for (const id of Array.from(openLogs)) pollLog(id);
+  }, 2000);
+}
+
+bindEvents();
+loadHealth();
+loadRefs();
+loadJobs();
+startPolling();
+</script>
+<script src="/i18n.js" defer></script>
+</body>
+</html>

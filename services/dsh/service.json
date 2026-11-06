@@ -1,0 +1,15 @@
+{
+  "name": "dsh",
+  "kind": "edge",
+  "layer": "接入客户端",
+  "port": 3080,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "pin": true,
+  "responsibility": "桌宠宿主：桌宠窗口、OCR 点评、插件设置",
+  "ui": "http://127.0.0.1:3080",
+  "links": {
+    "控制台": "http://127.0.0.1:3080"
+  }
+}

@@ -1,0 +1,69 @@
+// dsh-pet 个人配置示例（~/.dsh/dsh-pet/main-config.jsonc）
+// install.ps1 在该文件不存在时会用本示例铺一份；改完重启 DSH 生效。
+// 完整可配项见包内默认 assets/config.jsonc；本示例只覆盖常用的个性化项。
+{
+  // 桌宠实例：每只独立
+  "pets": [
+    {
+      "id": "main",
+      "name": "大肥鱼",            // 桌宠名字（气泡/日志里显示）
+      "size": 462,                 // 显示尺寸（px）
+      "balanceEnabled": true,      // 余额气泡
+      "whisperEnabled": true,      // 碎碎念
+      "workStatusEnabled": true,   // 工作状态气泡
+      "fixedEnabled": false,
+      "display": "both",
+      "position": { "corner": "top-right", "marginX": 24, "marginY": 100 }
+    }
+  ],
+
+  // 碎碎念人设：想换人设只改这一段
+  "whisperPrompt": "你是主人桌面上的Q版大肥鱼，会时不时碎碎念一句。说话要自然随意、短短一句（20字以内），俏皮可爱，说人话不啰嗦，不要解释你自己，不要提你是AI。",
+
+  // 睡觉时段的台词
+  "sleepRefuseTexts": ["我在睡觉，别烦我……", "唔……让我再睡一会儿。"],
+  "sleepStartTexts": ["好困……我先睡一会儿。", "那我去睡啦，晚安。"],
+  "sleepEndTexts": ["唔……我醒了。", "睡饱啦，主人！"],
+
+  // 模型：留空 = 用 DSH 默认模型；也可单独指定
+  "chatMemoryRounds": 10,
+  "whisperModel": { "provider": "", "model": "" },
+  "chatModel": { "provider": "", "model": "" },
+
+  // 看屏点评（Ollama 视觉模型）
+  "whisperImageEnabled": true,
+  "visionToolsEnabled": true,
+  "visionWatchEnabled": true,
+  "visionWatchSec": 900,
+  "ollamaModel": "qwen2.5vl:3b",
+  "ollamaBase": "http://127.0.0.1:11434",
+
+  // 海草 + 背景泡泡（宠物身后的水族箱背景层）
+  "bubbleBackdropEnabled": true,     // 总开关：false = 不显示
+  "bubbleRiseSfxEnabled": true,      // 泡泡上浮音效
+  "bubbleBackdropCount": 9,          // 泡泡数量
+  "bubbleBackdropMotion": "normal",  // normal | slow | lively
+  "bubbleBackdropPalette": "candy",  // 配色主题
+
+  // 物理手感（拖拽抛掷）
+  "physics": {
+    "gravity": 1400,
+    "restitution": 0.78,
+    "groundFriction": 2.5,
+    "ceilingBounce": true,
+    "throwPower": 1,
+    "petCollision": true,
+    "tiltGravity": true,
+    "shakeThrow": true
+  },
+
+  // 气泡字体
+  "font": { "family": "candy", "size": 21, "followPet": true },
+
+  // 周期事件（秒）
+  "eventsRefreshSec": {
+    "balance": 1800,   // 余额刷新
+    "whisper": 300,    // 碎碎念
+    "sleepTalk": 60    // 睡话
+  }
+}

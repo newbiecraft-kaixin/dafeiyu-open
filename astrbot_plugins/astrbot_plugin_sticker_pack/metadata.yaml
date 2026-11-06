@@ -1,0 +1,7 @@
+name: astrbot_plugin_sticker_pack
+display_name: "表情包索引（文字匹配推荐 / 收藏查重）"
+desc: "把回复里的 :情绪词: 按文字相似度从全库挑图单独成条；图片指纹只在收藏入库查重时使用，推荐不碰指纹。"
+version: v1.3.0
+author: dafeiyu-local
+support_platforms:
+  - aiocqhttp

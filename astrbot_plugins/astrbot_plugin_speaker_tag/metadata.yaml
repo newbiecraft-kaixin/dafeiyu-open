@@ -1,0 +1,5 @@
+name: astrbot_plugin_speaker_tag
+desc: "群聊当前消息补 [昵称/时间]: 标签 + 群历史块截断 + 每人档案按会话（群/私聊）隔离存储并在回复时注入"
+version: v1.3.0
+author: dafeiyu-local
+repo: local

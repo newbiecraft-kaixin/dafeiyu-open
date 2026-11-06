@@ -1,0 +1,1 @@
+﻿cosyvoice_ref\profiles\流萤\ft_model_10000.pth

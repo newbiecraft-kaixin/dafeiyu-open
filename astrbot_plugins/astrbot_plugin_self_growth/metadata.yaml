@@ -1,0 +1,7 @@
+name: astrbot_plugin_self_growth
+display_name: "自我成长系统（经验笔记闭环）"
+desc: "AI 可自主记录经验教训到成长笔记，笔记自动注入每次 LLM 请求的系统提示，形成学到-记住-用上的学习闭环；支持按关键词遗忘过时笔记。"
+version: v1.0.0
+author: dafeiyu-local
+support_platforms:
+  - aiocqhttp

@@ -1,0 +1,34 @@
+{
+  "name": "brain",
+  "kind": "capability",
+  "layer": "中枢层",
+  "port": 23402,
+  "ui": "http://127.0.0.1:23402/capabilities",
+  "responsibility": "角色/身份路由 + 人设 + 会话 + 记忆；模型调用交给 model 层",
+  "depends": ["infra", "model", "store"],
+  "entry": "service.py",
+  "endpoints": [
+    "GET /roles",
+    "POST /route",
+    "POST /chat",
+    "POST /event",
+    "GET /memory",
+    "POST /memory",
+    "DELETE /memory",
+    "GET /status",
+    "GET /capabilities"
+  ],
+  "files": {
+    "roles": "roles.json",
+    "persona": ["stack/persona-大肥鱼.md", "stack/persona-女仆强化.md"],
+    "sessions": "data/sessions.json"
+  },
+  "harness": {
+    "mode": "headless",
+    "executor": "services/model",
+    "profiles": ["brain-dafeiyu", "brain-maid"],
+    "tools": "disabled",
+    "credential_modes": ["account", "api_key"]
+  },
+  "status": "active"
+}

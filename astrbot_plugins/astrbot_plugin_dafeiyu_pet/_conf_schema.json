@@ -1,0 +1,27 @@
+{
+  "enabled": {
+    "type": "bool",
+    "default": true,
+    "description": "启用桌宠状态同步"
+  },
+  "relay_url": {
+    "type": "string",
+    "default": "http://127.0.0.1:23334/state",
+    "description": "桌宠中转服务地址（pet-relay.js）"
+  },
+  "notify_qq": {
+    "type": "bool",
+    "default": true,
+    "description": "同步 QQ 机器人状态"
+  },
+  "notify_wechat": {
+    "type": "bool",
+    "default": true,
+    "description": "同步微信机器人状态"
+  },
+  "min_interval": {
+    "type": "float",
+    "default": 1.5,
+    "description": "同一来源两次推送的最小间隔（秒），避免刷屏"
+  }
+}
