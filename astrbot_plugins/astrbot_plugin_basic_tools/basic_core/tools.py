@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 import aiohttp
 
 from astrbot.api.event import AstrMessageEvent, filter
 
+from . import blocklist
 from .compat import enter_plugin_main, exit_plugin_main, install_helpers
 
 install_helpers(globals())
@@ -325,6 +327,35 @@ class ToolsMixin:
             f"本次找到自己最近 {len(mine)} 条发言，成功撤销 {ok} 条{extra}"
             f"（累计撤销 {st['recalled']} 条）"
         )
+
+    @filter.llm_tool(name="ignore_user")
+    async def ignore_user(
+        self, event: AstrMessageEvent, user: str = "", minutes: str = "30", reason: str = ""
+    ):
+        """当你对某人厌烦、不想再聊时使用：把TA拉黑几分钟，期间TA发的消息你一概不回应，到期自动恢复。仅限对方持续骚扰、阴阳、刷屏或让你很不舒服时用，别滥用，也别拉黑主人。
+
+        Args:
+            user(string): 要拉黑谁，@TA或写TA的昵称
+            minutes(string): 拉黑多少分钟，1-720，默认30
+            reason(string): 一句话原因，如「老阴阳我」「刷屏太吵」
+        """
+        gid = str(event.get_group_id() or "").strip()
+        bot = getattr(event, "bot", None)
+        raw = str(user or "").strip()
+        uid, disp = "", ""
+        m = re.search(r"\b(\d{5,11})\b", raw)
+        if m:
+            uid, disp = m.group(1), m.group(1)
+        elif raw and bot is not None and gid:
+            try:
+                uid = await self._resolve_member(bot, gid, raw) or ""
+                disp = raw
+            except Exception:  # noqa: BLE001
+                uid = ""
+        if not uid:
+            return "没认出要拉黑谁，给个准确的昵称或QQ号"
+        mins = blocklist.set_block(uid, minutes, reason=str(reason or "").strip(), by="ai")
+        return f"行，{disp}（{uid}）接下来 {mins} 分钟不聊了（原因：{reason or '没说'}）。到期自动恢复，期间TA说什么我都当没看见。"
 
 
 exit_plugin_main(globals(), _REAL_MODULE_NAME)

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import random
 import re
 import time
@@ -25,10 +27,31 @@ from astrbot.api.message_components import (
     Video,
 )
 
-from .config import LOCAL_DECIDE_PROVIDER
+from .config import DATA_ROOT, LOCAL_DECIDE_PROVIDER
 from .prompts import SYSTEM_PROMPT
 from .text import BALANCE_ERR_RE, HALLUCINATED_MEDIA_RE, _DUP_SEND_LAST, _DUP_SEND_WINDOW, _FY_CONTENT_RE, _IDENTITY_TAG_RE, _MIX_TOKEN_RE, _QUOTE_RE, _STICKER_REQUEST_RE, _TOKEN_RE, _clean_quote, _cut_at_sentence_boundary, _send_dedupe_key, _send_dedupe_text, _strip_tokens
 from .runtime import filters
+
+# 拉黑共享存储（basic_tools 写：AI ignore_user tool / 主人 /拉黑 指令）。
+# 按 mtime 缓存增量重读：黑名单变更不需要任何插件重载。
+_BLOCKLIST_PATH = os.path.join(DATA_ROOT, "blocklist.json")
+_BLK_CACHE = {"mtime": 0.0, "items": {}}
+
+
+def _load_blocklist() -> dict:
+    try:
+        m = os.path.getmtime(_BLOCKLIST_PATH)
+    except OSError:
+        return {}
+    if m != _BLK_CACHE["mtime"]:
+        try:
+            with open(_BLOCKLIST_PATH, encoding="utf-8") as f:
+                d = json.load(f)
+            _BLK_CACHE["items"] = d if isinstance(d, dict) else {}
+        except Exception:  # noqa: BLE001
+            _BLK_CACHE["items"] = {}
+        _BLK_CACHE["mtime"] = m
+    return _BLK_CACHE["items"]
 
 # 让本模块内定义的函数/方法 __module__ 仍归属 main：
 # AstrBot 依赖 __module__ 做插件归属、实例绑定与热重载清理，拆分后必须保持一致。
@@ -157,10 +180,25 @@ class PipelineMixin:
         except Exception as e:  # noqa: BLE001
             logger.debug(f"[human_sim] 监听窗口接话失败: {type(e).__name__}: {e}")
 
+    def _blocked_by(self, uid: str) -> dict | None:
+        """在拉黑窗口内则返回条目（AI 厌烦拉黑 / 主人 /拉黑），否则 None。"""
+        ent = _load_blocklist().get(str(uid or "").strip())
+        if ent and float(ent.get("until") or 0) > time.time():
+            return ent
+        return None
+
     @filter.event_message_type(filter.EventMessageType.PRIVATE_MESSAGE)
     async def _record_private(self, event: AstrMessageEvent):
         """记下谁私聊过我、聊到哪儿了——主动问候 / 话题追问的数据来源。"""
         try:
+            blk = self._blocked_by(event.get_sender_id())
+            if blk:
+                # 厌烦/拉黑窗口内：私聊也不理，直接停事件
+                logger.info(
+                    f"[human_sim] 已拉黑，忽略私聊（原因：{blk.get('reason') or '没说'}）"
+                )
+                event.stop_event()
+                return
             umo = event.unified_msg_origin
             text = (event.message_str or "").strip()
             qq = str(event.get_sender_id() or "")
@@ -187,6 +225,14 @@ class PipelineMixin:
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     async def _record(self, event: AstrMessageEvent):
         try:
+            blk = self._blocked_by(event.get_sender_id())
+            if blk:
+                # 厌烦/拉黑窗口内：群消息不回应也不记，@唤醒一并拦掉
+                logger.info(
+                    f"[human_sim] 已拉黑，忽略消息（原因：{blk.get('reason') or '没说'}）"
+                )
+                event.stop_event()
+                return
             umo = event.unified_msg_origin
             # 顺手学表情：群里出现的 face id → 名字，补 face_config 没跟上的新包
             self._learn_from_event(event)
