@@ -195,7 +195,8 @@ AstrBot, NapCat and CosyVoice are downloaded by the installer. DeepSeek Harness 
    - [NapCat](https://github.com/NapNeko/NapCatQQ/releases): download `NapCat.Shell.Windows.OneKey.zip`, extract it, then run `NapCatInstaller.exe` once.
    - Optional: [CosyVoice](https://github.com/QwenAudio/CosyVoice) + weights [`iic/CosyVoice2-0.5B`](https://www.modelscope.cn/models/iic/CosyVoice2-0.5B) (local voice), [Ollama](https://ollama.com/download/windows) (local models).
 2. Copy `astrbot_plugins/*` into AstrBot's `data/plugins/` and enable only the plugins you want.
-3. Start `io-wechat` (WeChat bridge), `voice/audio/video`, etc. per [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md). Default ports are in each service's `service.json` under [`services`](services).
+3. Start `io-wechat` (WeChat bridge), `voice/audio/video`, etc. per [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md). Default ports are in each service's `service.json` under [`services`](services); the full port table plus firewall and reverse-proxy notes are in [GETTING-STARTED §12](docs/GETTING-STARTED.md#12-端口速查) (Chinese).
+4. NapCat needs **two** channels: reverse WS `6199` (message in/out) and HTTP `3000` (proactive sends — without it you get "napcat offline").
 
 ### ③ Desktop pet
 

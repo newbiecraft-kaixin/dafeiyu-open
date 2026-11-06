@@ -49,7 +49,8 @@ QQ ↔ NapCat（OneBot11 反向 WS）↔ AstrBot ↔ 插件层
 | dsh | 3080 | 桌宠渲染面 |
 | pet | 23334 | 桌宠继电 |
 | astrbot | 6185 | AstrBot 面板 |
-| napcat | 3000 | NapCat HTTP |
+| astrbot aiocqhttp | 6199 | 接收 NapCat 反向 WS |
+| napcat | 3000 | NapCat OneBot HTTP（主动发消息） |
 
 ## 关键设计
 

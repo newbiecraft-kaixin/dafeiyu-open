@@ -11,7 +11,7 @@
 ## 架构
 
 ```
-QQ ⇄ NapCat(napcat-win, Shell 版) ⇄ WebSocket 反向(6199, token) ⇄ AstrBot(astrbot-win) ⇄ DeepSeek API
+QQ ⇄ NapCat(napcat-win, Shell 版) ⇄ 反向 WS 6199 / HTTP 3000(token) ⇄ AstrBot(astrbot-win) ⇄ DeepSeek API
 ```
 
 ## 目录
@@ -22,6 +22,7 @@ QQ ⇄ NapCat(napcat-win, Shell 版) ⇄ WebSocket 反向(6199, token) ⇄ AstrB
 - `astrbot-win/venv/`：Python 3.13 虚拟环境（requirements.txt + edge-tts + imageio-ffmpeg）
 - `napcat-win/`：NapCat Shell Windows 版（自带 QQ 壳，9.9.31-49738）
   - `napcat/config/onebot11_1000000000.json`：反向 WS → `ws://127.0.0.1:6199/ws`，token `change-me-6199-token`
+  - 同一个文件里还要有 **HTTP 服务器**：`host 127.0.0.1`、`port 3000`、token 同上。只配反向 WS 时机器人只能被动回复，hub 主动发消息会提示「napcat 不在线」
   - `napcat/config/webui.json`：WebUI 6099 端口，token `change-me-webui-token`
 
 ## 仓库内随附的素材与配置

@@ -191,7 +191,8 @@ AstrBot、NapCat、CosyVoice 由安装器下载；DeepSeek Harness 未公开发�
    - [NapCat](https://github.com/NapNeko/NapCatQQ/releases)：下载 `NapCat.Shell.Windows.OneKey.zip`，解压后先运行一次 `NapCatInstaller.exe`。
    - 可选：[CosyVoice](https://github.com/QwenAudio/CosyVoice) + 权重 [`iic/CosyVoice2-0.5B`](https://www.modelscope.cn/models/iic/CosyVoice2-0.5B)（本地语音）、[Ollama](https://ollama.com/download/windows)（本地模型）。
 2. 把 `astrbot_plugins/*` 复制到 AstrBot 的 `data/plugins/`，按需只启用你想要的插件。
-3. 按 [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md) 启动 `io-wechat`（微信桥）、`voice/audio/video` 等能力服务。各服务默认端口见 [`services`](services) 下每个目录的 `service.json`。
+3. 按 [docs/WINDOWS-DEPLOY.md](docs/WINDOWS-DEPLOY.md) 启动 `io-wechat`（微信桥）、`voice/audio/video` 等能力服务。各服务默认端口见 [`services`](services) 下每个目录的 `service.json`，完整端口表、防火墙放行与反向代理见 [GETTING-STARTED 第 12 节](docs/GETTING-STARTED.md#12-端口速查)。
+4. NapCat 要同时开两条通道：反向 WS `6199`（收发主通道）和 HTTP `3000`（主动发消息，缺了会提示「napcat 不在线」）。
 
 ### ③ 桌宠
 

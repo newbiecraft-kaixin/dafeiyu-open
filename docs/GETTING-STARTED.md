@@ -172,7 +172,7 @@ AstrBot 是开源的多平台聊天机器人框架（AGPL-3.0）。它不提供�
 ### 3.5 第一次进 WebUI 必做四件事
 
 1. **改密码**：默认账号密码都是 `astrbot`，登录后立刻改。
-2. **加平台**：平台 → 新增 `aiocqhttp`，监听 `127.0.0.1:6199`，token 与 NapCat 反向 WS 完全一致；NapCat 侧填 `ws://127.0.0.1:6199/ws`。
+2. **加平台**：平台 → 新增 `aiocqhttp`，监听 `127.0.0.1:6199`，token 与 NapCat 反向 WS 完全一致；NapCat 侧填 `ws://127.0.0.1:6199/ws`。同时在 NapCat 里开 **HTTP 服务器 `127.0.0.1:3000`**（见[第 6 节](#6-napcatqq-登录)），否则机器人不会主动说话。
 3. **配 provider**：填 DeepSeek API Key（或把地址指向本地 Ollama / 本地 harness）；需要自动分流就启用 `provider_router`。
 4. **重载插件**：插件管理 → 重载，确认列表里有 18 个 `astrbot_plugin_*`；先启用 `human_sim`、`provider_router`、`basic_tools` 试跑，其余按需开。
 
@@ -269,8 +269,17 @@ powershell -ExecutionPolicy Bypass -File .\tools\windows\install-plugins.ps1 -As
 2. 解压到 `third_party\NapCat`，双击其中的 `NapCatInstaller.exe`，按提示选择你本机 QQ 的版本完成安装。
 3. 启动：`tools\windows\start-napcat-win.bat`。
 4. 浏览器打开 <http://127.0.0.1:6099/webui>，先看 WebUI 里显示的 token，再扫码登录 QQ。
-5. 配置 **OneBot v11 反向 WebSocket**：地址 `ws://127.0.0.1:6199/ws`，token 自定义一串随机字符。
+5. 配置 **OneBot v11 两条通道**（都在 WebUI → 网络配置里新增，token 两边保持一致）：
+   - **反向 WebSocket**：`ws://127.0.0.1:6199/ws` —— 必开。QQ 消息收发的主通道，断了机器人就完全不响应。
+   - **HTTP 服务器**：监听 `127.0.0.1:3000` —— 必开。机器人主动发消息、插件出站调用都走它（hub 的「发消息」工具直接 `POST http://127.0.0.1:3000/send_group_msg`）。不开这一项，被动回复正常，主动说话会报「napcat 不在线」。
 6. 在 AstrBot WebUI 里添加 `aiocqhttp` 平台，端口与 token 跟第 5 步保持一致。
+
+验证两条通道都通：
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 6199   # 反向 WS
+Test-NetConnection 127.0.0.1 -Port 3000   # OneBot HTTP
+```
 
 NapCat 的配置随 QQ 版本变化，遇到控件或字段对不上时以官方文档 <https://napcat.napneko.icu/> 为准。
 
@@ -381,6 +390,7 @@ AstrBot 目录按 `astrbot-win/AstrBot-*` 自动识别，版本从 4.29.x 升到
 6. 需要桌宠时先确认 `Test-Path "$env:USERPROFILE\.dsh\profiles\web"`，再 `.\install.bat -Select 8 -Yes`。
 7. `.\install.bat -Select 9 -Yes` → 启动核心四服务。
 8. 按[第 9 节](#9-逐项验收)逐个请求 `/health`，全部返回后才算部署成功。
+9. 检查端口：`6199`（AstrBot 反向 WS）、`3000`（NapCat OneBot HTTP）、`6099`（NapCat WebUI）三个都要通；缺 `3000` 时机器人只能被动回复。跨机或公网访问按 [12.1](#121-端口放行与反向代理) 处理。
 
 禁止事项：不要复制其他机器上的 `astrbot-win\AstrBot-4.29.3` 整个目录当作 AstrBot 安装（那只是示例数据）；不要把 Token、Cookie、聊天记录写进仓库；不要为 DSH 编造下载地址。
 
@@ -395,14 +405,44 @@ AstrBot 目录按 `astrbot-win/AstrBot-*` 自动识别，版本从 4.29.x 升到
 | AstrBot | 6185 | WebUI，默认账号 `astrbot/astrbot` |
 | AstrBot aiocqhttp | 6199 | 接收 NapCat 反向 WS |
 | NapCat WebUI | 6099 | 登录 QQ、看 token |
-| io-wechat | 见 `service.json` | 微信桌面桥 |
+| **NapCat OneBot HTTP** | **3000** | **机器人主动发消息走这里**，hub 的「发消息」工具直连 `http://127.0.0.1:3000/{action}`；没开就报「napcat 不在线」 |
+| io-wechat | 23392 | 微信桌面桥 |
 | audio | 23366 | 音色训练与歌曲库，`/ui/train` |
 | video | 23368 | 视频解析与信息流 |
 | subtitle | 23405 | whisper 字幕 / 画面描述 |
+| stickers | 8712 | 表情包存储 |
 | voice | 8714 | CosyVoice2 TTS |
-| pet-relay | 23334 | 桌宠侧信道 |
+| pet（pet-relay） | 23334 | 桌宠侧信道 |
+| dsh | 3080 | DSH 桌宠渲染面 |
 
 端口冲突时用环境变量覆盖（如 `HUB_PORT`、`AUDIO_PORT`、`VIDEO_PORT`）。
+
+### 12.1 端口放行与反向代理
+
+所有服务默认只监听 `127.0.0.1`，同一台机器上互相访问不需要额外放行。按场景开端口：
+
+| 场景 | 要开的端口 | 做法 |
+|---|---|---|
+| 只在本机用 | 无 | 浏览器直接开 <http://127.0.0.1:23408> |
+| 局域网另一台机器看控制台 | `23408`（按需 `23366`/`23368`/`23405`） | Windows 防火墙 → 高级设置 → 入站规则 → 新建规则 → 端口 |
+| NapCat 与 AstrBot 不在同一台机器 | NapCat 所在机器的 `3000`（OneBot HTTP）、`6199`（反向 WS） | 同上；反向 WS 地址改成对方内网 IP |
+| 远程 / 公网访问 | 只开**反向代理端口**（示例 `8443`） | 用 Nginx / Caddy 反代到 `127.0.0.1:23408` 并加认证 |
+
+NapCat 的 `3000` 端口由它自己的 OneBot v11 HTTP 服务提供：WebUI（6099）→ 网络配置 → 新增 HTTP 服务器，端口填 `3000`、Host 填 `127.0.0.1`，token 与 AstrBot 侧保持一致。不启用这一项时，QQ 收发照常（走 `6199` 反向 WS），但 hub 的主动发消息和部分插件的出站调用会失败。
+
+远程访问不要直接把端口映射到公网，`3000`、`6199`、`6099`、`6185` 一律保持本机闭环，对外只暴露反向代理那一个端口。Nginx 最小示例：
+
+```nginx
+server {
+    listen 8443 ssl;
+    server_name your-domain;
+    location / {
+        auth_basic "dafeiyu";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://127.0.0.1:23408;
+    }
+}
+```
 
 ## 13. 常见问题
 
@@ -415,6 +455,10 @@ AstrBot 目录按 `astrbot-win/AstrBot-*` 自动识别，版本从 4.29.x 升到
 **6185 打不开**：AstrBot 还没启动，或端口被别的程序占了。用 `netstat -ano | findstr 6185` 查占用。
 
 **QQ 登录后机器人不回**：先看 AstrBot 日志有没有 `aiocqhttp` 连接；再核对 NapCat 的反向 WS 地址与 token 是否和 AstrBot 平台配置完全一致。
+
+**机器人能被动回复，但不会主动说话 / 提示「napcat 不在线」**：NapCat 没开 OneBot v11 的 **HTTP 服务器（3000）**，只配了反向 WS 6199。WebUI → 网络配置新增 HTTP 服务器，端口 `3000`，token 与反向 WS 一致；然后 `Test-NetConnection 127.0.0.1 -Port 3000` 确认通。
+
+**防火墙拦住了跨机访问**：本机默认只监听 `127.0.0.1`，局域网另一台机器访问要按 [12.1 端口放行与反向代理](#121-端口放行与反向代理) 开入站规则；公网访问一律走反向代理，不要直接映射端口。
 
 **页面能开但模型报错**：密钥没注入到运行进程的环境变量里，重启该服务。
 
