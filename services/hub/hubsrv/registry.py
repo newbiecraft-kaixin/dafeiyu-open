@@ -4,11 +4,16 @@ registry 依赖 catalog（工具目录）、probe（端口探活）与 http_clie
 """
 from __future__ import annotations
 
+import http.client
 import json
+import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote, urlsplit
 
 from .catalog import TOOLS
 from .config import LAYERS, LAYER_BY_NAME, PINNED, PORT, SERVICES_DIR
@@ -128,6 +133,11 @@ def _capabilities() -> Dict[str, Any]:
                 ui = f"http://127.0.0.1:{port}{ui}"
             elif not ui:
                 ui = f"http://127.0.0.1:{port}/health"
+        links = _links(manifest)
+        if manifest.get("name") == "dsh":
+            # DSH 控制台要带网页 token，否则点进去是 401。
+            ui = _with_dsh_token(ui)
+            links = {label: _with_dsh_token(href) for label, href in links.items()}
         services.append({
             "name": manifest.get("name"),
             "kind": manifest.get("kind"),
@@ -138,7 +148,7 @@ def _capabilities() -> Dict[str, Any]:
             "responsibility": manifest.get("responsibility", ""),
             "endpoints": manifest.get("endpoints", []),
             "ui": ui,
-            "links": _links(manifest),
+            "links": links,
             "online": online,
             "pin": manifest.get("name") in PINNED or bool(manifest.get("pin")),
             # 有 entry 的服务都能由控制台启停；hub 自己已在上面被跳过
@@ -220,6 +230,58 @@ def _links(manifest: Dict[str, Any]) -> Dict[str, str]:
     if isinstance(extra, dict):
         links.update({str(key): str(value) for key, value in extra.items()})
     return links
+
+
+# DSH 控制台（3080）启动时会打印带网页 token 的地址；中枢里的链接要带上它，
+# 否则浏览器直接打开只会收到 401「dsh web authentication required」。
+_DSH_LOG = Path.home() / ".dsh" / "web-server.out.log"
+_DSH_TOKEN_CACHE: Dict[str, Any] = {"at": 0.0, "token": ""}
+_DSH_TOKEN_TTL = 5.0
+
+
+def _dsh_token() -> str:
+    """从 DSH 启动日志里取当前网页 token；日志缺失、没打印或已过期都返回空串。"""
+    now = time.monotonic()
+    if now - _DSH_TOKEN_CACHE["at"] < _DSH_TOKEN_TTL:
+        return _DSH_TOKEN_CACHE["token"]
+    log = Path(os.environ.get("DSH_WEB_LOG") or _DSH_LOG)
+    try:
+        text = log.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        text = ""
+    matches = re.findall(r"/\?token=([A-Za-z0-9_\-]+)", text)
+    # 日志可能残留上一个进程的 token，探一下活再决定用不用。
+    token = matches[-1] if matches and _dsh_token_alive(matches[-1]) else ""
+    _DSH_TOKEN_CACHE.update(at=now, token=token)
+    return token
+
+
+def _dsh_token_alive(token: str) -> bool:
+    """用 DSH 的首页验一次 token：有效会下发登录 cookie，无效直接 401。"""
+    conn = http.client.HTTPConnection("127.0.0.1", 3080, timeout=1.0)
+    try:
+        conn.request("GET", f"/?token={quote(token)}")
+        return conn.getresponse().status != 401
+    except (OSError, http.client.HTTPException):
+        return False
+    finally:
+        conn.close()
+
+
+def _with_dsh_token(url: str) -> str:
+    """给 DSH 控制台地址补上网页 token；不是 3080 或已经带 token 就原样返回。"""
+    token = _dsh_token()
+    if not token or not url:
+        return url
+    try:
+        parsed = urlsplit(url)
+        port = parsed.port
+    except ValueError:
+        return url
+    if port != 3080 or "token=" in (parsed.query or ""):
+        return url
+    separator = "&" if parsed.query else "?"
+    return f"{url}{separator}token={quote(token)}"
 
 
 def _service(manifests: List[Dict[str, Any]], name: str) -> Optional[Dict[str, Any]]:
