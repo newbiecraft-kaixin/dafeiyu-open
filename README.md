@@ -12,7 +12,8 @@
 | 本项目模块 | 上游项目 | 关系 | 上游许可 |
 |---|---|---|---|
 | `astrbot_plugins/*` | [AstrBot](https://github.com/AstrBotDevs/AstrBot) | 基于 AstrBot 4.x 插件接口开发；主程序与内置插件未随仓库分发 | AGPL-3.0 |
-| `pet/`、`relay/pet-relay.js`、`services/pet` | [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) | 桌宠壳（窗口 / 气泡 / 动作 / 语音链路）改造自该项目；壳本体未随仓库分发 | AGPL-3.0 |
+| `pet/dsh-pet` | [dsh-pet](https://github.com/PC2005-cloud/dsh-pet) | **当前实际在用的桌宠**（DeepSeek Harness 插件）；安装包 `dsh-pet-0.4.1.tgz` 随仓库分发 | MIT |
+| `pet/dafeiyu-web`、`relay/pet-relay.js`、`services/pet` | [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) | 旧版网页桌宠（窗口 / 气泡 / 动作 / 语音链路）改造自该项目；壳本体未随仓库分发 | AGPL-3.0 |
 | `services/io-wechat`、`astrbot_plugin_wechat_oc_bridge` | [wechatauto-replica](https://github.com/fanyuantaier/wechatauto-replica) | 基于其 UIA 微信自动化库对接 | Apache-2.0 |
 | `services/voice`、`tools/` 下的 CosyVoice 脚本、`cosyvoice_ref/` | [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) | 基于 CosyVoice2 推理服务；代码与模型权重未随仓库分发 | Apache-2.0 |
 | 长期记忆能力 | [livingmemory](https://github.com/lxfight-s-Astrbot-Plugins/astrbot_plugin_livingmemory) | 以插件形式依赖，未随仓库分发 | AGPL-3.0 |
@@ -29,7 +30,7 @@
 - **大脑与模型路由**：`services/brain` 负责任务编排、人设、上下文；`services/model` 统一 OpenAI 兼容 / Ollama / 本地 harness 提供方。
 - **语音**：本地 CosyVoice2 情感 TTS（可克隆声线），不可用时自动回退 edge-tts。
 - **视频/音乐**：`services/video` 提供解析与信息流 UI；`web_lookup` 插件支持 B 站、抖音、快手、西瓜的搜索/刷视频。
-- **桌宠**：`pet/dafeiyu-web`（Electron 壳）、`pet/dafeiyu3d`（Three.js 场景）、`relay/pet-relay.js` 负责与大脑/桌宠桥接。
+- **桌宠**：`pet/dsh-pet`（**实际在跑的桌面宠物**，DSH 插件，自带 109 个动作动画与 Electron 运行时）、`pet/dafeiyu-web`（旧版 Electron 页）、`pet/dafeiyu3d`（Three.js 场景）、`relay/pet-relay.js` 负责与大脑/桌宠桥接。
 - **控制台**：`services/hub` 聚合各服务健康状态与启停。
 
 ## 架构
@@ -58,7 +59,7 @@ flowchart LR
 |---|---|---|---|
 | **① 核心（必装）** | `services/hub·model·store·brain`、`shared/infra`、`tools/windows/start-core.bat` | 想跑大脑/模型路由/记忆/控制台 | 无 GPU 也能跑（模型走云端 API） |
 | **② 插件（可选）** | `astrbot_plugins/*` + `services/io-wechat·napcat 接入·voice·audio·video·stickers·subtitle` + AstrBot / NapCat 本体 | 想要 QQ/微信聊天、语音、看视频等能力 | 建议双端聊天至少 8G 内存；本地语音需 NVIDIA GPU（2~4G 显存），无 GPU 自动回退 edge-tts |
-| **③ 桌宠（可选）** | `pet/dafeiyu-web·dafeiyu3d`、`relay/pet-relay.js`、`services/pet·subtitle` + dsh 桌宠壳 | 想要桌面宠物 | 桌宠是 Electron + Three.js，集显可跑，核显建议关 3D 场景 |
+| **③ 桌宠（可选）** | `pet/dsh-pet`（本机同款，安装包已随仓库）+ `relay/pet-relay.js`、`services/pet·subtitle`；旧版 `pet/dafeiyu-web·dafeiyu3d` 保留 | 想要桌面宠物 | dsh-pet 是 Electron，集显可跑；3D 场景建议核显关闭 |
 
 > 组合示例：只跑核心 = 一台轻量机器（或 NAS）跑 hub/model/store/brain；聊天插件装在另一台有微信/QQ 的机器上；桌宠装在平时用的电脑上。三包拆开部署互不依赖启动顺序，通过端口互通即可。
 
@@ -73,8 +74,9 @@ services/
   pet/               桌宠服务                                     → 安装包③
 shared/infra/        共享基础设施（端口、配置、日志）              → 安装包①
 pet/
-  dafeiyu-web/       桌宠 Electron 前端                           → 安装包③
-  dafeiyu3d/         桌宠 Three.js 场景                           → 安装包③
+  dsh-pet/           本机在跑的桌宠（dsh-pet 0.4.1 安装包 + 安装脚本） → 安装包③
+  dafeiyu-web/       旧版桌宠 Electron 前端                       → 安装包③
+  dafeiyu3d/         旧版桌宠 Three.js 场景                       → 安装包③
   tools/             桌宠构建/素材脚本                            → 安装包③
 relay/               桌宠与大脑桥接（pet-relay.js）               → 安装包③
 stack/               Docker 部署参考（compose / Dockerfile / 人设）
@@ -98,10 +100,21 @@ docs/                架构与 Windows 部署说明
 
 ### ③ 桌宠
 
-1. **自行安装桌宠壳**：从 [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) 下载并安装（本仓库不分发壳本体）。
-2. **生成大肥鱼主题**：把素材放进 `%APPDATA%\clawd-on-desk\themes\dafeiyu`，可直接运行 `pet/tools/make_theme_assets.py`（抠图/生成主题资源）。不跑这步会显示桌宠壳的默认造型。
-3. 启动 `relay/pet-relay.js`（桌宠与大脑桥接，23334）与 `services/pet`。
-4. 启动 `pet/dafeiyu-web`：`dist/dafeiyu.iife.js` 已随仓库提供（预构建产物，无需 npm install / build），直接用 Electron 打开即可；3D 场景在 `pet/dafeiyu3d`，低配机器可关闭 3D 只用 2D。
+**方案 A（推荐，就是本机在跑的那只）**
+
+1. 安装并至少启动一次 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH），确认存在 `%USERPROFILE%\.dsh\profiles\web`。
+2. 运行 `powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1`：把仓库自带的 `dsh-pet-0.4.1.tgz` 装进 DSH profile、下载 Electron、并把插件写进 bundles。
+3. 重启 DSH，在插件列表启用 `dsh-pet`，桌宠即出现在桌面（自带 109 个动作动画）。个人数据在 `%USERPROFILE%\.dsh\dsh-pet`。
+4. 需要和大脑联动时再启动 `relay/pet-relay.js`（23334）与 `services/pet`。
+
+详见 [pet/dsh-pet/README.md](pet/dsh-pet/README.md)。
+
+**方案 B（旧版网页桌宠，保留兼容）**
+
+1. 安装 [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) 壳（本仓库不分发壳本体）。
+2. 运行 `pet/tools/make_theme_assets.py` 生成主题到 `%APPDATA%\clawd-on-desk\themes\dafeiyu`。
+3. 启动 `relay/pet-relay.js` 与 `services/pet`。
+4. 用 Electron 打开 `pet/dafeiyu-web`（`dist/dafeiyu.iife.js` 已预构建随仓库提供）；3D 场景在 `pet/dafeiyu3d`。
 
 > 仓库里的启动脚本、配置中的路径均为占位符 `C:\path\to\dafeiyu`，需要替换成你的实际目录。
 
