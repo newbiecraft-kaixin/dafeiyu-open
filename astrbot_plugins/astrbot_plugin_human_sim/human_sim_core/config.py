@@ -122,7 +122,7 @@ DEFAULTS = {
     "avatar_local": True,             # 「发我头像」这类明确请求本地直接甩图，连模型都不叫
     # —— 本地决策层（先本地判，再决定要不要叫模型）——
     "decision_layer": True,           # True=本地三分法（必回/必不回/交模型）；False=每条都问模型（费 token）
-    "silent_keepalive_probability": 0.05,  # 判无声的按这个比例仍交模型看一眼（不然平淡群里变哑巴）
+    "silent_keepalive_probability": 0.25,  # 判无声的按这个比例仍交模型看一眼（不然平淡群里变哑巴）
     "interest_learn": True,           # 我回过的话题记进兴趣表，之后同类话题更容易被判为「该接」
     # —— 复读（对感兴趣的东西跟着来一遍）——
     "repeat_enabled": True,

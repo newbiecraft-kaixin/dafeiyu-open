@@ -73,6 +73,11 @@ class PolicyMixin:
             f_max = float(self.cfg.get("audience_activity_max", 3.0) or 3.0)
         except (TypeError, ValueError):
             window, f_min, f_max = 300.0, 0.35, 3.0
+        # 小群人少，正常聊几句就很容易超过按人数算出来的预期条数，
+        # 再按活跃度去压就成了「越热闹越不敢插嘴」。人数 ≤ audience_min_size 时
+        # 活跃度系数不往下压，只保留冷场时的加成。
+        if count and count > 0 and count <= lo:
+            f_min = 1.0
         ts = self._msg_ts.get(umo)
         now = datetime.now().timestamp()
         n = sum(1 for t in ts if now - t <= window) if ts else 0
