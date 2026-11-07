@@ -6,19 +6,34 @@
 <title>大肥鱼 · 翻唱管理</title>
 <style>
   :root{
-    --bg:#070a14;--card:#101731;--line:rgba(122,152,222,.22);
-    --text:#e9edff;--muted:#8b97bd;--acc:#9db8ff;--blue:#6b8fff;
-    --good:#3ddc97;--bad:#ff617b;--warn:#7cc4ff;
+    --bg:#05070f;--card:#101731;--line:rgba(122,152,222,.22);
+    --text:#e9edff;--muted:#8b97bd;--acc:#7dd3fc;--blue:#22d3ee;
+    --good:#3ddc97;--bad:#ff617b;--warn:#ffc46b;
   }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;color:var(--text);
     font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
-    background:radial-gradient(900px 520px at 10% -12%,rgba(107,143,255,.16),transparent 60%),
-               linear-gradient(180deg,#0c1122,#070a14 46%)}
-  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+    background:radial-gradient(1100px 620px at 88% -12%,rgba(45,212,191,.10),transparent 62%),
+               linear-gradient(180deg,#0a1020,#05070f 46%);
+    animation:pageIn .4s ease both}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px;position:relative;z-index:1}
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora i{position:absolute;border-radius:50%;filter:blur(90px)}
+  .aurora .a1{width:520px;height:520px;left:-150px;top:-170px;
+    background:rgba(34,211,238,.16);animation:drift1 24s ease-in-out infinite alternate}
+  .aurora .a2{width:640px;height:640px;right:-220px;top:14%;
+    background:rgba(99,102,241,.18);animation:drift2 30s ease-in-out infinite alternate}
+  .aurora .a3{width:480px;height:480px;left:26%;bottom:-230px;
+    background:rgba(45,212,191,.12);animation:drift3 18s ease-in-out infinite alternate}
+  @keyframes drift1{to{transform:translate(90px,70px) scale(1.12)}}
+  @keyframes drift2{to{transform:translate(-110px,90px) scale(.94)}}
+  @keyframes drift3{to{transform:translate(70px,-90px) scale(1.15)}}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
   header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
     align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
-  h1{margin:0;font-size:20px;letter-spacing:.5px}
+  h1{margin:0;font-size:20px;letter-spacing:.5px;
+    background:linear-gradient(120deg,#7dd3fc,#a5b4fc);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
   .sub{margin:4px 0 0;color:var(--muted);font-size:13px}
   a.back{color:var(--acc);text-decoration:none;font-size:13px}
   a.back:hover{text-decoration:underline}
@@ -26,21 +41,24 @@
     word-break:break-all;padding:8px 12px;border-radius:9px;background:rgba(122,152,222,.06);
     border:1px solid var(--line)}
   .panel{margin-top:18px;padding:16px 18px;border-radius:16px;
-    background:var(--card);border:1px solid var(--line)}
+    background:var(--card);border:1px solid var(--line);
+    transition:border-color .2s ease,box-shadow .2s ease}
+  .panel:hover{border-color:rgba(34,211,238,.35);box-shadow:0 12px 34px rgba(34,211,238,.09)}
   .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .stat{font-size:13px;color:var(--muted)}
   .stat b{color:var(--acc)}
   .spacer{flex:1}
   .btn{cursor:pointer;border-radius:9px;border:1px solid var(--line);
     background:#121a35;color:#eaf0ff;padding:7px 14px;font-size:13px;transition:.15s}
-  .btn:hover{border-color:rgba(107,143,255,.6);background:#16203d}
-  .btn.primary{background:linear-gradient(180deg,#6b8fff,#4472e8);
+  .btn:hover{border-color:rgba(34,211,238,.55);background:#16203d}
+  .btn.primary{background:linear-gradient(135deg,#06b6d4,#6366f1);
     border-color:transparent;color:#fff}
+  .btn.primary:hover{box-shadow:0 4px 18px rgba(6,182,212,.4);filter:brightness(1.07)}
   .btn.tiny{padding:4px 10px;font-size:12px}
   .btn.danger{color:#ffb3c1;border-color:rgba(255,97,123,.35)}
   .btn.danger:hover{background:rgba(255,97,123,.15)}
   .btn:disabled{opacity:.45;cursor:not-allowed}
-  .btn.on{border-color:rgba(107,143,255,.7);background:rgba(107,143,255,.18)}
+  .btn.on{border-color:rgba(34,211,238,.65);background:rgba(34,211,238,.15);color:#bff3fd}
   .msg{margin-top:10px;font-size:13px;min-height:20px;color:var(--muted)}
   .msg.err{color:var(--bad)}.msg.good{color:var(--good)}
   .player-box{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
@@ -49,10 +67,12 @@
   audio{height:34px;flex:1 1 320px;min-width:220px}
   .list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
   .item{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-    padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:#0b1222}
-  .item:hover{border-color:rgba(107,143,255,.45)}
+    padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:#0b1222;
+    transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+  .item:hover{border-color:rgba(34,211,238,.5);transform:translateY(-1px);
+    box-shadow:0 6px 18px rgba(34,211,238,.10)}
   .tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
-  .tag.cover{color:#9db8ff;background:rgba(107,143,255,.12)}
+  .tag.cover{color:#7dd3fc;background:rgba(34,211,238,.12)}
   .tag.sing{color:#c9f7e6;background:rgba(61,220,151,.1)}
   .name{font-size:13.5px;color:var(--text)}
   .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
@@ -60,12 +80,13 @@
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(122,152,222,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:rgba(122,152,222,.4);background-clip:content-box}
-::selection{background:rgba(107,143,255,.32)}
+::selection{background:rgba(34,211,238,.30)}
 button{transition:.16s ease}
 button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 <div class="wrap">
   <header>
     <div>

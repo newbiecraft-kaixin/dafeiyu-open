@@ -6,34 +6,53 @@
 <title>大肥鱼 · 音色训练</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#070a14;color:#e9edff;
-font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
-.wrap{max-width:1040px;margin:0 auto;padding:34px 24px 60px}
-h1{margin:0 0 6px;font-size:23px;letter-spacing:.5px}
+body{margin:0;min-height:100vh;color:#e9edff;
+font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+background:radial-gradient(1100px 620px at 88% -12%,rgba(45,212,191,.10),transparent 62%),
+           linear-gradient(180deg,#0a1020,#05070f 46%);
+animation:pageIn .4s ease both}
+.wrap{max-width:1040px;margin:0 auto;padding:34px 24px 60px;position:relative;z-index:1}
+h1{margin:0 0 6px;font-size:23px;letter-spacing:.5px;
+background:linear-gradient(120deg,#a5b4fc,#c4b5fd);
+-webkit-background-clip:text;background-clip:text;color:transparent}
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px)}
+.aurora .a1{width:520px;height:520px;left:-150px;top:-170px;
+background:rgba(34,211,238,.16);animation:drift1 24s ease-in-out infinite alternate}
+.aurora .a2{width:640px;height:640px;right:-220px;top:14%;
+background:rgba(99,102,241,.18);animation:drift2 30s ease-in-out infinite alternate}
+.aurora .a3{width:480px;height:480px;left:26%;bottom:-230px;
+background:rgba(45,212,191,.12);animation:drift3 18s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(90px,70px) scale(1.12)}}
+@keyframes drift2{to{transform:translate(-110px,90px) scale(.94)}}
+@keyframes drift3{to{transform:translate(70px,-90px) scale(1.15)}}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
 .sub{margin:0 0 6px;color:#8b97bd;font-size:13px}
 .opt{margin:0 0 18px;color:#8b97bd;font-size:12.5px}
-.card{background:#101731;border:1px solid rgba(122,152,222,.32);border-radius:16px;padding:20px 22px;margin-bottom:18px}
+.card{background:#101731;border:1px solid rgba(122,152,222,.32);border-radius:16px;padding:20px 22px;margin-bottom:18px;
+transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.card:hover{border-color:rgba(139,92,246,.42);transform:translateY(-2px);box-shadow:0 12px 34px rgba(99,102,241,.12)}
 .card h2{margin:0 0 4px;font-size:16px;font-weight:600}
 .card p.tip{margin:0 0 16px;color:#8b97bd;font-size:12.5px}
 .health{border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;
 border:1px solid rgba(122,152,222,.3);background:#0c1226;color:#9aa6c9}
 .health.ok{border-color:rgba(96,200,150,.35);color:#a9e6c6}
-.health.warn{border-color:rgba(124,196,255,.45);background:rgba(124,196,255,.08);color:#cfe4ff}
+.health.warn{border-color:rgba(255,190,90,.45);background:rgba(255,190,90,.08);color:#ffd591}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 18px}
 label.f{display:block;font-size:12.5px;color:#9aa6c9;margin-bottom:6px}
 input[type=text],input[type=number],select{width:100%;padding:9px 11px;border-radius:9px;
 background:#0b1222;border:1px solid rgba(122,152,222,.38);color:#e9edff;font-size:13px;outline:none}
-input[type=text]:focus,input[type=number]:focus,select:focus{border-color:rgba(107,143,255,.75)}
+input[type=text]:focus,input[type=number]:focus,select:focus{border-color:rgba(139,92,246,.7)}
 select{appearance:none}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .check{display:flex;align-items:center;gap:8px;color:#dbe5ff;font-size:13px}
-.check input{width:16px;height:16px;accent-color:#6b8fff}
-button{font:inherit;cursor:pointer;border-radius:10px;padding:9px 18px;border:1px solid rgba(107,143,255,.45);
-background:rgba(107,143,255,.18);color:#dbe5ff;transition:.15s}
-button:hover{background:rgba(107,143,255,.3);border-color:rgba(107,143,255,.75)}
+.check input{width:16px;height:16px;accent-color:#8b5cf6}
+button{font:inherit;cursor:pointer;border-radius:10px;padding:9px 18px;border:1px solid rgba(99,102,241,.45);
+background:rgba(99,102,241,.16);color:#dbe5ff;transition:.16s ease}
+button:hover{background:rgba(99,102,241,.28);border-color:rgba(139,92,246,.75)}
 button:disabled{opacity:.5;cursor:not-allowed}
-button.primary{background:#2b47b8;border-color:#6b8fff;color:#fff;font-weight:600;padding:10px 22px}
-button.primary:hover{background:#3654d6}
+button.primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;font-weight:600;padding:10px 22px}
+button.primary:hover{box-shadow:0 4px 18px rgba(139,92,246,.42);filter:brightness(1.07)}
 button.ghost{background:transparent;color:#9aa6c9;border-color:rgba(122,152,222,.4);padding:5px 12px;font-size:12px}
 button.danger{background:rgba(220,80,100,.14);border-color:rgba(220,80,100,.5);color:#ffb9c3;padding:5px 12px;font-size:12px}
 .err{display:none;margin-top:14px;padding:10px 13px;border-radius:10px;font-size:13px;
@@ -41,7 +60,9 @@ background:rgba(220,80,100,.12);border:1px solid rgba(220,80,100,.45);color:#ffb
 .jobs-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
 .jobs-head h2{margin:0}
 .muted{color:#8b97bd;font-size:12.5px}
-.job{background:#101731;border:1px solid rgba(122,152,222,.32);border-radius:14px;padding:16px 18px;margin-top:14px}
+.job{background:#101731;border:1px solid rgba(122,152,222,.32);border-radius:14px;padding:16px 18px;margin-top:14px;
+transition:border-color .2s ease,box-shadow .2s ease}
+.job:hover{border-color:rgba(139,92,246,.4);box-shadow:0 8px 24px rgba(99,102,241,.10)}
 .job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .job-name{font-size:15px;font-weight:600}
 .job-meta{color:#8b97bd;font-size:12px;margin-top:3px;word-break:break-all}
@@ -53,7 +74,7 @@ background:rgba(220,80,100,.12);border:1px solid rgba(220,80,100,.45);color:#ffb
 .b-cancelled{background:rgba(160,160,160,.14);color:#b3bdd8;border-color:rgba(160,160,160,.4)}
 .bar{margin:13px 0 4px;height:8px;border-radius:999px;background:#0b1222;overflow:hidden;
 border:1px solid rgba(122,152,222,.25)}
-.bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6b8fff,#8fb4ff);transition:width .4s}
+.bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .4s}
 .bar-row{display:flex;justify-content:space-between;font-size:12px;color:#8b97bd}
 .art{margin-top:10px;padding:9px 12px;border-radius:10px;background:#0b1222;
 border:1px solid rgba(72,200,150,.3);font-size:12.5px;color:#a9e6c6;word-break:break-all}
@@ -69,12 +90,13 @@ pre.log.on{display:block}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(122,152,222,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:rgba(122,152,222,.4);background-clip:content-box}
-::selection{background:rgba(107,143,255,.32)}
+::selection{background:rgba(139,92,246,.30)}
 button{transition:.16s ease}
 button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 <div class="wrap">
   <h1>音色训练</h1>
   <p class="sub">填人声/参考音频路径 → 后台跑 seed-vc 微调 → 产物 ft_model.pth</p>
