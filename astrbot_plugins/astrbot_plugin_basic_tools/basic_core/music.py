@@ -59,8 +59,6 @@ class MusicMixin:
         name = re.sub(r"[《》\"'“”]", "", str(song or "")).strip()
         if not name:
             return "要下哪首歌？"
-        if not _kugou_cookie():
-            return "酷狗还没登录：让主人发 /扒歌 扫码登录后再下载。"
         lib = _load_music_lib()
         if lib is None:
             return "乐曲资源库没加载起来（music_lib.py 缺失）"
@@ -248,10 +246,15 @@ class MusicMixin:
             yield event.plain_result("要扒哪首？")
             return
         if not _kugou_cookie():
-            async for chunk in self._kugou_qr_flow(event):
-                yield chunk
-            if not _kugou_cookie():
-                return
+            # 没装 playwright 就跳过扫码，直接走在线搜索（酷狗搜不到会自动退回咪咕）
+            if _load_kugou_login() is None:
+                yield event.plain_result(
+                    "酷狗扫码用不了（没装 playwright），这次直接用咪咕音源扒。")
+            else:
+                async for chunk in self._kugou_qr_flow(event):
+                    yield chunk
+                if not _kugou_cookie():
+                    return
         ret = await self.fetch_song(event, song=name, choice=idx)
         if isinstance(ret, str) and ret:
             yield event.plain_result(ret)
