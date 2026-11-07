@@ -16,6 +16,24 @@ install_helpers(globals())
 _REAL_MODULE_NAME = enter_plugin_main(globals())
 
 
+def emoji_like_error(resp) -> str:
+    """从 set_msg_emoji_like 的返回里取真实失败原因（NapCat 会 retcode=0 但 result!=0）。"""
+    data = resp
+    if isinstance(data, list):
+        data = data[0] if data else None
+    if isinstance(data, dict) and "data" in data:
+        data = data.get("data")
+    if not isinstance(data, dict):
+        return ""
+    err = str(data.get("errMsg") or "").strip()
+    if err:
+        return err
+    result = data.get("result")
+    if result not in (None, 0, "0"):
+        return f"result={result}"
+    return ""
+
+
 class ToolsMixin:
     @filter.llm_tool(name="get_current_time")
     async def get_current_time(self, event: AstrMessageEvent):
@@ -225,7 +243,7 @@ class ToolsMixin:
 
     @filter.llm_tool(name="react_message")
     async def react_message(self, event: AstrMessageEvent, emoji: str = "", message_id: str = ""):
-        """给一条消息贴上 QQ 表情回应（就是消息右下角那个可以贴的小表情）。当用户说"给这条消息点个表情/贴个吃瓜"，或你觉得某条消息用一个表情回应比打字更传神时使用。
+        """给一条消息贴上 QQ 表情回应（就是消息右下角那个可以贴的小表情）。当用户说"给这条消息点个表情/贴个吃瓜"，或你觉得某条消息用一个表情回应比打字更传神时使用。只在群聊有效：QQ 私聊不支持表情回应，别在私聊里用，也别向对方宣称已经贴上。
 
         Args:
             emoji(string): QQ 表情名称或 ID，如 吃瓜、点赞、doge、128
@@ -264,13 +282,18 @@ class ToolsMixin:
         if not mid:
             return "拿不到消息 ID，没法贴表情"
         try:
-            await bot.api.call_action(
+            resp = await bot.api.call_action(
                 "set_msg_emoji_like",
                 **{"message_id": mid, "emoji_id": fid, "set": True},
             )
-            return f"已给消息贴上表情回应（emoji:{fid}）"
         except Exception as e:
             return f"贴表情回应失败: {e}"
+        err = emoji_like_error(resp)
+        if err:
+            if not str(event.get_group_id() or "").strip():
+                return f"贴表情回应失败: {err}（QQ 私聊不支持表情回应，只能贴到群消息上；私聊里直接发个表情吧）"
+            return f"贴表情回应失败: {err}"
+        return f"已给消息贴上表情回应（emoji:{fid}）"
 
     @filter.llm_tool(name="recall_own_messages")
     async def recall_own_messages(self, event: AstrMessageEvent, count: str = "1"):

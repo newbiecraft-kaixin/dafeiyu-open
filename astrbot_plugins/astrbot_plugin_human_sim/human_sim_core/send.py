@@ -35,6 +35,24 @@ if __package__:
     __name__ = __package__.rsplit(".", 1)[0] + ".main"
 
 
+def _emoji_like_error(resp) -> str:
+    """NapCat 会返回 retcode=0 但 data.result!=0，必须看 errMsg 才知道是否真贴上。"""
+    data = resp
+    if isinstance(data, list):
+        data = data[0] if data else None
+    if isinstance(data, dict) and "data" in data:
+        data = data.get("data")
+    if not isinstance(data, dict):
+        return ""
+    err = str(data.get("errMsg") or "").strip()
+    if err:
+        return err
+    result = data.get("result")
+    if result not in (None, 0, "0"):
+        return f"result={result}"
+    return ""
+
+
 class SendMixin:
 
     # ---------- 统一发送（必须带 self_id 路由） ----------
@@ -242,6 +260,10 @@ class SendMixin:
         """对一条已发送的消息贴表情回应（NapCat 扩展 API set_msg_emoji_like）"""
         if message_id in (None, "", 0):
             return False
+        if self._is_private(umo):
+            # QQ 私聊的 set_msg_emoji_like 恒被拒（result=65011），别浪费调用也别记成已贴
+            logger.debug(f"[human_sim] 私聊不支持表情回应，跳过（{umo}）")
+            return False
         now = time.time()
         if not force and now - self._react_last.get(umo, 0) < float(
             self.cfg.get("react_cooldown_seconds", 120)
@@ -265,7 +287,13 @@ class SendMixin:
         if sid:
             call_kwargs["self_id"] = sid
         try:
-            await bot.api.call_action("set_msg_emoji_like", **call_kwargs)
+            resp = await bot.api.call_action("set_msg_emoji_like", **call_kwargs)
+            err = _emoji_like_error(resp)
+            if err:
+                logger.warning(
+                    f"[human_sim] 表情回应失败（emoji:{call_kwargs.get('emoji_id')} 消息 {mid}）: {err}"
+                )
+                return False
             self._react_last[umo] = now
             eid = str(call_kwargs.get("emoji_id") or "")
             try:
