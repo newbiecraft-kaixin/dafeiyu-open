@@ -724,6 +724,11 @@
         <div class="hint" id="editToolHint">按会话覆盖工具档位，保存后下一条消息生效</div>
         <div class="tool-list" id="editToolList" hidden></div>
       </div>
+      <div class="lvl" id="lvlPromote" hidden>
+        <label>管理员权限</label>
+        <button type="button" id="editPromote">设为管理员</button>
+        <div class="hint">加入 admins_id，并同步到插件 owner_ids，AstrBot 重启后生效</div>
+      </div>
       <div class="lvl danger" id="lvlDanger">
         <label>第四层 · 危险操作</label>
         <button type="button" class="danger-btn" id="editDanger">退出群聊</button>
@@ -1921,6 +1926,7 @@
     $("lvlPersona").hidden = false;
     $("lvlListen").hidden = kind !== "group";
     $("lvlAdmin").hidden = kind !== "admin";
+    $("lvlPromote").hidden = kind !== "friend";
     $("lvlTools").hidden = false;
     const toolLabel = kind === "group"
       ? "工具 · 本群可调用的工具"
@@ -2659,6 +2665,20 @@
   $("editCancel").addEventListener("click", closeEdit);
   $("editClose").addEventListener("click", closeEdit);
   $("editDanger").addEventListener("click", doDanger);
+  $("editPromote").addEventListener("click", async () => {
+    if (!editing) return;
+    const name = editing.name || editing.id;
+    if (!confirm("把「" + name + "」设为管理员？会写入 admins_id 和插件 owner_ids，AstrBot 重启后生效。")) return;
+    try {
+      const data = await postJson("/bot/admin/profile", { id: editing.id, name: editing.name });
+      if (data && data.admins) bot.admins = data.admins;
+      if (data && data.adminProfiles) bot.adminProfiles = data.adminProfiles;
+      closeEdit();
+      botMsg("已设为管理员" + (data && data.restart ? "，AstrBot 正在重启…" : "（已同步 owner_ids）"));
+      await loadBot();
+      if (data && data.restart) setTimeout(loadBot, 15000);
+    } catch (error) { botMsg("设置失败：" + error.message, true); }
+  });
   $("formOk").addEventListener("click", submitForm);
   $("formCancel").addEventListener("click", closeForm);
   $("formClose").addEventListener("click", closeForm);
