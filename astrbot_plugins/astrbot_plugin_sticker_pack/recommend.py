@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 
-from .ranker import EMOTION_LEXICON, StickerRanker
+from .ranker import EMOTION_LEXICON, StickerRanker, hit_clusters as _hit_clusters
 from .settings import NEG_MOOD_RE
 
 # ==================== 推荐层：纯文字相似度（v1.3.0 重写） ====================
@@ -112,18 +112,9 @@ GROUP_TO_CLUSTER: dict[str, tuple[str, ...]] = {
 }
 
 
-def _hit_clusters(query: str) -> set[str]:
-    """这句话明确说出的情绪簇（整词命中，不含扫尾层）。
-
-    「你猜我为什么生气」里「生气」是整词：就算检索把一堆同分图排在前面，
-    生气组也必须优先占候选位，不然会出现「说了生气却一张生气的图都没有」。
-    """
-    q = query or ""
-    out: set[str] = set()
-    for canonical, variants in EMOTION_LEXICON.items():
-        if canonical in q or any(v in q for v in variants):
-            out.add(canonical)
-    return out
+# 「这句话明确说了哪个情绪簇」交给 ranker.hit_clusters（带否定式处理）：
+# 「你猜我为什么生气」里的「生气」必须把生气组顶到候选位，不然会出现
+# 「说了生气却一张生气的图都没有」。
 
 
 class RecommendMixin:
@@ -420,10 +411,8 @@ class RecommendMixin:
         seen: set[str] = set()
         emos = list(EMOTION_LEXICON)
         if text:
-            hit = [
-                e for e in emos
-                if e in text or any(v in text for v in EMOTION_LEXICON[e])
-            ]
+            hits = _hit_clusters(text)
+            hit = [e for e in emos if e in hits]
             if hit:
                 emos = hit
         for emo in emos:

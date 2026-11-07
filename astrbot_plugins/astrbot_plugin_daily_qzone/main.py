@@ -396,10 +396,14 @@ class DailyQzone(Star):
             logger.warning("[daily_qzone] LLM 没吐出有效内容，本次放弃")
             return False
         images: list[str] = []
-        if random.random() < float(self.cfg.get("sticker_probability", 0.8)):
+        if random.random() < float(self.cfg.get("sticker_probability", 0.95)):
             b64 = self._pick_sticker_b64()
             if b64:
                 images = [f"base64://{b64}"]
+            else:
+                logger.info("[daily_qzone] 掷中配图但没挑到能用的表情包，本条不带图")
+        else:
+            logger.info("[daily_qzone] 配图概率掷骰未中，本条纯文字")
         try:
             resp = await self._bot.api.call_action(
                 "send_qzone_msg",

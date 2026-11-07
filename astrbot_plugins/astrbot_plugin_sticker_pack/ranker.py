@@ -1,12 +1,34 @@
-"""全库文字相似度排序器与查询扩展。"""
+"""全库文字相似度排序器与查询扩展（v1.4：jieba 分词 + 分层权重）。
+
+为什么要换掉 v1.3 的写法：
+  v1.3 是「原句 + 一整簇近义词」平权比字面——写「我服了」时，无语簇的
+  「傻/蠢/笨」也拿到 1.0 分，于是会推一张「傻子」的图；写「不开心」时
+  「开心」簇先命中，配出来的全是呲牙。语义不匹配就是这么来的。
+  这一版做三件事：
+    1) 用结巴分词，中文按「词」比，不再拿单字在整句里乱撞；
+    2) 分层给分：原句/词命中最高，同簇标准词次之，近义说法再降一档，
+       近义词永远进不了「核心命中」那一层，只能做长尾补充；
+    3) 否定式（不开心/不好笑/没意思）单独成簇，不再被肯定式抢先命中。
+  jieba 不可用时退回二元组分词，行为与旧版接近。
+"""
 
 from __future__ import annotations
 
+import logging
 import re
+
+try:  # 结巴不是硬依赖：装了就用，没装退回二元组
+    import jieba
+
+    jieba.setLogLevel(logging.WARNING)
+except Exception:  # noqa: BLE001
+    jieba = None
 
 STOP_CHARS = set("的了吗呢吧啊呀哦嗯是我你他她它这那有就都也不很太个把被给对说会能可以还来着过里上下在")
 
 PUNCT_RE = re.compile(r"[\s:：,，、。.．!！?？~～…·\-—_（）()\[\]【】\"'“”‘’/\\|]+")
+
+EMOTION_CHARS_ALL = "笑乐喜爽嗨哈强牛棒炫讽嘲鄙嫌杂酸典怒气凶骂滚火揍狠哭泪惨怜呜委屈累躺摆瘫懒寄苟瓜奇围剧看啥惊震呆吓懵瞪饿饭餐馋吃羞红脸腼抱亲贴萌娇默裂尴无语疲困乏熬睡觉床晚干忙修码班工收办完搞领"
 
 
 def _norm_text(s: str) -> str:
@@ -14,18 +36,38 @@ def _norm_text(s: str) -> str:
     return PUNCT_RE.sub("", (s or "").lower())
 
 
-def _tokens(text: str) -> list[str]:
-    """中文按「二元组 + 单字」切；英文按整词切。
-
-    英文一定不能切二元组：否则 "token" 会切出 "ok"，一张算 token 的图
-    就成了「收到」的候选（这坑实测踩过）。
-    """
+def segment_all(text: str) -> list[str]:
+    """分词但不过滤单字——配脸要认「累」「哭」这种单字关键词。"""
     t = _norm_text(text)
-    toks: list[str] = [t[i : i + 2] for i in range(len(t) - 1)
-                       if "\u4e00" <= t[i] <= "\u9fff" and "\u4e00" <= t[i + 1] <= "\u9fff"]
-    toks.extend(c for c in t if "\u4e00" <= c <= "\u9fff" and c not in STOP_CHARS)
-    toks.extend(re.findall(r"[a-z0-9]+", t))
-    return toks
+    if not t:
+        return []
+    toks: list[str] = []
+    if jieba is not None:
+        for w in jieba.lcut(t):
+            w = w.strip()
+            if w:
+                toks.append(w)
+    if not toks:
+        toks = [t[i : i + 2] for i in range(max(0, len(t) - 1))] if len(t) >= 2 else [t]
+    seen: set[str] = set()
+    out: list[str] = []
+    for w in toks:
+        if w not in seen:
+            seen.add(w)
+            out.append(w)
+    return out
+
+
+def segment(text: str) -> list[str]:
+    """中文分词：优先结巴；没装就退回二元组。
+
+    只保留「词」（≥2 字的中文词、整段英文/数字）。单字不放进来——「一切」
+    里的「切」、「积累」里的「累」就是这么把无关表情命中出来的。
+    """
+    return [
+        w for w in segment_all(text)
+        if re.fullmatch(r"[a-z0-9]+", w) or len(w) >= 2
+    ]
 
 
 # 情绪词 -> 近义说法。**只用于查询扩展**，不是分类：AI 写「开心」，库里写的是
@@ -62,6 +104,14 @@ EMOTION_LEXICON: dict[str, list[str]] = {
     "打招呼": ["打招呼", "你好", "在吗", "来了", "hello", "嗨", "早安"],
 }
 
+# 否定式：连同否定的原文一起映射到真正的情绪簇，避免「不开心」被「开心」抢走。
+NEG_CLUSTER: dict[str, str] = {
+    "不开心": "委屈", "不高兴": "委屈", "不快乐": "委屈", "不好笑": "无语",
+    "没意思": "无语", "不想动": "累了", "睡不着": "想睡", "不想睡": "想睡",
+    "不饿": "无语", "没劲": "累了", "笑不出来": "委屈",
+}
+
+NEG_CHARS = set("不没别勿无")
 
 # 情绪字：整词都对不上时的「扫尾层」。中文里情绪常常藏在一个字里——
 # 含义写「眼泪汪汪」不一定出现「委屈」，但「泪」出现了。这一层让池子有尾巴，
@@ -87,38 +137,73 @@ EMOTION_CHARS: dict[str, str] = {
 }
 
 
-def _cluster_chars(query: str) -> set[str]:
-    """查询命中的情绪簇 -> 该簇的「情绪字」集合（扫尾层用）。"""
+def _has_unneg(text: str, word: str) -> bool:
+    """词在句子里出现过，且至少有一次没被「不/没/别」否定掉。"""
+    i = text.find(word)
+    while i >= 0:
+        if i == 0 or text[i - 1] not in NEG_CHARS:
+            return True
+        i = text.find(word, i + 1)
+    return False
+
+
+def hit_clusters(query: str) -> set[str]:
+    """这句话明确说出的情绪簇（先处理否定式）。"""
     q = query or ""
     out: set[str] = set()
-    for canonical, chars in EMOTION_CHARS.items():
-        if canonical in q or any(v in q for v in EMOTION_LEXICON.get(canonical, [])):
-            out.update(chars)
+    for key, cluster in NEG_CLUSTER.items():
+        if key in q:
+            out.add(cluster)
+    for canonical, variants in EMOTION_LEXICON.items():
+        if canonical in out:
+            continue
+        if _has_unneg(q, canonical) or any(_has_unneg(q, v) for v in variants):
+            out.add(canonical)
     return out
 
 
-def _expand(query: str) -> list[str]:
-    """查询扩展：AI 说的词命中哪个情绪簇，就把那一簇的近义说法都拿去比字面。"""
+def _expand(query: str) -> list[tuple[str, float]]:
+    """查询扩展：(词, 分数上限)。
+
+    同簇标准词封顶 0.85（刚好够进核心层），近义说法封顶 0.62（只做长尾）。
+    这样「我服了」能推到无语图，但不会顺手把整簇的「傻/蠢」也顶到满分。
+    """
     q = query or ""
-    out: list[str] = []
-    for canonical, variants in EMOTION_LEXICON.items():
-        if canonical in q or any(v in q for v in variants):
-            out.append(canonical)
-            out.extend(variants)
+    out: list[tuple[str, float]] = []
+    seen: set[str] = set()
+    for canonical in hit_clusters(q):
+        if canonical not in seen:
+            seen.add(canonical)
+            out.append((canonical, 0.85))
+        for v in EMOTION_LEXICON.get(canonical, []):
+            if v in seen:
+                continue
+            seen.add(v)
+            out.append((v, 0.62))
+    return out
+
+
+def _cluster_chars(query: str) -> set[str]:
+    """查询命中的情绪簇 -> 该簇的「情绪字」集合（扫尾层用）。"""
+    out: set[str] = set()
+    for canonical in hit_clusters(query):
+        out.update(EMOTION_CHARS.get(canonical, ""))
     return out
 
 
 class StickerRanker:
     """全库文字相似度排序器：只吃文本，不碰图片。
 
-    打法是「最优命中」而不是余弦：对每个候选图，取「原句 + 情绪近义词」里
-    对它匹配得最好的那一个词作为分数——
-        · 词整串出现在「含义 + 名字」里      -> 1.0（「笑」命中「心情很好的温柔笑」）
-        · 单个字的情绪字命中                -> 0.55（「累」命中「累成咸鱼」）
-        · 只有二元组部分重合                -> 按重合比例打折
-        · 名字就是查询词                    -> 1.3（AI 或用户点名了）
-    不稀释、不衰减，所以「开心」不会因为名字里带「开心」的那五张就把
-    「笑出声」「吃饱饱」这些语义近的图挤出去——池子自然就宽了。
+    分层给分（取最高，不叠加）：
+        · 名字就是查询词                    -> 1.3
+        · 名字/查询互相包含                 -> 1.05
+        · 查询整串出现在「含义 + 名字」里    -> 1.0
+        · 分词后词命中比例                  -> 0.55 ~ 1.0
+        · 同情绪簇的标准词                  -> ≤0.85
+        · 同情绪簇的近义说法                -> ≤0.62
+        · 只命中情绪字                      -> ≤0.46
+    近义层够不着「核心命中」线（0.85），所以「服了」不会先推一张「傻子」，
+    只会把无语图排进去；确实一句都不沾时才由情绪字扫尾补长尾。
     """
 
     def __init__(self, docs: dict[str, str]):
@@ -127,7 +212,7 @@ class StickerRanker:
         self._draw: dict[str, str] = {}
         self._dname: dict[str, str] = {}
         for name in self.names:
-            self._dtok[name] = set(_tokens(docs[name]))
+            self._dtok[name] = set(segment(docs[name]))
             self._draw[name] = _norm_text(docs[name])
             self._dname[name] = _norm_text(name)
 
@@ -138,17 +223,17 @@ class StickerRanker:
         if not t:
             return 0.0
         if t.isascii():
-            # 英文按整词比：不然 "ok" 会命中 "token"，一张算 token 的图就成了「收到」
+            # 英文按整词比：不然 "ok" 会命中 "token"
             return 1.0 if t in dtok else 0.0
         if len(t) >= 2:
             if t in draw:
-                return 1.0
+                # 「不开心」里也有「开心」，但那是被否定的开心，不能算命中
+                return 1.0 if _has_unneg(draw, t) else 0.0
             bgs = [t[i : i + 2] for i in range(len(t) - 1)]
             hit = sum(1 for b in bgs if b in draw)
             if not bgs or not hit:
                 return 0.0
             ratio = hit / len(bgs)
-            # 过半二元组命中算「大概是这个词」，否则只算擦边
             return 0.9 * ratio if ratio >= 0.5 else 0.4 * ratio
         return 0.55 if t in draw else 0.0
 
@@ -156,35 +241,43 @@ class StickerRanker:
         q = (query or "").strip()
         if not q or not self.names:
             return []
-        terms = [q] + _expand(q)
-        chars = _cluster_chars(q)
         qn = _norm_text(q)
+        # 被否定的词不算命中：「不开心」不能因为切出个「开心」就去推呲牙图
+        primary = [t for t in segment(q) if _has_unneg(qn, t)]
+        clusters = _expand(q)
+        chars = _cluster_chars(q)
         scored: list[tuple[str, float]] = []
         for name in self.names:
             dt = self._dtok[name]
             dr = self._draw[name]
+            dn = self._dname[name]
             s = 0.0
-            # 取「最优命中」，不能覆盖：近义词表里排在后面的词对这张图往往一个字
-            # 都不沾（「生气啦」被「为什么」「你猜」这些扩展词一路覆盖成 0），
-            # 覆盖式写法会让整词命中的图凭空消失，候选池就只剩擦边的那些。
-            for term in terms:
-                qs = self._quality(term, dt, dr)
-                if qs > s:
-                    s = qs
-                if s >= 1.0:
-                    break
-            # 整词都没命中，退到「情绪字」层：命中的字越多分越高，但永远排在整词命中之后
+            if qn == dn:
+                s = 1.3
+            elif len(qn) >= 2 and qn in dn:
+                s = 1.05
+            elif len(dn) >= 2 and dn in qn and _has_unneg(qn, dn):
+                # 名字包含在查询里也要管否定：「不开心」不能因为含「开心」就配开心图
+                s = 1.05
+            if len(qn) >= 2 and qn in dr and _has_unneg(dr, qn):
+                s = max(s, 1.0)
+            elif primary:
+                hit = sum(1 for t in primary if t in dt)
+                if hit:
+                    cov = hit / len(primary)
+                    s = max(s, 0.55 + 0.45 * cov)
+            if s < 0.85:
+                best = 0.0
+                for term, cap in clusters:
+                    qs = self._quality(term, dt, dr) * cap
+                    if qs > best:
+                        best = qs
+                if best > s:
+                    s = best
             if s < 0.5 and chars:
                 hit = sum(1 for c in chars if c in dr)
                 if hit:
                     s = max(s, 0.26 + min(0.2, 0.07 * hit))
-            dn = self._dname[name]
-            if qn and qn == dn:
-                s = max(s, 1.3)
-            elif len(qn) >= 2 and qn in dn:
-                s = max(s, 1.05)
-            elif len(dn) >= 2 and dn in qn:
-                s = max(s, 1.05)
             if s > 0:
                 scored.append((name, round(s, 4)))
         scored.sort(key=lambda x: -x[1])

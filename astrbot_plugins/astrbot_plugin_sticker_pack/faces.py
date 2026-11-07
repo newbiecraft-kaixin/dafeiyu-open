@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 
 from astrbot.api import logger
 
+from .ranker import segment_all
 from .settings import NEG_MOOD_RE, PLACEHOLDER, PLUGIN_DIR
 
 # unicode emoji -> QQ 黄脸名（发送前自动替换成真表情；名字须在 map.txt 中存在）
@@ -248,9 +250,12 @@ FACE_MOOD_RULES: list[tuple[tuple[str, ...], tuple[str, ...]]] = [
     (("气死", "生气", "火大", "烦死", "滚", "凶", "别惹", "警告"),
      ("发怒", "生气", "拍桌")),
     (("哼", "切", "不服", "才不"), ("哼", "撇嘴", "阴险")),
-    (("委屈", "冤枉", "欺负", "凭什么这样"), ("委屈", "可怜", "快哭了")),
+    (("委屈", "冤枉", "欺负", "凭什么这样", "不开心", "不高兴", "想哭", "快哭了"),
+     ("委屈", "可怜", "快哭了")),
+    (("无语", "服了", "算了", "裂开", "离谱", "呵呵"), ("无语", "白眼", "呵呵哒")),
     # ---- 情绪：难过 ----
-    (("哭", "呜呜", "难过", "心疼", "惨"), ("大哭", "流泪", "快哭了", "可怜")),
+    (("哭", "哭死", "大哭", "想哭", "呜呜", "难过", "心疼", "惨", "眼泪", "emo"),
+     ("大哭", "流泪", "快哭了", "可怜")),
     # ---- 情绪：惊讶 / 疑问 ----
     (("震惊", "卧槽", "什么鬼", "真的假的", "我靠", "惊了", "啊这"),
      ("震惊", "惊讶", "惊吓")),
@@ -272,7 +277,7 @@ FACE_MOOD_RULES: list[tuple[tuple[str, ...], tuple[str, ...]]] = [
     (("期待", "等不及", "什么时候", "想见"), ("期待", "让我康康")),
     # ---- 社交 / 吃 ----
     (("吃瓜", "围观", "看戏", "前排", "热闹", "瓜"), ("吃瓜", "暗中观察")),
-    (("饿了", "馋", "干饭", "想吃"), ("吃", "饥饿", "吃糖")),
+    (("饿了", "好饿", "饿死", "饿晕", "馋", "干饭", "想吃"), ("吃", "饥饿", "吃糖")),
     (("奶茶", "整一杯", "喝点", "来杯"), ("咖啡", "茶", "干杯")),
     (("干杯", "敬你", "碰一个"), ("干杯", "啤酒")),
     (("红包", "发钱", "打钱", "土豪"), ("红包", "拿到红包", "元宝")),
@@ -280,9 +285,15 @@ FACE_MOOD_RULES: list[tuple[tuple[str, ...], tuple[str, ...]]] = [
     (("狗", "修狗", "小狗狗"), ("汪汪", "doge")),
     (("猫", "喵", "猫猫"), ("喵喵",)),
     # ---- 状态 ----
-    (("累", "摆烂", "躺平", "加班", "搬砖"), ("摸鱼", "头秃", "脑阔疼", "沧桑")),
-    (("困", "睡了", "晚安", "打盹", "眯一会"), ("睡", "困", "哈欠")),
+    (("累", "累死", "好累", "心累", "累了", "太累", "疲惫", "摆烂", "躺平", "加班", "搬砖"),
+     ("摸鱼", "头秃", "脑阔疼", "沧桑")),
+    (("困", "困死", "好困", "困了", "犯困", "睡了", "晚安", "打盹", "眯一会"),
+     ("睡", "困", "哈欠")),
     (("加油", "冲", "稳住", "别怕", "干就完"), ("奋斗", "打call", "庆祝")),
+    # ---- 日常应答：这几句是群里最高频的，之前一条规则都没覆盖，所以很少见到脸 ----
+    (("好的", "好滴", "行吧", "可以", "没问题", "ok", "okay", "收到"), ("OK", "赞", "明白", "悠闲")),
+    (("人呢", "有人吗", "在不在", "在吗"), ("敲敲", "打招呼", "疑问")),
+    (("我去", "哇塞", "我的天", "好家伙"), ("惊讶", "震惊", "哇")),
     (("那个", "等等", "emmm", "嗯…"), ("emm", "疑问")),
 ]
 
@@ -338,22 +349,65 @@ class FaceMixin:
         del rec[:-4]  # 只记最近 4 张，够轮换了
         self._save_rotate()
 
+    @staticmethod
+    def _face_tokens(text: str) -> set[str]:
+        """分好词的正文 + 标点切开的短句，单字关键词只认这两种边界。"""
+        toks = set(segment_all(text))
+        toks.update(w for w in re.split(r"[\s，。！？、,!?~…]+", text) if w)
+        return toks
+
+    @staticmethod
+    def _face_kw_hit(kw: str, text: str, toks: set[str]) -> bool:
+        """多字词按子串命中；单字词必须是独立词。
+
+        「切」在「一切/切换」里、「累」在「积累」里、「哭」在「哭笑不得」里
+        都会被子串命中，配出来的脸跟正文完全无关——单字必须来自分词结果。
+        """
+        return kw in text if len(kw) >= 2 else kw in toks
+
+    @staticmethod
+    def _face_fallback(text: str) -> tuple[str, ...]:
+        """一条规则都没命中时的兜底：按句式给个最不违和的脸。"""
+        t = (text or "").strip()
+        low = t.lower()
+        if t.endswith(("？", "?")) or any(w in t for w in ("吗", "呢", "咋", "啥", "什么")):
+            return ("疑问", "问号脸", "发呆")
+        if "哈哈" in t or "hh" in low or "233" in low:
+            return ("呲牙", "偷笑", "狂笑")
+        return ()
+
     def _pick_semantic_face(self, text: str, umo: str) -> str:
-        """正文语义 -> 一张脸；挑不到返回空串。正文一个字都不改。"""
+        """正文语义 -> 一张脸；挑不到返回空串。正文一个字都不改。
+
+        打分而不是「第一条命中就返回」：一条回复里常常同时沾好几个词
+        （「我不开心，气死了」），取命中词更长、更多的那条规则才贴切。
+        """
         # 先剥掉 :笑哭: 这类占位符：它们是从 emoji 换过来的「表情名」，
         # 不是正文情绪。不剥的话「😂😭😡 三连」会因为占位符里有「哭」字
         # 被判成难过、配一张大哭，把三个 emoji 本身的情绪盖掉。
-        text = PLACEHOLDER.sub(" ", text)
-        if NEG_MOOD_RE.search(text):
+        text = PLACEHOLDER.sub(" ", text).strip()
+        if not text or NEG_MOOD_RE.search(text):
             return ""
+        toks = self._face_tokens(text)
+        ranked: list[tuple[int, int, tuple[str, ...]]] = []
+        for idx, (words, faces) in enumerate(FACE_MOOD_RULES):
+            score = 0
+            for w in words:
+                if self._face_kw_hit(w, text, toks):
+                    # 长词更具体：「不开心」应该压过「开心」
+                    score += 2 if len(w) >= 2 else 1
+            if score:
+                ranked.append((score, -idx, faces))
+        ranked.sort(reverse=True)
         recent = self._face_recent.get(umo, [])
-        for words, faces in FACE_MOOD_RULES:
-            if not any(w in text for w in words):
-                continue
+        for _score, _idx, faces in ranked:
             pool = [f for f in faces if self._face_ok(f)]
             if not pool:
-                continue
+                continue  # 这条规则的脸本机全没有，往下一条退
             fresh = [f for f in pool if f not in recent]
-            name = random.choice(fresh or pool)
-            return name
-        return ""
+            return random.choice(fresh or pool)
+        fallback = [f for f in self._face_fallback(text) if self._face_ok(f)]
+        if not fallback:
+            return ""
+        fresh = [f for f in fallback if f not in recent]
+        return random.choice(fresh or fallback)

@@ -160,6 +160,26 @@ class StateMixin:
         emojis = sum(1 for _ts, kind in ev if kind == "emoji")
         return texts - emojis * ratio >= ratio
 
+    def _face_allowed(self, umo: str) -> bool:
+        """黄脸比贴图轻，单独一套闸：间隔更短、每 2 条文字就够配一张。
+
+        原来配脸走的是贴图那套闸（120s 间隔 + 每 5 条文字 1 张），再加上
+        auto_face_probability，实际算下来一天也见不到几次——群友的观感就是
+        「这人从来不发黄脸」。表情只有几 KB，没必要跟大图共用配额。
+        """
+        gap = float(self.config.get("face_min_gap_seconds", 45))
+        if gap > 0 and time.time() - float(self._last_emit.get(umo, 0.0)) < gap:
+            return False
+        ratio = int(self.config.get("face_text_per_face", 2))
+        if ratio <= 0:
+            return True
+        window = float(self.config.get("sticker_density_window_seconds", 600))
+        cutoff = time.time() - window
+        ev = [e for e in self._density.get(umo, []) if e[0] >= cutoff]
+        texts = sum(1 for _ts, kind in ev if kind == "text")
+        emojis = sum(1 for _ts, kind in ev if kind == "emoji")
+        return texts - emojis * ratio >= ratio
+
     def _note_text(self, umo: str) -> None:
         """记一条「大肥鱼发了句话」，密度闸的配额就加一格。"""
         self._note_density(umo, "text")

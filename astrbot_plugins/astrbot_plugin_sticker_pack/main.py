@@ -292,8 +292,8 @@ class StickerPackPlugin(
             # 语义配脸：模型不用写 :情绪词:（那是 AI 腔），系统自己从正文里切词判断情绪，
             # 命中了就在末尾补一张常用脸——正文一个字不动，读起来就是「说完顺手点了个表情」
             if len(_text_all) >= int(self.config.get("auto_face_min_chars", 4)) and random.random() < float(
-                self.config.get("auto_face_probability", 0.45)
-            ) and self._emit_allowed(umo) and umo.split(":", 1)[0] == "aiocqhttp":
+                self.config.get("auto_face_probability", 0.6)
+            ) and self._face_allowed(umo) and umo.split(":", 1)[0] == "aiocqhttp":
                 face = self._pick_semantic_face(_text_all, umo)
                 if face:
                     self._mark_face_used(umo, face)

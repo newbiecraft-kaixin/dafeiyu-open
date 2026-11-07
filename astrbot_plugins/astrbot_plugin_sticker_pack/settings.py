@@ -74,8 +74,10 @@ DEFAULT_CONFIG = {
     "image_summary": "[动画表情]",       # 表情在 QQ 里的摘要
     "solo_face_probability": 0.5,       # 黄脸单独成条的概率（QQ 会把单条纯表情渲染成超大表情）
     # —— 语义配脸：不要求模型写 :词: ，系统自己从正文切词判断情绪 ——
-    "auto_face_probability": 0.35,      # 正文里没占位符时，自动补一张黄脸的概率
+    "auto_face_probability": 0.6,       # 正文里没占位符时，自动补一张黄脸的概率
     "auto_face_min_chars": 4,           # 正文短于这个字数不配脸（「嗯」「好」配张脸很怪）
+    "face_min_gap_seconds": 45,         # 黄脸自己的间隔闸（不跟大图共用 120s/5条 那套）
+    "face_text_per_face": 2,            # 同群最近窗口内每 2 条文字就够配 1 张黄脸
     "face_whitelist_only": True,        # 只允许常用脸（斜眼笑/瓢虫这类冷门直接换掉或丢弃）
     "solo_delay_seconds": [0.8, 2.6],   # 文字发出后隔多久单甩表情
     "short_reply_char_limit": 6,        # 去掉占位符后正文不超过这么多字，就算「短回复」

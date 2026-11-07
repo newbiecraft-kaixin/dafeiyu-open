@@ -17,5 +17,5 @@
   "prefer_provider_id": "deepseek/deepseek-flash",
   "llm_retry": 2,
   "daily_summary": true,
-  "sticker_probability": 0.8
+  "sticker_probability": 0.95
 }

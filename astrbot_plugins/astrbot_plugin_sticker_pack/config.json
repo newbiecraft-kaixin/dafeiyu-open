@@ -38,7 +38,9 @@
   "fav_vision_check": true,
   "image_sub_type": 1,
   "image_summary": "[动画表情]",
-  "auto_face_probability": 0.35,
+  "auto_face_probability": 0.6,
   "auto_face_min_chars": 4,
+  "face_min_gap_seconds": 45,
+  "face_text_per_face": 2,
   "face_whitelist_only": true
 }

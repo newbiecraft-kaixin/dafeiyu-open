@@ -85,6 +85,26 @@ class CollectMixin:
         self._save_pending()
         if not pend:
             return False, ""
+        # 没有本地识图模型时不丢图：放进待核验区，主人在存储页看图命名、
+        # 勾选核验后才入库（与「一键 AI 识别」共用同一套人工流程）。
+        if not await self._vision_ready():
+            try:
+                ok, stored = self._fav_park(
+                    pend, "待命名",
+                    (context_text or "").strip()[:40] or "待补含义",
+                )
+            except Exception as e:  # noqa: BLE001
+                try:
+                    os.remove(pend.get("file", ""))
+                except OSError:
+                    pass
+                return False, f"暂存待命名失败 {type(e).__name__}: {e}"
+            if not ok:
+                return False, stored
+            if quota:
+                self._take_quota()
+            logger.info(f"[sticker_pack] 无识别模型，已放待核验区等人工命名：{stored}")
+            return True, f"待命名 {stored}"
         info = await self._label_for_group(context_text, pend.get("file", ""), umo)
         if not info:
             try:
@@ -162,9 +182,46 @@ class CollectMixin:
                     pass
             await self._unload_vision()
 
-    @staticmethod
-    async def _vision_chat(image_path: str, prompt: str, system_prompt: str = "") -> str:
-        """直连本地 ollama 认图（qwen3.5:9b 是这台机器上唯一带视觉的模型）。"""
+    _VISION_MODEL = "qwen2.5vl:3b"
+    _vision_probe = {"ts": 0.0, "model": ""}
+
+    async def _vision_ready(self) -> bool:
+        """本地 ollama 有没有能认图的模型；探测结果缓存 60 秒。"""
+        now = time.time()
+        probe = type(self)._vision_probe
+        if now - float(probe.get("ts") or 0.0) < 60:
+            return bool(probe.get("model"))
+
+        def _run() -> str:
+            try:
+                with urllib.request.urlopen(
+                    "http://127.0.0.1:11434/api/tags", timeout=3
+                ) as resp:
+                    data = json.loads(resp.read().decode("utf-8") or "{}")
+            except Exception:  # noqa: BLE001
+                return ""
+            names = [str(m.get("name") or "") for m in (data.get("models") or [])]
+            base = self._VISION_MODEL.split(":")[0]
+            for name in names:
+                if name.split(":")[0] == base:
+                    return name
+            # 指定的模型不在，就找任意带视觉的本地模型兜底
+            for name in names:
+                low = name.lower()
+                if "vl" in low or "llava" in low or "minicpm-v" in low:
+                    return name
+            return ""
+
+        model = await asyncio.to_thread(_run)
+        type(self)._vision_probe = {"ts": now, "model": model}
+        if not model:
+            logger.info("[sticker_pack] 本地没有识图模型：新图改为待命名，等人工入库")
+        return bool(model)
+
+    async def _vision_chat(self, image_path: str, prompt: str, system_prompt: str = "") -> str:
+        """直连本地 ollama 认图（模型用探测到的那个视觉模型）。"""
+        model = type(self)._vision_probe.get("model") or self._VISION_MODEL
+
         def _run() -> str:
             with open(image_path, "rb") as f:
                 img = base64.b64encode(f.read()).decode("ascii")
@@ -174,7 +231,7 @@ class CollectMixin:
             messages.append({"role": "user", "content": prompt, "images": [img]})
             body = json.dumps(
                 {
-                    "model": "qwen2.5vl:3b",
+                    "model": model,
                     "messages": messages,
                     "stream": False,
                     "think": False,  # qwen3.5 不关思考会只返回空 content
