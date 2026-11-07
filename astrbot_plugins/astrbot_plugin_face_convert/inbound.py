@@ -214,6 +214,37 @@ class InboundMixin:
             if extra not in (event.message_str or ""):
                 event.message_str = ((event.message_str or "") + " " + extra).strip()
                 logger.info(f"[face_convert] 收信翻译: {extra}")
+                # 回填群滑动窗口：纯图片消息会被 human_sim 丢弃、文字消息的
+                # 上下文里也看不到图，把翻译结果写进窗口，后续任何回话都能看到
+                try:
+                    gid = event.get_group_id()
+                    if gid:
+                        # get_registered_star 返回 StarMetadata，实例在 star_cls
+                        info = None
+                        try:
+                            info = self.context.get_registered_star(
+                                "astrbot_plugin_group_window"
+                            )
+                        except Exception:
+                            info = None
+                        if info is None:
+                            try:
+                                from astrbot.core.star.star import star_map
+
+                                info = star_map.get("astrbot_plugin_group_window.main")
+                            except Exception:
+                                info = None
+                        gw = getattr(info, "star_cls", None) or getattr(info, "star", None)
+                        if gw is not None and hasattr(gw, "capture_external"):
+                            gw.capture_external(
+                                gid,
+                                event.get_sender_id(),
+                                event.get_sender_name(),
+                                extra,
+                            )
+                            logger.info("[face_convert] 图注已回填群窗口")
+                except Exception as e:
+                    logger.debug(f"[face_convert] 群窗口回填失败: {type(e).__name__}: {e}")
 
         # 身份标记（只进她的上下文，对方看不到字面量）：
         # 管理员（群聊/私聊）-> [主人(QQ号)]；群聊其他人 -> [群友 昵称(QQ号)]；
@@ -256,7 +287,7 @@ class InboundMixin:
                         event.message_str = f"[{tag}] {text}"
                         event.set_extra("_fy_tagged", True)
                         logger.info(f"[face_convert] 身份标记: {tag}")
-                    elif is_group and event.is_wake and not any(
+                    elif is_group and event.is_at_or_wake_command and not any(
                         type(c).__name__ == "Poke" for c in comps
                     ) and not any(
                         (isinstance(c, At) and str(c.qq) == str(event.get_self_id()))
@@ -266,6 +297,9 @@ class InboundMixin:
                         )
                         for c in comps
                     ):
+                        # 用 is_at_or_wake_command 而不是 is_wake：后者只要有插件 handler
+                        # 匹配到消息就会被置 True（群里每条消息都是），那样别人 @ 谁、
+                        # 或只发个空消息都会被写成「喊了你一声」，让它以为被 @。
                         # 只喊了名字、没带内容：给她一个回应的由头。
                         # 拍一戳除外：那是社交动作，由 human_sim 本地回，
                         # 补一句「（喊了你一声）」会让模型当成普通消息接话，
