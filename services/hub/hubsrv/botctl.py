@@ -34,6 +34,7 @@ ACCESS_PATH = DATA / "local_tools" / "access.json"
 TOOL_NAMES_PATH = DATA / "local_tools" / "tool_names.json"
 HUB_DATA = ROOT / "services" / "hub" / "data"
 ADMINS_PATH = HUB_DATA / "admins.json"
+SEED_DIR = Path(__file__).resolve().parents[1] / "seeds"
 
 _LOCK = threading.Lock()
 
@@ -115,18 +116,46 @@ def admins() -> List[str]:
     return [str(item).strip() for item in data.get("admins_id") or [] if str(item).strip()]
 
 
+# tool_gate / local_tools 不读 admins_id，各自维护 owner_ids；新增管理员必须同步过去，
+# 否则 AstrBot 认这个人是管理员，插件却还把他当陌生人（不给全量工具 / 提示词里不是主人）。
+OWNER_ID_CONFIGS = (
+    DATA / "plugins" / "astrbot_plugin_tool_gate" / "config.json",
+    DATA / "plugins" / "astrbot_plugin_local_tools" / "config.json",
+)
+
+
+def _sync_owner_ids(rows: List[str]) -> bool:
+    """把管理员列表同步到插件的 owner_ids，返回是否有变化。"""
+    synced = False
+    for path in OWNER_ID_CONFIGS:
+        if not path.is_file():
+            continue
+        try:
+            data = _read_json(path)
+        except ValueError:
+            continue
+        current = [str(item).strip() for item in data.get("owner_ids") or [] if str(item).strip()]
+        if current == rows:
+            continue
+        data["owner_ids"] = list(rows)
+        _write_json(path, data)
+        synced = True
+    return synced
+
+
 def _write_admins(rows: List[str]) -> bool:
-    """写入管理员列表，返回是否真的有变化（变化才需要重启 AstrBot）。"""
+    """写入管理员列表，返回是否需要重启 AstrBot（管理员或插件主人有变化）。"""
     for row in rows:
         if not row.isdigit() and not row.lower().startswith("wxid_"):
             raise ValueError("管理员必须是 QQ 号或微信 ID: " + row)
     data = _read_json(CMD_CONFIG)
     current = [str(item).strip() for item in data.get("admins_id") or [] if str(item).strip()]
-    if current == rows:
-        return False
-    data["admins_id"] = rows
-    _write_json(CMD_CONFIG, data)
-    return True
+    changed = current != rows
+    if changed:
+        data["admins_id"] = rows
+        _write_json(CMD_CONFIG, data)
+    synced = _sync_owner_ids(rows)
+    return changed or synced
 
 
 def _admin_store() -> Dict[str, Any]:
@@ -150,7 +179,7 @@ def admin_profiles() -> Dict[str, Dict[str, str]]:
 
 
 def save_admin_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """新增/修改管理员：只保存身份标签，不再维护层级、不改动 tool_gate 的 owner_ids。"""
+    """新增/修改管理员：保存身份标签，并把管理员同步到插件的 owner_ids。"""
     uid = str(payload.get("id") or "").strip()
     if not uid:
         raise ValueError("QQ 号 / 微信 ID 不能为空")
@@ -161,7 +190,8 @@ def save_admin_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
         ids = admins()
         if uid not in ids:
             ids.append(uid)
-            restart = _write_admins(ids)
+        # 老管理员也要过一遍：历史上只写了 admins_id 没同步 owner_ids 的机子靠这里补齐
+        restart = _write_admins(ids)
         stored = dict(_admin_store())
         stored[uid] = {"identity": identity, "name": name}
         HUB_DATA.mkdir(parents=True, exist_ok=True)
@@ -172,7 +202,7 @@ def save_admin_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def remove_admin(uid_raw: Any) -> Dict[str, Any]:
-    """移除管理员权限与身份资料（不改动 tool_gate 的 owner_ids）。"""
+    """移除管理员权限与身份资料，同时从插件的 owner_ids 里去掉。"""
     uid = str(uid_raw or "").strip()
     if not uid:
         raise ValueError("QQ 号 / 微信 ID 不能为空")
@@ -216,17 +246,38 @@ def providers() -> List[Dict[str, str]]:
 
 
 # ---------- 可用模型来源 / 角色 ----------
+def _mask_key(value: Any) -> str:
+    """把密钥压成可展示的掩码，避免前端只能看到「有没有」，改完看不出换没换。"""
+    if isinstance(value, (list, tuple)):
+        raw = next((item for item in value if str(item or "").strip()), "")
+    else:
+        raw = value if value is not None else ""
+    text = str(raw).strip()
+    if not text:
+        return ""
+    if len(text) <= 8:
+        return "*" * len(text)
+    return text[:4] + "…" + text[-4:]
+
+
 def provider_sources() -> List[Dict[str, str]]:
     data = _read_json(CMD_CONFIG)
     rows: List[Dict[str, str]] = []
     for item in data.get("provider_sources") or []:
         if not isinstance(item, dict) or not item.get("id"):
             continue
+        masked = _mask_key(item.get("key"))
+        # dsh_bridge 用 token 鉴权，key 只是占位（["dsh"]），必须单独暴露给前端
+        token = _mask_key(item.get("token"))
         rows.append({
             "id": str(item.get("id")),
             "type": str(item.get("type") or ""),
             "api_base": str(item.get("api_base") or ""),
-            "has_key": bool(item.get("key")),
+            "has_key": bool(masked),
+            "key_masked": masked,
+            "has_token": bool(token),
+            "token_masked": token,
+            "timeout": item.get("timeout"),
         })
     return rows
 
@@ -264,6 +315,75 @@ def personas() -> List[Dict[str, str]]:
     ]
 
 
+# ---------- 预置：厂商 / 角色 ----------
+def _seed_json(name: str) -> Dict[str, Any]:
+    path = SEED_DIR / name
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+
+
+def vendor_presets() -> List[Dict[str, Any]]:
+    """OpenAI 兼容厂商预置：选完只填 API Key 就能建模型。"""
+    data = _seed_json("vendors.json")
+    rows = data.get("vendors") if isinstance(data, dict) else []
+    return [row for row in rows or [] if isinstance(row, dict) and row.get("id")]
+
+
+def persona_seeds() -> List[Dict[str, Any]]:
+    data = _seed_json("personas.json")
+    rows = data.get("personas") if isinstance(data, dict) else []
+    return [
+        {
+            "id": str(item.get("id") or ""),
+            "name": _persona_title(str(item.get("id") or ""), str(item.get("prompt") or "")),
+            "prompt_len": len(str(item.get("prompt") or "")),
+        }
+        for item in rows or []
+        if isinstance(item, dict) and item.get("id")
+    ]
+
+
+def import_personas(ids: Any = None) -> Dict[str, Any]:
+    """把预置角色补进人格库，已存在的跳过；有新增才重启 AstrBot。"""
+    data = _seed_json("personas.json")
+    rows = data.get("personas") if isinstance(data, dict) else []
+    picked = {str(item).strip() for item in _as_list(ids)} if ids else None
+    if not PERSONA_DB.exists():
+        raise ValueError("人格库还不存在，先让 AstrBot 启动一次")
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    imported: List[str] = []
+    skipped: List[str] = []
+    con = sqlite3.connect(str(PERSONA_DB), timeout=8)
+    try:
+        have = {str(row[0]) for row in con.execute("SELECT persona_id FROM personas").fetchall()}
+        for item in rows or []:
+            if not isinstance(item, dict):
+                continue
+            pid = str(item.get("id") or "").strip()
+            prompt = str(item.get("prompt") or "")
+            if not pid or not prompt or (picked is not None and pid not in picked):
+                continue
+            if pid in have:
+                skipped.append(pid)
+                continue
+            con.execute(
+                "INSERT INTO personas (created_at, updated_at, persona_id, system_prompt, "
+                "begin_dialogs, tools, skills, sort_order) VALUES (?, ?, ?, ?, '[]', '[]', '[]', 0)",
+                (now, now, pid, prompt),
+            )
+            imported.append(pid)
+        con.commit()
+    finally:
+        con.close()
+    if imported:
+        _restart_astrbot()
+    return {"ok": True, "imported": imported, "skipped": skipped, "restarted": bool(imported)}
+
+
 # ---------- 配置读写 ----------
 def get_config() -> Dict[str, Any]:
     cfg = _read_json(CONFIG_PATH)
@@ -283,6 +403,8 @@ def get_config() -> Dict[str, Any]:
         "providers": providers(),
         "provider_sources": provider_sources(),
         "personas": personas(),
+        "vendors": vendor_presets(),
+        "persona_seeds": persona_seeds(),
         "plugin_online": PLUGIN_DIR.exists(),
         "listen_mode": "only" if editable["listen_groups"] else "all",
     }
@@ -693,6 +815,19 @@ def _opt_num(raw: Any, label: str) -> tuple[bool, Any]:
         raise ValueError(f"{label}必须是数字") from error
 
 
+def _apply_source(src: Dict[str, Any], api_base: str, api_key: str, token: str,
+                  has_timeout: bool, timeout_value: Any) -> None:
+    """写提供商级参数：dsh_bridge 的鉴权是 token，key 只是占位（["dsh"]）。"""
+    if api_base:
+        src["api_base"] = api_base
+    if api_key:
+        src["key"] = [api_key] if isinstance(src.get("key"), list) else api_key
+    if token and str(src.get("type") or "") == "dsh_bridge":
+        src["token"] = token
+    if has_timeout and timeout_value is not None:
+        src["timeout"] = int(timeout_value) if float(timeout_value).is_integer() else timeout_value
+
+
 def create_model(
     source_id: str,
     model: str,
@@ -703,10 +838,14 @@ def create_model(
     temperature: Any = None,
     top_p: Any = None,
     max_context_tokens: Any = None,
+    token: str = "",
+    timeout: Any = None,
 ) -> Dict[str, Any]:
     source_id, model = str(source_id or "").strip(), str(model or "").strip()
     source_new = str(source_new or "").strip()
     api_base, api_key = str(api_base or "").strip(), str(api_key or "").strip()
+    token = str(token or "").strip()
+    has_timeout, timeout_value = _opt_num(timeout, "超时")
     if not model:
         raise ValueError("模型名不能为空")
     has_temp, temp = _opt_num(temperature, "温度")
@@ -746,10 +885,7 @@ def create_model(
             })
         else:
             src = sources[source_id]
-            if api_base:
-                src["api_base"] = api_base
-            if api_key:
-                src["key"] = [api_key] if isinstance(src.get("key"), list) else api_key
+            _apply_source(src, api_base, api_key, token, has_timeout, timeout_value)
         pid = str(provider_id or "").strip() or f"{source_id}/{model}"
         if any(str(p.get("id")) == pid for p in data.get("provider") or [] if isinstance(p, dict)):
             raise ValueError("模型 ID 已存在: " + pid)
@@ -786,7 +922,7 @@ def create_model(
         data.setdefault("provider", []).append(entry)
         _write_json(CMD_CONFIG, data)
     _restart_astrbot()
-    return {"ok": True, "id": pid, "restarted": True}
+    return {"ok": True, "id": pid, "restarted": True, "provider_sources": provider_sources()}
 
 
 def delete_model(provider_id: str) -> Dict[str, Any]:
@@ -819,11 +955,15 @@ def update_model(
     temperature: Any = None,
     top_p: Any = None,
     max_context_tokens: Any = None,
+    token: str = "",
+    timeout: Any = None,
 ) -> Dict[str, Any]:
     pid = str(provider_id or "").strip()
     model = str(model or "").strip()
     source_id, api_base = str(source_id or "").strip(), str(api_base or "").strip()
     api_key = str(api_key or "").strip()
+    token = str(token or "").strip()
+    has_timeout, timeout_value = _opt_num(timeout, "超时")
     if not pid:
         raise ValueError("模型 ID 不能为空")
     if not model:
@@ -860,10 +1000,7 @@ def update_model(
             hit["provider_source_id"] = source_id
         src = sources.get(str(hit.get("provider_source_id") or ""))
         if src:
-            if api_base:
-                src["api_base"] = api_base
-            if api_key:
-                src["key"] = [api_key] if isinstance(src.get("key"), list) else api_key
+            _apply_source(src, api_base, api_key, token, has_timeout, timeout_value)
         hit["model"] = model
         if has_temp or has_top:
             extra = dict(hit.get("custom_extra_body") or {})
@@ -882,7 +1019,7 @@ def update_model(
             hit["max_context_tokens"] = max_ctx
         _write_json(CMD_CONFIG, data)
     _restart_astrbot()
-    return {"ok": True, "id": pid, "model": model, "restarted": True}
+    return {"ok": True, "id": pid, "model": model, "restarted": True, "provider_sources": provider_sources()}
 
 
 def _restart_astrbot() -> None:
@@ -1513,6 +1650,8 @@ def handle_persona(req: Any) -> Any:
             return ok(update_persona(payload.get("id"), payload.get("name"), payload.get("prompt")))
         if action == "get":
             return ok(persona_detail(payload.get("id")))
+        if action == "import_seeds":
+            return ok(import_personas(payload.get("ids")))
         return ok(create_persona(payload.get("name"), payload.get("prompt"), payload.get("id")))
     except ValueError as error:
         return fail(str(error), 400)
@@ -1536,6 +1675,8 @@ def handle_model(req: Any) -> Any:
                 payload.get("temperature"),
                 payload.get("top_p"),
                 payload.get("max_context_tokens"),
+                payload.get("token"),
+                payload.get("timeout"),
             ))
         return ok(create_model(
             payload.get("source"),
@@ -1547,6 +1688,8 @@ def handle_model(req: Any) -> Any:
             payload.get("temperature"),
             payload.get("top_p"),
             payload.get("max_context_tokens"),
+            payload.get("token"),
+            payload.get("timeout"),
         ))
     except ValueError as error:
         return fail(str(error), 400)

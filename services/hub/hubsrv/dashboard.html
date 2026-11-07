@@ -6,16 +6,16 @@
 <title>大肥鱼 · 微服务中枢</title>
 <style>
   :root {
-    --bg: #070a14;
-    --bg2: #0c1122;
-    --panel: rgba(18, 24, 44, .74);
-    --panel2: rgba(26, 34, 60, .55);
-    --line: rgba(122, 152, 222, .16);
-    --line2: rgba(122, 152, 222, .30);
-    --text: #e9edff;
-    --muted: #8b97bd;
-    --dim: #636d95;
-    --accent: #6b8fff;
+    --bg: #0d0906;
+    --bg2: #171009;
+    --panel: rgba(32, 23, 13, .74);
+    --panel2: rgba(44, 32, 18, .55);
+    --line: rgba(255, 196, 130, .14);
+    --line2: rgba(255, 196, 130, .30);
+    --text: #f6eedd;
+    --muted: #b3a284;
+    --dim: #857759;
+    --accent: #ffb454;
     --accent2: #3ddc97;
     --warn: #ffbe3d;
     --bad: #ff617b;
@@ -25,11 +25,24 @@
     margin: 0; min-height: 100vh; color: var(--text);
     font: 14px/1.65 "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     background:
-      radial-gradient(1000px 640px at 8% -12%, rgba(107,143,255,.20), transparent 62%),
-      radial-gradient(760px 520px at 96% -6%, rgba(61,220,151,.12), transparent 58%),
+      radial-gradient(1000px 640px at 8% -12%, rgba(255,168,66,.17), transparent 62%),
+      radial-gradient(760px 520px at 96% -6%, rgba(255,110,40,.11), transparent 58%),
       linear-gradient(180deg, var(--bg2), var(--bg) 46%);
     background-attachment: fixed;
   }
+  /* 细点纹理：给深底加一层暖沙质感，避免大片纯色的呆板 */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(rgba(255,196,130,.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.9), rgba(0,0,0,.25) 55%, transparent);
+  }
+  .wrap { position: relative; z-index: 1; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,180,84,.22); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,180,84,.4); background-clip: content-box; border: 2px solid transparent; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::selection { background: rgba(255,180,84,.32); }
   a { color: inherit; }
   .wrap { max-width: 1320px; margin: 0 auto; padding: 26px 22px 44px; }
 
@@ -42,11 +55,15 @@
   .logo {
     width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
     font-size: 20px; font-weight: 700; color: #fff;
-    background: linear-gradient(140deg, var(--accent), #8f6bff);
-    box-shadow: 0 10px 26px rgba(107,143,255,.34);
+    background: linear-gradient(140deg, #ffcf6e, #ff7a3d);
+    box-shadow: 0 10px 26px rgba(255,140,60,.34), inset 0 1px 0 rgba(255,255,255,.25);
   }
   h1 { margin: 0; font-size: 23px; letter-spacing: .4px; font-weight: 700; }
-  h1 span { color: var(--accent); font-weight: 600; }
+  h1 span {
+    background: linear-gradient(120deg, #ffd9a0, #ffb454);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700;
+  }
   .sub { color: var(--muted); margin-top: 2px; font-size: 12.5px; }
 
   .stats { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -60,31 +77,32 @@
   .stat.warn b { color: var(--warn); }
   .ring {
     width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
-    background: conic-gradient(var(--accent2) 0deg, var(--accent2) 0deg, rgba(122,152,222,.16) 0deg);
+    background: conic-gradient(var(--accent2) 0deg, var(--accent2) 0deg, rgba(255,196,130,.16) 0deg);
     transition: background .4s ease;
   }
   .ring i {
     width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
-    background: #0b1020; font-style: normal; font-size: 15px; font-weight: 700;
+    background: #191108; font-style: normal; font-size: 15px; font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
   .actions { display: flex; gap: 8px; align-items: center; color: var(--dim); font-size: 12px; }
   button, .btn {
-    font: inherit; cursor: pointer; color: #d7e2ff;
+    font: inherit; cursor: pointer; color: #f3e6cc;
     padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line2);
-    background: rgba(107,143,255,.10); transition: .16s ease;
+    background: rgba(255,180,84,.10); transition: .16s ease;
   }
-  button:hover, .btn:hover { background: rgba(107,143,255,.22); border-color: var(--accent); color: #fff; }
+  button:hover, .btn:hover { background: rgba(255,180,84,.22); border-color: var(--accent); color: #fff; }
+  button:active, .btn:active { transform: translateY(1px); }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .ghost { background: transparent; color: var(--muted); }
 
   /* ---------- 机器人管控 ---------- */
   .bot {
     margin-top: 16px; padding: 16px 18px 18px; border: 1px solid var(--line);
-    border-radius: 16px; background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.72));
+    border-radius: 16px; background: linear-gradient(165deg, var(--panel), rgba(20,14,8,.72));
   }
   .bot-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .bot-head h2 { margin: 0; font-size: 15px; letter-spacing: .8px; color: #c8d3ff; }
+  .bot-head h2 { margin: 0; font-size: 15px; letter-spacing: .8px; color: #f2e4c8; }
   .bot-head .sub { margin-top: 2px; }
   .bot-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   .bot-msg { font-size: 12px; color: var(--accent2); opacity: 0; transition: opacity .2s ease; }
@@ -96,19 +114,21 @@
   .panel {
     min-width: 0; padding: 13px 14px; border: 1px solid var(--line);
     border-radius: 12px; background: var(--panel2);
+    transition: border-color .18s ease, transform .18s ease;
   }
-  .panel h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .panel:hover { border-color: var(--line2); transform: translateY(-1px); }
+  .panel h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #f2e4c8; }
   .panel .hint { color: var(--dim); font-size: 11px; margin-top: 5px; }
   .panel label.row { display: flex; align-items: center; gap: 9px; margin-top: 9px; color: var(--muted); font-size: 12px; }
   .panel label.row span { flex: 0 0 62px; }
   .panel input[type="text"], .panel select {
     flex: 1; min-width: 0; padding: 7px 10px; border-radius: 9px; color: var(--text);
-    border: 1px solid var(--line); background: rgba(13,18,34,.9);
+    border: 1px solid var(--line); background: rgba(24,17,9,.9);
     font: inherit; font-size: 12.5px;
   }
   .tool-panel { margin-top: 12px; }
   .tool-panel-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .tool-panel-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .tool-panel-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #f2e4c8; }
   .tool-panel-head button { margin-left: auto; padding: 6px 14px; font-size: 12px; }
   .tool-levels {
     display: grid; gap: 10px; margin-top: 10px;
@@ -119,14 +139,24 @@
   .human-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .human-tag {
     padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
-    font-size: 11.5px; color: var(--muted); background: rgba(107,143,255,.06);
+    font-size: 11.5px; color: var(--muted); background: rgba(255,180,84,.06);
   }
-  .human-tag.on { color: #dce7ff; border-color: rgba(107,143,255,.5); background: rgba(107,143,255,.16); }
+  .human-tag.on { color: #ffe9c2; border-color: rgba(255,180,84,.5); background: rgba(255,180,84,.16); }
   .human-tag.warn { color: #ffd7de; border-color: rgba(255,97,123,.45); background: rgba(255,97,123,.12); }
-  .human-group { margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(122,152,222,.16); }
+  .human-group { margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255,196,130,.16); }
   .human-group-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .human-group-head b { font-size: 12.5px; color: #c8d3ff; }
+  .human-group-head b { font-size: 12.5px; color: #f2e4c8; }
   .human-group-head .hint { font-size: 11px; color: var(--dim); }
+  .human-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-top: 12px; }
+  .human-fact { font-size: 11.5px; color: var(--muted); }
+  .human-fact b { color: #f2e4c8; font-weight: 600; margin-right: 5px; }
+  .human-panel .tool-panel-head #humanEdit { margin-left: auto; }
+  .human-panel .tool-panel-head #humanSave { margin-left: 0; }
+  .human-modal .modal-card { width: min(680px, 100%); }
+  .human-sec { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 8px; }
+  .human-sec .fld { margin-top: 0; }
+  .human-sec .fld-check { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .human-sec { grid-template-columns: 1fr; } }
   .picks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-height: 176px; overflow: auto; }
   .pick {
     display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
@@ -134,7 +164,7 @@
     font-size: 11.5px; color: var(--muted);
   }
   .pick input { accent-color: var(--accent); margin: 0; }
-  .pick.on { color: #fff; border-color: rgba(107,143,255,.52); background: rgba(107,143,255,.14); }
+  .pick.on { color: #fff; border-color: rgba(255,180,84,.52); background: rgba(255,180,84,.14); }
   .maps { display: grid; gap: 12px; margin-top: 9px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .maps h4 { margin: 0 0 4px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
   .map-list { display: flex; flex-direction: column; gap: 6px; }
@@ -146,20 +176,20 @@
   .cmds { margin-top: 9px; max-height: 246px; overflow: auto; }
   .cmd-row {
     display: flex; gap: 8px; align-items: baseline; padding: 5px 0;
-    border-bottom: 1px dashed rgba(122,152,222,.14); font-size: 12px;
+    border-bottom: 1px dashed rgba(255,196,130,.14); font-size: 12px;
   }
-  .cmd-row .c { flex: none; font-family: Consolas, "Cascadia Mono", monospace; color: #cfe0ff; font-weight: 600; }
+  .cmd-row .c { flex: none; font-family: Consolas, "Cascadia Mono", monospace; color: #f5e6c4; font-weight: 600; }
   .cmd-row .a { flex: none; color: var(--dim); font-size: 11px; }
-  .cmd-row .p { flex: none; color: #8fa3d8; font-size: 11px; }
+  .cmd-row .p { flex: none; color: #c9ac7e; font-size: 11px; }
   .cmd-row .d { color: var(--muted); font-size: 11.5px; margin-left: auto; text-align: right; }
   .cmd-group { margin-top: 9px; }
-  .cmd-group b { font-size: 11.5px; color: #b9c6ee; }
+  .cmd-group b { font-size: 11.5px; color: #ddc9a0; }
 
   /* ---------- 管控：卡片 / 弹窗 / 声线 ---------- */
   .bot-bar { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
   .bot-bar .search { flex: 1 1 220px; }
   .sec-head { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
-  .sec-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #c8d3ff; }
+  .sec-head h3 { margin: 0; font-size: 12.5px; letter-spacing: .9px; color: #f2e4c8; }
   .sec-head .map-add { margin: 0 0 0 auto; }
   .chips.pool { margin-top: 9px; max-height: 168px; overflow: auto; }
   .pool-chip {
@@ -200,7 +230,7 @@
     border: 1px solid var(--line); border-radius: 12px; background: var(--panel2);
     transition: border-color .16s ease, background .16s ease;
   }
-  .ent-card:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.08); }
+  .ent-card:hover { border-color: rgba(255,180,84,.44); background: rgba(255,180,84,.08); }
   .ent-card.off { opacity: .78; border-color: rgba(255,97,123,.22); }
   .ent-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
   .ent-main b { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -208,7 +238,7 @@
   .ent-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
   .tag {
     padding: 2px 7px; border-radius: 999px; font-size: 10.5px;
-    color: var(--muted); border: 1px solid var(--line); background: rgba(122,152,222,.06);
+    color: var(--muted); border: 1px solid var(--line); background: rgba(255,196,130,.06);
   }
   .tag.on { color: #9ff0c9; border-color: rgba(64,220,150,.4); background: rgba(64,220,150,.10); }
   .tag.warn { color: #ffb3c0; border-color: rgba(255,97,123,.35); background: rgba(255,97,123,.08); }
@@ -216,7 +246,7 @@
     flex: none; padding: 5px 11px; font-size: 11.5px; border-radius: 9px;
     background: transparent; color: var(--muted); border: 1px solid var(--line);
   }
-  .ent-edit:hover { color: #fff; background: rgba(107,143,255,.18); }
+  .ent-edit:hover { color: #fff; background: rgba(255,180,84,.18); }
   .cmd-panel { margin-top: 16px; }
   .cmd-panel .cmds { max-height: 300px; }
 
@@ -228,26 +258,26 @@
   .modal[hidden] { display: none; }
   .modal-card {
     width: min(520px, 100%); max-height: 88vh; overflow: auto;
-    padding: 16px 18px 14px; border: 1px solid rgba(122,152,222,.38); border-radius: 16px;
-    background: linear-gradient(165deg, #141b31, #0b1020);
+    padding: 16px 18px 14px; border: 1px solid rgba(255,196,130,.38); border-radius: 16px;
+    background: linear-gradient(165deg, #241a0e, #191108);
     box-shadow: 0 24px 60px rgba(0,0,0,.5);
   }
   .form-sec {
-    margin: 16px 0 8px; padding-top: 10px; border-top: 1px dashed rgba(122,152,222,.2);
-    font-size: 11.5px; letter-spacing: .6px; color: #9fb3ff;
+    margin: 16px 0 8px; padding-top: 10px; border-top: 1px dashed rgba(255,196,130,.2);
+    font-size: 11.5px; letter-spacing: .6px; color: #ffcf8a;
   }
   .form-sec:first-child { margin-top: 10px; padding-top: 0; border-top: 0; }
   .modal-head { display: flex; align-items: center; gap: 10px; }
-  .modal-head h3 { margin: 0; font-size: 13.5px; letter-spacing: .6px; color: #dfe7ff; }
+  .modal-head h3 { margin: 0; font-size: 13.5px; letter-spacing: .6px; color: #f8eeda; }
   .modal-x {
     margin-left: auto; width: 26px; height: 26px; padding: 0; border-radius: 8px;
     background: transparent; color: var(--dim); border: 1px solid var(--line);
   }
-  .lvl { margin-top: 12px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(13,18,34,.55); }
-  .lvl > label:first-child { display: block; font-size: 11.5px; color: #c8d3ff; margin-bottom: 7px; }
+  .lvl { margin-top: 12px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(24,17,9,.55); }
+  .lvl > label:first-child { display: block; font-size: 11.5px; color: #f2e4c8; margin-bottom: 7px; }
   .lvl select, .lvl input[type="text"], .lvl textarea {
     width: 100%; padding: 7px 10px; border-radius: 9px; color: var(--text);
-    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12.5px;
+    border: 1px solid var(--line); background: rgba(20,14,8,.95); font: inherit; font-size: 12.5px;
   }
   .lvl textarea { resize: vertical; }
   .lvl input[type="text"] + select { margin-top: 8px; }
@@ -259,7 +289,7 @@
   }
   .tool-list[hidden] { display: none; }
   .tool-list label { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
-  .tool-list input { accent-color: #6b8fff; }
+  .tool-list input { accent-color: #ffb454; }
   .lvl.danger { border-color: rgba(255,97,123,.3); }
   .danger-btn {
     width: 100%; padding: 8px 12px; border-radius: 9px; font-size: 12.5px; cursor: pointer;
@@ -268,13 +298,13 @@
   .danger-btn:hover { background: rgba(255,97,123,.24); color: #fff; }
   .modal-foot { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
   .fld { display: block; margin-top: 10px; }
-  .fld span { display: block; font-size: 11.5px; color: #c8d3ff; margin-bottom: 6px; }
+  .fld span { display: block; font-size: 11.5px; color: #f2e4c8; margin-bottom: 6px; }
   .fld input, .fld select, .fld textarea {
     width: 100%; padding: 7px 10px; border-radius: 9px; color: var(--text);
-    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12.5px;
+    border: 1px solid var(--line); background: rgba(20,14,8,.95); font: inherit; font-size: 12.5px;
   }
   .fld textarea { resize: vertical; }
-  .fld input[type="checkbox"] { width: auto; margin: 0; accent-color: #6b8fff; }
+  .fld input[type="checkbox"] { width: auto; margin: 0; accent-color: #ffb454; }
   .fld-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .fld-check span { margin: 0; }
   .fld input[type="number"] { font-variant-numeric: tabular-nums; }
@@ -282,7 +312,7 @@
     margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px;
     background: var(--panel2); transition: border-color .16s ease, background .16s ease;
   }
-  .pet-card:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.08); }
+  .pet-card:hover { border-color: rgba(255,180,84,.44); background: rgba(255,180,84,.08); }
   .pet-switches { display: flex; flex-wrap: wrap; gap: 8px 18px; }
   .pet-power {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -294,22 +324,22 @@
     padding: 6px 12px; font-size: 11.5px; border-radius: 8px; background: transparent;
     color: var(--muted); border: 1px solid var(--line);
   }
-  .pet-power button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-power button:hover:not(:disabled) { color: #fff; background: rgba(255,180,84,.18); }
   .pet-power button.on { color: #7ee2a8; border-color: rgba(70,220,130,.42); }
   .pet-power button:disabled { opacity: .55; cursor: not-allowed; }
   .pet-sw label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  .pet-sw input { accent-color: #6b8fff; width: 15px; height: 15px; }
+  .pet-sw input { accent-color: #ffb454; width: 15px; height: 15px; }
   .pet-sw span { user-select: none; }
   .pet-voice { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
   .pet-voice select {
     flex: 1; min-width: 0; padding: 6px 9px; border-radius: 8px; color: var(--text);
-    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12px;
+    border: 1px solid var(--line); background: rgba(20,14,8,.95); font: inherit; font-size: 12px;
   }
   .pet-voice button {
     padding: 6px 10px; font-size: 11.5px; border-radius: 8px; background: transparent;
     color: var(--muted); border: 1px solid var(--line);
   }
-  .pet-voice button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-voice button:hover:not(:disabled) { color: #fff; background: rgba(255,180,84,.18); }
   .pet-voice button:disabled { opacity: .55; cursor: not-allowed; }
   .voice-meta { font-size: 10.5px; color: var(--dim); }
   .pet-api-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -318,18 +348,18 @@
   .pet-api-row { display: flex; align-items: center; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
   .pet-api-row input {
     flex: 1 1 200px; min-width: 0; padding: 6px 9px; border-radius: 8px; color: var(--text);
-    border: 1px solid var(--line); background: rgba(10,15,28,.95); font: inherit; font-size: 12px;
+    border: 1px solid var(--line); background: rgba(20,14,8,.95); font: inherit; font-size: 12px;
   }
   .pet-api-row button {
     padding: 6px 10px; font-size: 11.5px; border-radius: 8px; background: transparent;
     color: var(--muted); border: 1px solid var(--line);
   }
-  .pet-api-row button:hover:not(:disabled) { color: #fff; background: rgba(107,143,255,.18); }
+  .pet-api-row button:hover:not(:disabled) { color: #fff; background: rgba(255,180,84,.18); }
   .pet-api-row button:disabled { opacity: .55; cursor: not-allowed; }
   .pet-api-log { margin-top: 8px; font-size: 10.5px; color: var(--dim); word-break: break-all; }
   .ent-actions { display: flex; gap: 5px; flex: none; }
   .ent-actions button { padding: 4px 9px; font-size: 11px; border-radius: 8px; background: transparent; color: var(--muted); border: 1px solid var(--line); }
-  .ent-actions button:hover { color: #fff; background: rgba(107,143,255,.18); }
+  .ent-actions button:hover { color: #fff; background: rgba(255,180,84,.18); }
   .ent-actions button.danger:hover { background: rgba(255,97,123,.2); border-color: rgba(255,97,123,.45); }
 
   /* ---------- 工具条 ---------- */
@@ -337,12 +367,12 @@
     position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; gap: 10px;
     align-items: center; justify-content: space-between;
     margin: 18px 0 6px; padding: 12px 0;
-    background: linear-gradient(180deg, rgba(7,10,20,.94), rgba(7,10,20,.72) 70%, transparent);
+    background: linear-gradient(180deg, rgba(13,9,6,.94), rgba(13,9,6,.72) 70%, transparent);
     backdrop-filter: blur(10px);
   }
   .search {
     flex: 1 1 260px; min-width: 220px; padding: 9px 14px; border-radius: 11px;
-    color: var(--text); border: 1px solid var(--line); background: rgba(13,18,34,.9);
+    color: var(--text); border: 1px solid var(--line); background: rgba(24,17,9,.9);
   }
   .search::placeholder { color: var(--dim); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -351,7 +381,7 @@
     color: var(--muted); border: 1px solid var(--line); background: transparent;
   }
   .chip[aria-pressed="true"] {
-    color: #fff; border-color: rgba(107,143,255,.55); background: rgba(107,143,255,.18);
+    color: #fff; border-color: rgba(255,180,84,.55); background: rgba(255,180,84,.18);
   }
 
   /* ---------- 常用入口 ---------- */
@@ -362,10 +392,10 @@
   .layer {
     display: flex; align-items: flex-start; gap: 16px; margin-top: 12px;
     padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
-    background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.55));
+    background: linear-gradient(165deg, var(--panel), rgba(20,14,8,.55));
   }
   .layer-head { flex: 0 0 132px; display: flex; flex-direction: column; gap: 3px; }
-  .layer-head h2 { margin: 0; font-size: 13px; letter-spacing: 1.2px; color: #c8d3ff; font-weight: 600; }
+  .layer-head h2 { margin: 0; font-size: 13px; letter-spacing: 1.2px; color: #f2e4c8; font-weight: 600; }
   .layer-head .rule { display: none; }
   .count { font-size: 11.5px; color: var(--dim); }
   .layer-body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -375,9 +405,9 @@
   .svc {
     display: inline-flex; align-items: center; gap: 8px; min-width: 0;
     padding: 7px 11px; border-radius: 11px; border: 1px solid var(--line);
-    background: rgba(122,152,222,.05); transition: border-color .16s ease, background .16s ease;
+    background: rgba(255,196,130,.05); transition: border-color .16s ease, background .16s ease;
   }
-  .svc:hover { border-color: rgba(107,143,255,.44); background: rgba(107,143,255,.10); }
+  .svc:hover { border-color: rgba(255,180,84,.44); background: rgba(255,180,84,.10); }
   .svc.off { border-color: rgba(255,97,123,.26); opacity: .72; }
   .svc .name { font-size: 13px; font-weight: 600; letter-spacing: .2px; }
   .svc .port { font-size: 10.5px; color: var(--dim); font-family: Consolas, "Cascadia Mono", monospace; }
@@ -389,26 +419,26 @@
     padding: 2px 8px; font-size: 11px; line-height: 1.4; border-radius: 8px;
     background: transparent; color: var(--muted); border-color: var(--line);
   }
-  .svc-ctl button:hover { background: rgba(107,143,255,.22); color: #fff; }
+  .svc-ctl button:hover { background: rgba(255,180,84,.22); color: #fff; }
   .svc-ctl button[disabled] { opacity: .45; cursor: wait; }
 
   /* ---------- 卡片 ---------- */
   .card {
     position: relative; overflow: hidden; display: flex; flex-direction: column; min-width: 0;
     padding: 15px 16px 13px; border: 1px solid var(--line); border-radius: 15px;
-    background: linear-gradient(165deg, var(--panel), rgba(10,14,27,.78));
+    background: linear-gradient(165deg, var(--panel), rgba(20,14,8,.78));
     box-shadow: 0 12px 28px rgba(0,0,0,.24);
     transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
   .card::after {
     content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(107,143,255,.35), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,180,84,.35), transparent);
     opacity: 0; transition: opacity .18s ease;
   }
-  .card:hover { transform: translateY(-2px); border-color: rgba(107,143,255,.44); box-shadow: 0 16px 34px rgba(0,0,0,.32); }
+  .card:hover { transform: translateY(-2px); border-color: rgba(255,180,84,.44); box-shadow: 0 16px 34px rgba(0,0,0,.32); }
   .card:hover::after { opacity: 1; }
   .card.off { border-color: rgba(255,97,123,.28); }
-  .card.off .name { color: #c9d2ee; }
+  .card.off .name { color: #e8d9ba; }
   .top2 { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .dot {
     width: 8px; height: 8px; border-radius: 50%; flex: none;
@@ -424,17 +454,17 @@
   .meta { display: flex; gap: 6px; flex-wrap: wrap; margin: 11px 0 11px; }
   .tag {
     font-size: 11px; color: var(--muted); padding: 2px 8px; border-radius: 999px;
-    border: 1px solid var(--line); background: rgba(122,152,222,.06);
+    border: 1px solid var(--line); background: rgba(255,196,130,.06);
   }
   .tag.on { color: #b9f5dd; border-color: rgba(61,220,151,.34); background: rgba(61,220,151,.10); }
   .tag.off { color: #ffc2cd; border-color: rgba(255,97,123,.34); background: rgba(255,97,123,.10); }
   .links { display: flex; gap: 7px; flex-wrap: wrap; }
   .link {
-    text-decoration: none; color: #cfe0ff; font-size: 12px; padding: 6px 10px;
-    border-radius: 9px; border: 1px solid rgba(107,143,255,.26); background: rgba(107,143,255,.08);
+    text-decoration: none; color: #f5e6c4; font-size: 12px; padding: 6px 10px;
+    border-radius: 9px; border: 1px solid rgba(255,180,84,.26); background: rgba(255,180,84,.08);
     transition: .16s ease;
   }
-  .link:hover { border-color: var(--accent); color: #fff; background: rgba(107,143,255,.20); }
+  .link:hover { border-color: var(--accent); color: #fff; background: rgba(255,180,84,.20); }
   .link.primary { border-color: rgba(61,220,151,.38); color: #bff6e4; background: rgba(61,220,151,.10); }
   .link.off { opacity: .42; cursor: not-allowed; border-style: dashed; background: transparent; }
 
@@ -445,11 +475,11 @@
     background: var(--panel2); display: flex; gap: 12px; align-items: flex-start;
     transition: border-color .16s ease, background .16s ease;
   }
-  .tool:hover { border-color: var(--line2); background: rgba(30,40,72,.62); }
+  .tool:hover { border-color: var(--line2); background: rgba(52,37,20,.62); }
   .tool.off { opacity: .62; }
   .tool .state { margin-left: auto; flex: none; }
   .tool .mono { font-family: Consolas, "Cascadia Mono", monospace; color: var(--dim); font-size: 10.5px; margin-top: 2px; }
-  .tool .title { color: #e4ebff; font-size: 13px; }
+  .tool .title { color: #f8eeda; font-size: 13px; }
   .tool .desc { color: var(--muted); font-size: 12px; margin-top: 3px; }
   .empty {
     color: var(--muted); font-size: 12px; padding: 14px 16px;
@@ -460,7 +490,7 @@
     color: var(--dim); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap;
     justify-content: space-between;
   }
-  code { font-family: Consolas, monospace; color: #bfd0ff; }
+  code { font-family: Consolas, monospace; color: #efdcac; }
   @media (max-width: 640px) {
     .wrap { padding: 18px 14px 32px; }
     .stats { width: 100%; }
@@ -523,6 +553,7 @@
         <div class="hint">复用 AstrBot 现有人格，按群绑定。</div>
         <div class="chips pool" id="personaChips"></div>
         <button class="map-add" type="button" id="addPersona">+ 新建角色</button>
+        <button class="map-add" type="button" id="importPersonas">导入预置角色</button>
       </div>
     </div>
 
@@ -548,17 +579,11 @@
     <div class="panel human-panel">
       <div class="tool-panel-head">
         <h3>人味水群 <span class="hint" id="humanSub">读取中…</span></h3>
+        <button class="map-add" type="button" id="humanEdit">调整参数</button>
         <button id="humanSave" type="button">保存并重启 AstrBot</button>
       </div>
       <div class="human-status" id="humanStatus"></div>
-      <div class="human-group">
-        <div class="human-group-head"><b>白天档</b><span class="hint" id="humanDayHint">时段内按这里的参数说话</span></div>
-        <div class="tool-levels" id="humanDay"></div>
-      </div>
-      <div class="human-group">
-        <div class="human-group-head"><b>夜宵档</b><span class="hint" id="humanNightHint">时段外按系数缩放</span></div>
-        <div class="tool-levels" id="humanNight"></div>
-      </div>
+      <div class="human-facts" id="humanFacts"></div>
       <div class="hint">这些参数只在 AstrBot 启动时读一次，保存后会重启一次才生效；点名回复不受时段和夜间系数影响。</div>
     </div>
 
@@ -716,6 +741,15 @@
     </div>
   </div>
 
+  <div class="modal human-modal" id="humanModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h3>人味水群 · 白天档参数</h3><button class="modal-x" type="button" id="humanClose">✕</button></div>
+      <div class="hint">白天时段内按这里的参数说话；时段外只按夜间频率系数缩放，点名 / 引用 / 指令不受影响。</div>
+      <div id="humanBody"></div>
+      <div class="modal-foot"><button class="ghost" type="button" id="humanCancel">取消</button><button type="button" id="humanOk">保存并重启</button></div>
+    </div>
+  </div>
+
   <div class="toolbar">
     <input id="search" class="search" type="search" placeholder="搜索服务 / 端口 / 职责…" aria-label="搜索服务" />
     <div class="chips" role="group" aria-label="状态筛选">
@@ -852,7 +886,7 @@
   function renderRing(ratio) {
     const deg = Math.round(ratio * 360);
     $("ring").style.background = "conic-gradient(var(--accent2) 0deg, var(--accent2) " + deg +
-      "deg, rgba(122,152,222,.16) " + deg + "deg)";
+      "deg, rgba(255,196,130,.16) " + deg + "deg)";
     $("ringText").textContent = Math.round(ratio * 100) + "%";
   }
 
@@ -1077,37 +1111,83 @@
   // ---------- 人味水群（human_sim 白天档 / 夜宵档） ----------
   const human = { cfg: null, period: null, online: false };
 
-  const HUMAN_DAY_FIELDS = [
-    ["start_hour", "白天开始（点）", 1, 0, 23],
-    ["end_hour", "白天结束（点）", 1, 0, 23],
-    ["ai_decide_probability", "主动决策概率", 0.01, 0, 1],
-    ["ai_decide_cooldown_seconds", "主动决策冷却（秒）", 1, 0, 86400],
-    ["decision_check_interval_seconds", "决策检查间隔（秒）", 1, 1, 3600],
-    ["ai_decide_per_minute", "主动决策每分钟", 1, 0, 60],
-    ["followup_seconds", "接话窗口（秒）", 1, 0, 3600],
-    ["followup_max_messages", "窗口内最多条数", 1, 0, 20],
-    ["followup_min_gap_seconds", "跟进最小间隔（秒）", 1, 0, 600],
-    ["interject_probability", "随机插话概率", 0.01, 0, 1],
-    ["interject_cooldown_minutes", "插话冷却（分钟）", 1, 0, 1440],
-    ["group_idle_minutes", "冷场判定（分钟）", 1, 0, 1440],
-    ["group_idle_probability", "冷场开话头概率", 0.01, 0, 1],
-    ["solo_face_probability", "单发表情概率", 0.01, 0, 1],
-    ["solo_sticker_probability", "表情包概率", 0.01, 0, 1],
-    ["repeat_probability", "复读概率", 0.01, 0, 1],
-    ["repeat_cooldown_seconds", "复读冷却（秒）", 1, 0, 86400],
-    ["global_per_minute", "全局每分钟上限", 1, 0, 60],
-    ["global_gap_min", "全局最小间隔（秒）", 1, 0, 600],
-    ["global_gap_max", "全局最大间隔（秒）", 1, 0, 600],
-    ["pm_active_probability", "私聊主动关心概率", 0.01, 0, 1],
-    ["pm_active_cooldown_hours", "私聊关心冷却（小时）", 1, 0, 168]
-  ];
-  const HUMAN_DAY_CHECKS = [
-    ["ai_decide", "AI 自主决策"],
-    ["repeat_enabled", "复读开关"],
-    ["plus1_enabled", "+1 机械跟队（关 = 全交给 AI 判断）"]
-  ];
-  const HUMAN_NIGHT_FIELDS = [
-    ["night_frequency_scale", "夜间频率系数（0 = 静默）", 0.01, 0, 1]
+  // 弹窗里按插件架构分节摆放：时段 → 自主决策 → 跟进 → 插话冷场 → 表情复读 → 全局节流 → 私聊关心
+  const HUMAN_SECTIONS = [
+    {
+      name: "一 · 活跃时段",
+      hint: "白天档内按下面所有参数说话，时段外只保留夜间系数",
+      fields: [
+        ["start_hour", "白天开始（点）", 1, 0, 23],
+        ["end_hour", "白天结束（点）", 1, 0, 23],
+        ["night_frequency_scale", "夜间频率系数（0 = 静默）", 0.01, 0, 1]
+      ],
+      checks: []
+    },
+    {
+      name: "二 · AI 自主决策",
+      hint: "主线：交给模型判断要不要接话",
+      fields: [
+        ["ai_decide_probability", "主动决策概率", 0.01, 0, 1],
+        ["ai_decide_per_minute", "主动决策每分钟", 1, 0, 60],
+        ["ai_decide_cooldown_seconds", "主动决策冷却（秒）", 1, 0, 86400],
+        ["decision_check_interval_seconds", "决策检查间隔（秒）", 1, 1, 3600]
+      ],
+      checks: [["ai_decide", "AI 自主决策"]]
+    },
+    {
+      name: "三 · 跟进窗口",
+      hint: "刚被 @ / 点名 / 引用之后，专门盯住这个人",
+      fields: [
+        ["followup_seconds", "接话窗口（秒）", 1, 0, 3600],
+        ["followup_max_messages", "窗口内最多条数", 1, 0, 20],
+        ["followup_min_gap_seconds", "跟进最小间隔（秒）", 1, 0, 600]
+      ],
+      checks: []
+    },
+    {
+      name: "四 · 插话与冷场",
+      hint: "别人聊天时随机接一句、群里没人说话时主动开话头",
+      fields: [
+        ["interject_probability", "随机插话概率", 0.01, 0, 1],
+        ["interject_cooldown_minutes", "插话冷却（分钟）", 1, 0, 1440],
+        ["group_idle_minutes", "冷场判定（分钟）", 1, 0, 1440],
+        ["group_idle_probability", "冷场开话头概率", 0.01, 0, 1]
+      ],
+      checks: []
+    },
+    {
+      name: "五 · 表情与复读",
+      hint: "不说话的参与感：单发表情、表情包、复读和 +1",
+      fields: [
+        ["solo_face_probability", "单发表情概率", 0.01, 0, 1],
+        ["solo_sticker_probability", "表情包概率", 0.01, 0, 1],
+        ["repeat_probability", "复读概率", 0.01, 0, 1],
+        ["repeat_cooldown_seconds", "复读冷却（秒）", 1, 0, 86400]
+      ],
+      checks: [
+        ["repeat_enabled", "复读开关"],
+        ["plus1_enabled", "+1 机械跟队（关 = 全交给 AI 判断）"]
+      ]
+    },
+    {
+      name: "六 · 全局节流",
+      hint: "所有群里合计的发言上限与最小间隔",
+      fields: [
+        ["global_per_minute", "全局每分钟上限", 1, 0, 60],
+        ["global_gap_min", "全局最小间隔（秒）", 1, 0, 600],
+        ["global_gap_max", "全局最大间隔（秒）", 1, 0, 600]
+      ],
+      checks: []
+    },
+    {
+      name: "七 · 私聊关心",
+      hint: "私聊里主动找人，和群聊独立计数",
+      fields: [
+        ["pm_active_probability", "私聊主动关心概率", 0.01, 0, 1],
+        ["pm_active_cooldown_hours", "私聊关心冷却（小时）", 1, 0, 168]
+      ],
+      checks: []
+    }
   ];
 
   function humanField(row) {
@@ -1122,11 +1202,23 @@
       '<input type="checkbox" data-hs="' + esc(row[0]) + '" /></label>';
   }
 
+  function humanValue(cfg, key, fallback) {
+    const value = cfg[key];
+    return value === undefined || value === null || value === "" ? fallback : value;
+  }
+
+  function humanFact(label, text) {
+    return '<span class="human-fact"><b>' + esc(label) + '</b>' + esc(text) + '</span>';
+  }
+
   function renderHumanSim() {
     const cfg = human.cfg || {};
-    $("humanDay").innerHTML = HUMAN_DAY_FIELDS.map(humanField).join("") +
-      HUMAN_DAY_CHECKS.map(humanCheck).join("");
-    $("humanNight").innerHTML = HUMAN_NIGHT_FIELDS.map(humanField).join("");
+    $("humanBody").innerHTML = HUMAN_SECTIONS.map((sec) => {
+      const fields = sec.fields.map(humanField).join("") + (sec.checks || []).map(humanCheck).join("");
+      return '<div class="form-sec">' + esc(sec.name) + '</div>' +
+        '<div class="hint">' + esc(sec.hint) + '</div>' +
+        '<div class="human-sec">' + fields + '</div>';
+    }).join("");
     document.querySelectorAll("[data-hs]").forEach((el) => {
       const key = el.dataset.hs;
       if (el.type === "checkbox") el.checked = !!cfg[key];
@@ -1146,10 +1238,22 @@
     if (!human.online) tags.push('<span class="human-tag warn">human_sim 插件目录缺失</span>');
     $("humanStatus").innerHTML = tags.join("");
     $("humanSub").textContent = human.online ? "human_sim · 改完需重启" : "未安装";
-    $("humanDayHint").textContent = "白天 " + p.start_hour + ":00–" + p.end_hour + ":00 内按这里的参数说话";
-    $("humanNightHint").textContent = p.night_silent
-      ? "时段外完全静默，只回应点名 / 拍一拍"
-      : "时段外所有主动发言概率 ×" + p.night_scale;
+    const percent = (value) => Math.round(Number(value) * 100) + "%";
+    $("humanFacts").innerHTML = [
+      humanFact("白天", humanValue(cfg, "start_hour", p.start_hour) + ":00–" + humanValue(cfg, "end_hour", p.end_hour) + ":00"),
+      humanFact("主动决策", percent(humanValue(cfg, "ai_decide_probability", 0)) + " · 每分钟 " + humanValue(cfg, "ai_decide_per_minute", 0) + " 条"),
+      humanFact("复读", (cfg.repeat_enabled ? "开" : "关") + " · " + percent(humanValue(cfg, "repeat_probability", 0))),
+      humanFact("夜间", p.night_silent ? "静默" : "×" + humanValue(cfg, "night_frequency_scale", p.night_scale))
+    ].join("");
+  }
+
+  function openHumanModal() {
+    renderHumanSim();
+    $("humanModal").hidden = false;
+  }
+
+  function closeHumanModal() {
+    $("humanModal").hidden = true;
   }
 
   async function loadHumanSim() {
@@ -1168,8 +1272,8 @@
   }
 
   async function saveHumanSim() {
-    const btn = $("humanSave");
-    btn.disabled = true;
+    const btns = [$("humanSave"), $("humanOk")].filter(Boolean);
+    btns.forEach((node) => { node.disabled = true; });
     const config = {};
     document.querySelectorAll("[data-hs]").forEach((el) => {
       const key = el.dataset.hs;
@@ -1182,12 +1286,13 @@
       human.period = data.period || human.period;
       human.online = !!data.plugin_online;
       renderHumanSim();
+      closeHumanModal();
       botMsg("水群参数已保存，AstrBot 正在重启（约 10 秒生效）");
       setTimeout(loadHumanSim, 15000);
     } catch (error) {
       botMsg("保存失败：" + error.message, true);
     } finally {
-      btn.disabled = false;
+      btns.forEach((node) => { node.disabled = false; });
     }
   }
 
@@ -1256,11 +1361,19 @@
 
   // ---------- 池：模型 / 角色 ----------
   function renderPools() {
+    const keyText = (source) => {
+      const src = bot.sources.find((s) => s.id === source);
+      if (!src) return "";
+      // dsh_bridge 的 key 只是占位（["dsh"]），真正鉴权的是 token
+      if (src.type === "dsh_bridge") return src.token_masked ? "token " + src.token_masked : "未配置 Token";
+      return src.key_masked ? src.key_masked : "未配置 Key";
+    };
     $("modelCount").textContent = bot.providers.length + " 个";
     $("modelChips").innerHTML = bot.providers.map((p) =>
       '<span class="pool-chip">' +
       '<button type="button" class="chip-main" data-edit-model="' + esc(p.id) + '" title="' + esc(p.id) + ' · 点击修改模型参数">' +
-      esc(p.model && p.model !== p.id ? p.model : p.id) + "<code>" + esc(p.source || "未标来源") + "</code></button>" +
+      esc(p.model && p.model !== p.id ? p.model : p.id) + "<code>" + esc(p.source || "未标来源") +
+      (p.source ? " · " + esc(keyText(p.source)) : "") + "</code></button>" +
       '<button type="button" data-model="' + esc(p.id) + '" title="删除模型">✕</button></span>'
     ).join("") || '<span class="hint">没有可用模型</span>';
     $("personaCount").textContent = bot.personas.length + " 个";
@@ -1736,6 +1849,8 @@
       bot.providers = data.providers || [];
       bot.sources = data.provider_sources || [];
       bot.personas = data.personas || [];
+      bot.vendors = data.vendors || [];
+      bot.personaSeeds = data.persona_seeds || [];
       bot.admins = Array.isArray(data.admins) ? data.admins : [];
       bot.adminProfiles = data.admin_profiles || {};
       bot.cfg = Object.assign({}, data.config || {});
@@ -2079,21 +2194,37 @@
   function editModel(id) {
     const row = bot.providers.find((p) => p.id === id) || { id: id, model: id };
     const src = bot.sources.find((s) => s.id === row.source) || {};
+    const isDsh = src.type === "dsh_bridge";
     const num = (value) => (value === null || value === undefined ? "" : String(value));
-    openForm("修改模型 · " + id, [
+    const fields = [
       { name: "model", label: "模型名", value: row.model || id, placeholder: "例如 deepseek-chat" },
       { name: "source", label: "提供商", type: "select", value: row.source || "",
         options: bot.sources.map((s) => ({ value: s.id, text: s.id + " · " + s.type })) },
-      { name: "api_base", label: "API 地址（写提供商，该来源下所有模型共用）", value: src.api_base || "", placeholder: "https://.../v1" },
-      { name: "api_key", label: "API Key（留空不改）", placeholder: src.has_key ? "已配置，留空保持不变" : "填这个提供商的密钥" },
+      { name: "api_base", label: "API 地址（写提供商，该来源下所有模型共用）", value: src.api_base || "", placeholder: "https://.../v1" }
+    ];
+    if (isDsh) {
+      // dsh_bridge 的 key 固定是 ["dsh"]，鉴权走 token，别让页面再把 token 写进 key
+      fields.push({ type: "section", name: "token_now", label: src.has_token ? "当前 Token：" + src.token_masked + "（dsh 桥接用它鉴权，保存后立即换成新值）" : "当前 Token：未配置（回落到 ~/.dsh/qq-bridge-token.txt）" });
+      fields.push({ name: "token", label: "DSH Token（留空不改）", placeholder: src.has_token ? "已配置，留空保持不变" : "填 qq-bridge 的 token" });
+    } else {
+      fields.push({ type: "section", name: "key_now", label: src.has_key ? "当前 Key：" + src.key_masked + "（保存后这里立即换成新值）" : "当前 Key：未配置" });
+      fields.push({ name: "api_key", label: "API Key（留空不改）", placeholder: src.has_key ? "已配置，留空保持不变" : "填这个提供商的密钥" });
+    }
+    fields.push(
+      { name: "timeout", label: "超时（秒，提供商级）", type: "number", min: 10, max: 3600, step: 1, value: num(src.timeout) },
       { name: "temperature", label: "温度", value: num(row.temperature), placeholder: "例如 1.2，留空清除" },
       { name: "top_p", label: "Top P", value: num(row.top_p), placeholder: "例如 0.95，留空清除" },
       { name: "max_context_tokens", label: "最大上下文 tokens", value: num(row.max_context_tokens), placeholder: "例如 131072" }
-    ], async (data) => {
+    );
+    openForm("修改模型 · " + id, fields, async (data) => {
       if (!data.model) { botMsg("模型名不能为空", true); return false; }
       try {
-        await postJson("/bot/model", Object.assign({ action: "update", id: id }, data));
-        botMsg("模型配置已保存并自动提交");
+        const res = await postJson("/bot/model", Object.assign({ action: "update", id: id }, data));
+        if (res && res.provider_sources) bot.sources = res.provider_sources;
+        const now = bot.sources.find((s) => s.id === (data.source || row.source)) || {};
+        const masked = now.type === "dsh_bridge" ? now.token_masked : now.key_masked;
+        const label = now.type === "dsh_bridge" ? "Token：" : "Key：";
+        botMsg(masked ? "模型配置已保存并自动提交 · 当前 " + label + masked : "模型配置已保存并自动提交");
         await loadBot();
         setTimeout(loadBot, 12000);
         return true;
@@ -2201,7 +2332,14 @@
   });
 
   $("addModel").addEventListener("click", () => {
+    const vendors = bot.vendors || [];
     openForm("添加模型", [
+      {
+        name: "vendor", label: "厂商预置（选完只需填 API Key）", type: "select",
+        options: [{ value: "", text: "不用预置，手动填写" }].concat(
+          vendors.map((v) => ({ value: v.id, text: v.name + " · " + v.api_base }))
+        )
+      },
       {
         name: "source", label: "提供商", type: "select",
         options: bot.sources.map((s) => ({ value: s.id, text: s.id + " · " + s.type }))
@@ -2209,14 +2347,24 @@
       },
       { name: "source_new", label: "新提供商 ID（仅新建时填）", placeholder: "字母/数字/-/_，例如 myapi" },
       { name: "api_base", label: "API 地址", placeholder: "https://.../v1" },
-      { name: "api_key", label: "API Key", placeholder: "新建提供商时填写" },
-      { name: "model", label: "模型名", placeholder: "例如 deepseek-chat" },
+      { name: "api_key", label: "API Key", placeholder: "选预置厂商就只填这个" },
+      { name: "model", label: "模型名", placeholder: "例如 deepseek-chat，选预置可留空" },
       { name: "temperature", label: "温度", placeholder: "例如 1.2，可留空" },
       { name: "top_p", label: "Top P", placeholder: "例如 0.95，可留空" },
       { name: "max_context_tokens", label: "最大上下文 tokens", placeholder: "例如 131072，可留空" },
       { name: "id", label: "模型 ID（可留空）", placeholder: "默认 提供商/模型名" }
     ], async (data) => {
+      // 选预置厂商：自动补提供商 / API 地址 / 默认模型，用户只填 Key
+      const vendor = (bot.vendors || []).find((v) => v.id === data.vendor);
+      if (vendor) {
+        const exists = (bot.sources || []).some((s) => s.id === vendor.id);
+        data.source = exists ? vendor.id : "__new__";
+        data.source_new = exists ? "" : vendor.id;
+        data.api_base = vendor.api_base;
+        if (!data.model) data.model = (vendor.models || [])[0] || "";
+      }
       if (!data.model) { botMsg("模型名不能为空", true); return false; }
+      if (vendor && vendor.key_required && !data.api_key) { botMsg("这个厂商要填 API Key", true); return false; }
       if (data.source === "__new__" && !data.source_new) { botMsg("新建提供商要填提供商 ID", true); return false; }
       if (data.source === "__new__" && !data.api_base) { botMsg("新建提供商要填 API 地址", true); return false; }
       try {
@@ -2243,6 +2391,31 @@
         setTimeout(loadBot, 12000);
         return true;
       } catch (error) { botMsg("创建失败：" + error.message, true); return false; }
+    });
+  });
+
+  $("importPersonas").addEventListener("click", () => {
+    const seeds = bot.personaSeeds || [];
+    if (!seeds.length) { botMsg("没有可导入的预置角色", true); return; }
+    const have = new Set((bot.personas || []).map((p) => p.id));
+    const missing = seeds.filter((s) => !have.has(s.id));
+    if (!missing.length) { botMsg("预置角色都已在人格库里"); return; }
+    openForm("导入预置角色", [
+      { type: "section", name: "tip", label: "勾选要补进人格库的角色，已存在会自动跳过" },
+      {
+        name: "ids", type: "checks", value: missing.map((s) => s.id),
+        options: missing.map((s) => ({ value: s.id, text: s.name + "（" + s.id + "）" }))
+      }
+    ], async (data) => {
+      const ids = Array.isArray(data.ids) ? data.ids : [];
+      if (!ids.length) { botMsg("至少勾一个角色", true); return false; }
+      try {
+        const res = await postJson("/bot/persona", { action: "import_seeds", ids: ids });
+        botMsg("已导入 " + ((res && res.imported) || []).length + " 个角色，AstrBot 正在重启…");
+        await loadBot();
+        setTimeout(loadBot, 12000);
+        return true;
+      } catch (error) { botMsg("导入失败：" + error.message, true); return false; }
     });
   });
 
@@ -2489,11 +2662,16 @@
   $("formOk").addEventListener("click", submitForm);
   $("formCancel").addEventListener("click", closeForm);
   $("formClose").addEventListener("click", closeForm);
+  $("humanEdit").addEventListener("click", openHumanModal);
+  $("humanOk").addEventListener("click", saveHumanSim);
+  $("humanCancel").addEventListener("click", closeHumanModal);
+  $("humanClose").addEventListener("click", closeHumanModal);
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (!$("editModal").hidden) closeEdit();
     if (!$("formModal").hidden) closeForm();
+    if (!$("humanModal").hidden) closeHumanModal();
   });
 
   $("botSave").addEventListener("click", saveBot);

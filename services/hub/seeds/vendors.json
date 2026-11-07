@@ -1,0 +1,77 @@
+{
+  "note": "中枢预置厂商：都是 OpenAI 兼容接口，选中后只需要填 API Key 就能建模型；models[0] 是默认模型，可手改。",
+  "vendors": [
+    {
+      "id": "deepseek",
+      "name": "DeepSeek 深度求索",
+      "api_base": "https://api.deepseek.com/v1",
+      "models": ["deepseek-chat", "deepseek-reasoner"],
+      "key_required": true,
+      "hint": "platform.deepseek.com 创建 Key"
+    },
+    {
+      "id": "zhipu",
+      "name": "智谱 GLM",
+      "api_base": "https://open.bigmodel.cn/api/paas/v4",
+      "models": ["glm-4-flash", "glm-4-plus", "glm-4v-flash"],
+      "key_required": true,
+      "hint": "bigmodel.cn 创建 Key，glm-4-flash 免费"
+    },
+    {
+      "id": "moonshot",
+      "name": "月之暗面 Kimi",
+      "api_base": "https://api.moonshot.cn/v1",
+      "models": ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
+      "key_required": true,
+      "hint": "platform.moonshot.cn 创建 Key"
+    },
+    {
+      "id": "siliconflow",
+      "name": "硅基流动 SiliconFlow",
+      "api_base": "https://api.siliconflow.cn/v1",
+      "models": ["deepseek-ai/DeepSeek-V3", "Qwen/Qwen2.5-72B-Instruct"],
+      "key_required": true,
+      "hint": "cloud.siliconflow.cn 创建 Key，聚合很多开源模型"
+    },
+    {
+      "id": "dashscope",
+      "name": "阿里通义千问",
+      "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "models": ["qwen-plus", "qwen-max", "qwen-turbo"],
+      "key_required": true,
+      "hint": "bailian.console.aliyun.com 创建 Key"
+    },
+    {
+      "id": "volcengine",
+      "name": "火山方舟（豆包）",
+      "api_base": "https://ark.cn-beijing.volces.com/api/v3",
+      "models": ["doubao-1-5-pro-32k-250115"],
+      "key_required": true,
+      "hint": "model 一般填火山控制台里的接入点 ID（ep-xxx）"
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "api_base": "https://api.openai.com/v1",
+      "models": ["gpt-4o-mini", "gpt-4o"],
+      "key_required": true,
+      "hint": "有代理就把 API 地址改成自己的中转地址"
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "api_base": "https://openrouter.ai/api/v1",
+      "models": ["openai/gpt-4o-mini", "deepseek/deepseek-chat"],
+      "key_required": true,
+      "hint": "openrouter.ai 创建 Key，一个 Key 用多家模型"
+    },
+    {
+      "id": "ollama",
+      "name": "本机 Ollama",
+      "api_base": "http://127.0.0.1:11434/v1",
+      "models": ["qwen2.5:7b"],
+      "key_required": false,
+      "hint": "本地免费，先 ollama pull 模型，不用填 Key"
+    }
+  ]
+}

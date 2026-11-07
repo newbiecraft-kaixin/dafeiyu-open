@@ -30,7 +30,7 @@ from .api import (
 )
 from .catalog import TOOLS
 from .config import PORT
-from .dashboard import DASHBOARD_HTML, handle_ui
+from .dashboard import handle_ui
 from .tools import HANDLERS
 from .views import handle_view
 
@@ -45,5 +45,4 @@ __all__ = [
     "handle_health",
     "TOOLS",
     "HANDLERS",
-    "DASHBOARD_HTML",
 ]
