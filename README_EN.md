@@ -165,7 +165,7 @@ Three of them are also standalone repos, installable straight from the AstrBot p
 | `astrbot_plugin_speaker_tag` | Tag messages with `[nickname/time]`, truncate group history, per-session user profiles |
 | `astrbot_plugin_provider_router` | Auto-route groups to local Ollama, friend DMs to cloud; `/模型` `/转换` to switch |
 | `astrbot_plugin_basic_tools` | Basic tools: time/group members/pokes/reminders/weather/avatars; `/听歌` `/声线` `/停` `/定时任务` |
-| `astrbot_plugin_sticker_pack` | Picks images from the library by semantics for `:emotion:` tokens, sent as separate messages |
+| `astrbot_plugin_sticker_pack` | Picks images from the library for `:emotion:` tokens via jieba segmentation + tiered scoring, sent as separate messages; QQ faces use their own quota |
 | `astrbot_plugin_face_convert` | Converts textual emotes like `[流泪]` `[doge]` into real QQ emote segments |
 | `astrbot_plugin_qzone_channel` | Qzone channel: polls new comments on your own posts, replies with an isolated context |
 | `astrbot_plugin_daily_qzone` | Auto-posts one Qzone update daily, preferring a summary of that day's group chat |
@@ -192,7 +192,7 @@ Double-click `install.bat` in the repo root and pick items by number:
 | --- | --- | --- |
 | 1 | Runtime | Checks Python 3.12+ / Node 20+, installs them via winget if missing, creates `astrbot-win\venv` |
 | 2 | Core services | Verifies hub / model / store / brain and writes `.env` with your API key |
-| 3 | AstrBot | Downloads the source, installs AstrBot plus the plugin extras (edge-tts / imageio-ffmpeg / faster-whisper / numpy / requests), copies the bundled `data` |
+| 3 | AstrBot | Downloads the source, installs AstrBot plus the plugin extras (edge-tts / imageio-ffmpeg / faster-whisper / numpy / requests / jieba), copies the bundled `data` |
 | 4 | Plugin pack | Copies all 18 plugins into AstrBot `data/plugins` |
 | 5 | NapCat | Downloads the latest release and extracts it, then asks you to run its installer once |
 | 6 | WeChat bridge | Installs `uiautomation` and `wechatauto` |

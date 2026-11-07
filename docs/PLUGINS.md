@@ -73,6 +73,14 @@
 
 **astrbot_plugin_sticker_pack** — 表情包引擎
 - 回复里的 `:情绪词:` 按语义相似度从全库挑图，单独成条发送
+- 文本语义匹配（纯本地算法，不调用大模型）：
+  - 中文用 `jieba` 分词后按「词」比对，单字不参与检索——避免「一切」命中「切」、「积累」命中「累」这类误配
+  - 分层给分：名字/原句命中 1.0~1.3，同簇标准词封顶 `text_match_core_score`（默认 0.85），近义词 0.62，只命中情绪字时 ≤0.46 作为长尾；近义层够不到核心线，只能补池
+  - 否定式单独成簇（不开心→委屈、不好笑→无语），查询和图库两侧都做否定判定，「不开心」里的「开心」不算命中
+  - `jieba` 是可选依赖：装了就按词匹配；没装自动退回二元组分词，功能可用、精度略降
+  - 相关配置：`text_match_core_score`、`text_match_min_score`、`text_match_topk`
+- 自动配 QQ 黄脸：正文命中情绪规则后补一张脸，走独立配额，不跟贴图共用 120s/5 条那套闸
+  - 相关配置：`auto_face_probability`（默认 0.6）、`auto_face_min_chars`、`face_min_gap_seconds`（默认 45）、`face_text_per_face`（默认 2）
 - 支持收藏（fav）与查重：图片指纹只在收藏入库时使用
 - 关键配置：`unlimited_groups`（不限流群）、`follow_up_probability`（补图概率）
 - 图库结构：`map.txt` 索引 + `fav/` 收藏 + `pool/` 候选（参考仓库 `astrbot-win/.../stickers/`）

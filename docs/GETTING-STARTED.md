@@ -39,7 +39,7 @@ AstrBot 自己的 `requirements.txt` 会装齐宿主依赖（aiohttp、httpx、p
 | `faster-whisper` | `face_convert`、`web_lookup`、`basic_tools`、`subtitle`、`video` | 本地语音转文字，默认 `small` int8，首次运行下载约 500MB 权重 | 语音转写、字幕、唱歌咬字核验不可用 |
 | `numpy` | `basic_tools`、`face_convert`、`web_lookup` | 音频与图像数组运算 | 翻唱、封面、视觉识别报错 |
 | `requests` | `basic_tools` 曲库 | HTTP 请求 | 点歌 / 曲库功能失败 |
-| `jieba` | `web_lookup` | 中文分词 | AstrBot 已自带，通常无需单独装 |
+| `jieba` | `web_lookup`、`sticker_pack` | 中文分词：视频标题/正文切分，表情包按词做语义匹配 | 表情包会自动退回二元组分词，功能可用、精度略降 |
 | `uiautomation` | `io-wechat` | 桌面微信控件自动化 | 微信桥完全不可用 |
 | `wechatauto` | `io-wechat` | 微信会话读写封装 | 微信桥完全不可用 |
 | `torch` + `torchaudio`（cu128） | `tools/cosyvoice_tts_server.py` | CosyVoice2 推理 | 本地语音不可用 |

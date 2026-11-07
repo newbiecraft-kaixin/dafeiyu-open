@@ -163,7 +163,7 @@ cosyvoice_ref/       声线参考音与 profiles 档案（说话 / 唱歌共用�
 | `astrbot_plugin_speaker_tag` | 消息补 `[昵称/时间]` 标签、群历史截断、每人档案按会话隔离 |
 | `astrbot_plugin_provider_router` | 群聊自动切本地 Ollama、好友私聊走云端；`/模型` `/转换` 切换 |
 | `astrbot_plugin_basic_tools` | 基础工具：时间/群成员/戳一戳/提醒/天气/查头像；`/听歌` `/声线` `/停` `/定时任务` |
-| `astrbot_plugin_sticker_pack` | 回复里的 `:情绪词:` 按语义从全库挑图，单独成条发送 |
+| `astrbot_plugin_sticker_pack` | 回复里的 `:情绪词:` 用 jieba 分词 + 分层打分从全库挑图，单独成条发送；黄脸走独立配额 |
 | `astrbot_plugin_face_convert` | 把 `[流泪]` `[doge]` 等文字表情转成真实 QQ 表情段 |
 | `astrbot_plugin_qzone_channel` | QQ 空间独立信道：轮询自己说说下的新评论，用独立上下文回复 |
 | `astrbot_plugin_daily_qzone` | 每天自动发一条 QQ 空间动态，内容优先取当日群聊总结 |
@@ -188,7 +188,7 @@ cosyvoice_ref/       声线参考音与 profiles 档案（说话 / 唱歌共用�
 | --- | --- | --- |
 | 1 | 运行环境 | 检测 Python 3.12+ / Node 20+，缺失时用 winget 安装；创建 `astrbot-win\venv` |
 | 2 | 核心四服务 | hub / model / store / brain，校验目录并写入 `.env` 密钥 |
-| 3 | AstrBot | 自动下载源码、安装 AstrBot 与插件附加依赖（edge-tts / imageio-ffmpeg / faster-whisper / numpy / requests）、带入仓库自带 data |
+| 3 | AstrBot | 自动下载源码、安装 AstrBot 与插件附加依赖（edge-tts / imageio-ffmpeg / faster-whisper / numpy / requests / jieba）、带入仓库自带 data |
 | 4 | 大肥鱼插件包 | 18 个插件复制进 AstrBot 的 `data/plugins` |
 | 5 | NapCat | 自动下载最新 Release 并解压，提示运行一次安装器 |
 | 6 | 微信桥 | 安装 `uiautomation` 与 `wechatauto` |
