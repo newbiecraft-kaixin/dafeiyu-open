@@ -7,8 +7,35 @@ from html import escape
 
 from .models import _fmt_play
 
+
+def _dur_sec(v) -> int:
+    """时长统一成秒：容忍 90 / "90" / "1:30" / "01:02:03"，认不出的记 0。
+
+    常驻页面会混入不同平台、不同时期的数据，统一在这里兜住，
+    避免一条脏时长让整页渲染失败、链接发不出去。
+    """
+    if isinstance(v, (int, float)):
+        return max(int(v), 0)
+    s = str(v or "").strip()
+    if not s:
+        return 0
+    if ":" in s:
+        try:
+            parts = [int(x) for x in s.split(":")]
+        except ValueError:
+            return 0
+        sec = 0
+        for n in parts[-3:]:
+            sec = sec * 60 + n
+        return max(sec, 0)
+    try:
+        return max(int(float(s)), 0)
+    except ValueError:
+        return 0
+
+
 def _bili_line(i: int, it: dict) -> str:
-    d = int(it.get("duration") or 0)
+    d = _dur_sec(it.get("duration"))
     dur = f"{d // 60:02d}:{d % 60:02d}" if d else "?"
     author = str(it.get("author") or "").strip() or "未知UP"
     tag = str(it.get("tag") or "").strip()
@@ -103,7 +130,7 @@ def bili_page_html(
 
     cards: list[str] = []
     for i, it in enumerate(items, 1):
-        d = int(it.get("duration") or 0)
+        d = _dur_sec(it.get("duration"))
         dur = f"{d // 60:02d}:{d % 60:02d}" if d else "?"
         title = escape(str(it.get("title") or "无标题"))
         url = escape(str(it.get("url") or "#"), quote=True)

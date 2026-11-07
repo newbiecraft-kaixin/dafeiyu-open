@@ -405,7 +405,7 @@ def _load_login_qr():
     "astrbot_plugin_web_lookup",
     "dafeiyu-local",
     "联网查证：多引擎聚合搜索→登录墙过滤→流式抓正文→相似度挑最相关页面（免 API key）",
-    "v1.5.0",
+    "v1.5.1",
 )
 class WebLookupPlugin(Star):
     def __init__(self, context: Context, config: dict | None = None):
