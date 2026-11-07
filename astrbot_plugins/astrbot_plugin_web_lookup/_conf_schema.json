@@ -13,6 +13,8 @@
   "ixigua_cookie": {"type": "string", "hint": "西瓜 Cookie（浏览器登录后整条复制；填了才能拿评论）", "default": ""},
   "bili_subtitle_chars": {"type": "int", "hint": "B站字幕最多回多少字", "default": 4000},
   "bili_tags": {"type": "list", "hint": "刷B站用的标签列表", "default": ["搞笑", "pvz"]},
+  "bili_browse_sub_chars": {"type": "int", "hint": "每条视频带多少字字幕给模型（越小越省 token）", "default": 300},
+  "bili_summary_items": {"type": "int", "hint": "一轮最多让模型总结几条（省 token，其余只显示简介）", "default": 6},
   "bili_pool_max": {"type": "int", "hint": "B站片单池最多保留条数", "default": 60},
   "bili_browse_default": {"type": "int", "hint": "刷B站默认条数", "default": 5},
   "bili_browse_max": {"type": "int", "hint": "刷B站一次最多条数", "default": 10},

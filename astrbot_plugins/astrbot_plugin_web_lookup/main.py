@@ -576,20 +576,38 @@ class WebLookupPlugin(Star):
         return f"{msg}{'（' + why + '）' if why else ''}"
 
     async def _bili_tldr(
-        self, event: AstrMessageEvent, text: str, picked: list[dict] | None = None
+        self, event: AstrMessageEvent, picked: list[dict] | None = None
     ) -> tuple[dict, str]:
-        """让模型给每条写「视频总结 / 评论总结」，返回 ({序号: {...}}, 想法)。"""
-        extra = ""
-        if picked:
-            rows: list[str] = []
-            for i, it in enumerate(picked, 1):
-                cmts = [str(c) for c in (it.get("comments") or []) if str(c).strip()][:10]
-                rows.append(f"{i}. " + ("；".join(cmts) if cmts else "没评论"))
-            if rows:
-                extra = (
-                    "\n\n【每条的前10条评论（只用于评论总结，不要整段复述给用户）】\n"
-                    + "\n".join(rows)
-                )
+        """让模型给每条写「视频总结 / 评论总结」，返回 ({序号: {...}}, 想法)。
+
+        省 token 的做法：
+        - 只发标题/UP/简介/字幕节选/前 5 条评论，各自截断（不再重复发全量文本）；
+        - 已经有总结的条目直接跳过；
+        - 一次最多总结 bili_summary_items 条，剩下的页面里只显示抓到的简介。
+        """
+        picked = picked or []
+        cap = max(1, int(self.cfg.get("bili_summary_items") or 6))
+
+        def clip(s, n: int) -> str:
+            return re.sub(r"\s+", " ", str(s or "")).strip()[:n]
+
+        rows: list[str] = []
+        for i, it in enumerate(picked[:cap], 1):
+            if it.get("sum"):
+                continue
+            bits = [f"{i}. {clip(it.get('title'), 60)}"]
+            if it.get("author"):
+                bits.append("UP：" + clip(it.get("author"), 20))
+            if it.get("desc"):
+                bits.append("简介：" + clip(it.get("desc"), 120))
+            if it.get("sub"):
+                bits.append("字幕：" + clip(it.get("sub"), 220))
+            cmts = [clip(c, 40) for c in (it.get("comments") or []) if str(c).strip()][:5]
+            if cmts:
+                bits.append("评论：" + "；".join(cmts))
+            rows.append("｜".join(bits))
+        if not rows:
+            return {}, ""
         umo = str(getattr(event, "unified_msg_origin", "") or "")
         try:
             prov = self.context.get_using_provider(umo)
@@ -597,14 +615,13 @@ class WebLookupPlugin(Star):
             resp = await asyncio.wait_for(
                 prov.text_chat(
                     prompt=(
-                        "下面是刚刷到的一批 B站视频，条目里带标题、简介、标签、字幕节选和前 10 条评论。\n"
+                        "下面是刚刷到的一批 B站视频（标题/UP/简介/字幕节选/评论，均已截断）。\n"
                         "只输出一个 JSON 对象，不要解释、不要 markdown：\n"
-                        '{"items":[{"i":1,"video":"这条讲什么、好玩或有用在哪（40字内）",'
-                        '"comment":"评论区态度或关注点（30字内）"}],'
+                        '{"items":[{"i":1,"video":"这条讲什么、好玩或有用在哪（30字内）",'
+                        '"comment":"评论区态度或关注点（20字内）"}],'
                         '"thought":"以你自己（肥鱼）的口吻写1-2句真实想法"}\n'
                         "i 是条目序号；只依据给到的信息，信息不足写「信息太少」，绝不编造。\n\n"
-                        + text
-                        + extra
+                        + "\n".join(rows)
                     ),
                     system_prompt="你只输出合法 JSON，不要输出别的任何东西。",
                 ),
@@ -655,11 +672,21 @@ class WebLookupPlugin(Star):
         """
         if not picked:
             return text
-        sums, thought = await self._bili_tldr(event, text, picked)
+        # 页面里已经总结过的同一条，直接复用，不再花一次模型
+        cached: dict[str, dict] = {}
+        for old in (_load_feed_page().get("items") or []):
+            u = str(old.get("url") or "").strip()
+            if u and old.get("sum"):
+                cached[u] = old["sum"]
+        for it in picked:
+            u = str(it.get("url") or "").strip()
+            if not it.get("sum") and u in cached:
+                it["sum"] = cached[u]
+        sums, thought = await self._bili_tldr(event, picked)
         rows: list[dict] = []
         for i, it in enumerate(picked, 1):
             row = dict(it)
-            s = sums.get(i) or {}
+            s = sums.get(i) or it.get("sum") or {}
             if s:
                 row["sum"] = s
             rows.append(row)

@@ -33,7 +33,8 @@ DEFAULT_CFG = {
     "bili_pool_max": 60,        # 片单池最多留多少条（超了裁掉最旧的）
     "bili_browse_default": 5,   # 不写条数时默认刷几条
     "bili_browse_max": 10,      # 一次最多刷几条
-    "bili_browse_sub_chars": 400,  # 刷视频时每条带多少字字幕给模型总结
+    "bili_browse_sub_chars": 300,  # 刷视频时每条带多少字字幕给模型总结
+    "bili_summary_items": 6,       # 一轮最多让模型总结几条（省 token，其余只放简介）
     # 刷B站防风控：每条至少停留视频时长的 1/3，模拟真人在看
     "bili_dwell_ratio": 0.34,   # 停留时长 = 视频时长 × 该比例（1/3）
     "bili_dwell_max": 90,       # 单条最多停留多少秒（半小时的视频别真等十分钟）

@@ -103,6 +103,14 @@ h2 a:hover{color:#ffd166}
 .text em{font-style:normal;color:#7f8db0}
 .cmts{margin:10px 0 0;padding-left:18px;color:#9faccb;font-size:12.5px;line-height:1.75}
 .cmts li{margin:3px 0}
+.more{margin-top:10px}
+.more>summary{cursor:pointer;color:#8fb4ff;font-size:12.5px;outline:none;user-select:none}
+.more>summary::-webkit-details-marker{display:none}
+.more>summary::before{content:"▸ ";color:#8fb4ff}
+.more[open]>summary::before{content:"▾ "}
+.more .box{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:10px;background:rgba(86,120,255,.07);border:1px solid rgba(140,170,255,.14)}
+.more .k{color:#ffd166;font-size:12px;letter-spacing:.06em}
+.more p{margin:2px 0 0;color:#c2cdec;font-size:13px;line-height:1.7;word-break:break-word}
 footer{margin-top:26px;color:#6f7b9a;font-size:12px;line-height:1.8}
 .none{padding:26px;border-radius:14px;border:1px dashed rgba(140,170,255,.25);color:#8f9bbd;text-align:center}
 @media (max-width:560px){
@@ -162,25 +170,27 @@ def bili_page_html(
                 for x in kws.replace("，", "、").split("、") if x.strip()
             ) + "</div>"
 
-        sum_html = ""
-        if vsum or csum:
-            bits = []
-            if vsum:
-                bits.append(f'<div class="k">视频总结</div><p>{escape(vsum)}</p>')
-            if csum:
-                bits.append(f'<div class="k">评论总结</div><p>{escape(csum)}</p>')
-            sum_html = '<div class="sum">' + "".join(bits) + "</div>"
-
-        text_html = ""
+        intro: list[str] = []
+        if vsum:
+            intro.append(f'<div class="k">视频总结</div><p>{escape(vsum)}</p>')
+        if csum:
+            intro.append(f'<div class="k">评论总结</div><p>{escape(csum)}</p>')
         if desc:
-            text_html += f'<div class="text"><em>简介：</em>{escape(desc[:220])}</div>'
+            intro.append(f'<div class="k">简介</div><p>{escape(desc[:400])}</p>')
         if sub:
-            text_html += f'<div class="text"><em>字幕：</em>{escape(sub[:300])}</div>'
-        cmt_html = ""
+            intro.append(f'<div class="k">字幕节选</div><p>{escape(sub[:300])}</p>')
         if cmts:
-            cmt_html = '<ul class="cmts">' + "".join(
-                f"<li>{escape(c[:160])}</li>" for c in cmts
-            ) + "</ul>"
+            intro.append(
+                '<div class="k">热门评论</div><ul class="cmts">'
+                + "".join(f"<li>{escape(c[:160])}</li>" for c in cmts)
+                + "</ul>"
+            )
+        more_html = (
+            '<details class="more"><summary>详细</summary>'
+            '<div class="box">' + "".join(intro) + "</div></details>"
+            if intro
+            else ""
+        )
 
         cards.append(
             '<article class="card">'
@@ -188,7 +198,7 @@ def bili_page_html(
             '<div class="body">'
             f'<h2><a href="{url}" target="_blank" rel="noopener">{title}</a></h2>'
             f'<div class="rows">{rows_html}</div>'
-            f"{chips_small}{sum_html}{text_html}{cmt_html}"
+            f"{chips_small}{more_html}"
             "</div></article>"
         )
 
