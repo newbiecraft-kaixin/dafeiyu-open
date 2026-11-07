@@ -22,9 +22,10 @@ powershell -ExecutionPolicy Bypass -File .\pet\dsh-pet\install.ps1
 
 ## 说明
 
-- 本目录里的 `dsh-pet-0.4.1.tgz` 就是从本机 DSH 安装目录里取出的同款安装包（62.4 MB，1077 个文件），保证别人下载后跑出来和本机一致。
+- 本目录里的 `dsh-pet-0.4.1.tgz` 就是从本机 DSH 安装目录里取出的同款安装包（62.5 MB，1077 个文件），保证别人下载后跑出来和本机一致。
 - dsh-pet 自身以上游 MIT 许可发布（作者 PC2005-cloud，npm 包名 `dsh-pet`，首页 https://github.com/PC2005-cloud/dsh-pet ），二次分发请保留其 LICENSE。
-- 首次安装时若 `%USERPROFILE%\.dsh\dsh-pet\main-config.jsonc` 不存在，脚本会自动铺入本目录的 `config.example.jsonc`（碎碎念人设、海草+背景泡泡、睡觉台词等，带中文注释，可自行修改）。
+- 首次安装时若 `%USERPROFILE%\.dsh\dsh-pet\main-config.jsonc` 不存在，脚本会自动铺入本目录的 `config.example.jsonc`（桌宠实例、人设/睡觉台词、模型、配图与动作、看屏、语音、泡泡、全局开关、物理、字体、工作状态台词、动画权重、周期事件，带中文注释，可自行修改）。已有旧配置则只补缺失的必填开关，不动原有设置。
+- 配置合并是「顶层字段整段替换」：动了 `animations` / `memes` / `physics` / `workStatusTexts` 这类整段，要把整段写全，别只写一半；没写的顶层字段才回落包内默认值（`assets/config.jsonc`）。
 - 更新版本：`npm install dsh-pet@latest --save-exact` 装回 DSH profile 即可，不需要动本目录的 tgz（除非要同步仓库）。
 
 ## 海草 / 背景泡泡不显示

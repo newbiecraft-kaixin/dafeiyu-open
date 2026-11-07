@@ -137,6 +137,9 @@ if (-not (Test-Path $cfg)) {
 else {
     # dsh-pet 把这几个开关当必填项，老版本配置缺了会被判「配置错误」，气泡开关也存不回去
     $required = [ordered]@{
+        "whisperImageEnabled"    = "true"
+        "chatImageEnabled"       = "true"
+        "chatAnimationEnabled"   = "true"
         "bubbleBackdropEnabled"  = "true"
         "bubbleRiseSfxEnabled"   = "true"
         "bubbleBurstSfxEnabled"  = "true"
