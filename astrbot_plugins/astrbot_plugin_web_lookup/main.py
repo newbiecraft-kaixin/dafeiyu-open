@@ -180,22 +180,76 @@ def _share_page_dir() -> str:
     return share
 
 
-def _write_share_page(html_text: str) -> str:
-    """把刷视频页面写到 8712 静态目录，保留最近 20 个，返回可发的 URL。"""
-    share = _share_page_dir()
-    path = os.path.join(share, f"bili_feed_{int(time.time())}.html")
+def _write_feed_page(html_text: str) -> str:
+    """所有刷到的视频只写进同一个常驻页面，返回可发的 URL。"""
+    path = os.path.join(_share_page_dir(), "bili_feed.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(html_text)
-    pages = sorted(
-        (os.path.join(share, fn) for fn in os.listdir(share) if fn.startswith("bili_feed_")),
-        key=lambda p: os.path.getmtime(p),
-    )
-    for old in pages[:-20]:
-        try:
-            os.remove(old)
-        except OSError:
-            pass
     return _bili_qr_url(path)
+
+
+def _feed_page_path() -> str:
+    """常驻页面的数据落盘：data/plugin_data/<插件名>/bili_page.json。"""
+    try:
+        from astrbot.core.utils.astrbot_path import get_astrbot_plugin_data_path
+
+        root = get_astrbot_plugin_data_path()
+    except Exception:  # noqa: BLE001
+        root = os.path.join(os.path.dirname(os.path.dirname(PLUGIN_DIR)), "plugin_data")
+    return os.path.join(root, PLUGIN_NAME, "bili_page.json")
+
+
+_FEED_PAGE_LIMIT = 200
+
+
+def _load_feed_page() -> dict:
+    """读常驻页面数据（条目 + 标签 + 更新时间）。"""
+    try:
+        with open(_feed_page_path(), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    items = [it for it in (data.get("items") or []) if isinstance(it, dict)]
+    tags = [str(t).strip() for t in (data.get("tags") or []) if str(t).strip()]
+    return {
+        "items": items[:_FEED_PAGE_LIMIT],
+        "tags": tags[:10],
+        "updated": str(data.get("updated") or ""),
+    }
+
+
+def _merge_feed_page(items: list[dict], tags: list[str] | None = None) -> dict:
+    """把新条目并进常驻页面：按链接去重，新的在前，最多留 200 条。"""
+    page = _load_feed_page()
+
+    def key_of(it: dict) -> str:
+        return str(it.get("url") or it.get("bvid") or it.get("title") or "").strip()
+
+    seen = {key_of(it) for it in page["items"]}
+    fresh: list[dict] = []
+    for it in items:
+        k = key_of(it)
+        if not k or k in seen:
+            continue
+        seen.add(k)
+        fresh.append(dict(it))
+    page["items"] = (fresh + page["items"])[:_FEED_PAGE_LIMIT]
+
+    merged: list[str] = []
+    for t in list(tags or []) + page["tags"]:
+        t = str(t or "").strip()
+        if t and t not in merged:
+            merged.append(t)
+    page["tags"] = merged[:10]
+    page["updated"] = time.strftime("%Y-%m-%d %H:%M")
+
+    path = _feed_page_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(page, f, ensure_ascii=False, indent=2)
+    return page
 
 
 def _load_lookup_module():
@@ -591,41 +645,40 @@ class WebLookupPlugin(Star):
     async def _deliver_feed(
         self, event: AstrMessageEvent, text: str, picked: list[dict], tags: list[str]
     ) -> str:
-        """把本次刷到的条目写成网页，并返回「带每条链接」的固定格式清单。
+        """把刷到的条目并进唯一视频页面，QQ 里只回一句介绍 + 页面链接。
 
-        排版由代码写死，AI 只补一句要点——它给不出就留空，绝不让它决定格式。
+        页面会一直累积（最多 200 条），不再把清单和封面图刷到群里。
         """
         if not picked:
             return text
         sums, thought = await self._bili_tldr(event, text, picked)
-        # 页面只是附赠；写不出来也不能拖累直链清单，清单才是用户要的
+        rows: list[dict] = []
+        for i, it in enumerate(picked, 1):
+            row = dict(it)
+            s = sums.get(i) or {}
+            if s:
+                row["sum"] = s
+            rows.append(row)
+
         url = ""
         try:
+            page = _merge_feed_page(rows, tags)
             html = self.core.bili_page_html(
-                picked,
-                tags,
-                summaries=sums,
+                page["items"],
+                page["tags"],
                 thought=thought,
-                note="页面只保留最近 20 份；想换口味直接跟我说个词，不想看了就说停。",
+                note="页面会一直累积，最多保留最近 200 条；想换口味直接跟我说个词。",
+                generated=page["updated"],
             )
-            url = _write_share_page(html)
+            url = _write_feed_page(html)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"[web_lookup] 刷B站页面生成失败: {type(e).__name__}: {str(e)[:120]}")
-        label = "、".join(str(t) for t in tags if str(t).strip()) or "默认"
 
+        label = "、".join(str(t) for t in tags if str(t).strip()) or "默认"
+        intro = _clean_ai_line(thought) or _clean_ai_line(str(picked[0].get("title") or ""))
         lines = [f"刷到 {len(picked)} 条（{label}）"]
-        for i, it in enumerate(picked, 1):
-            title = _clean_ai_line(str(it.get("title") or "")) or f"第{i}条"
-            link = str(it.get("url") or "").strip()
-            lines.append(f"{i}. {title}")
-            if link:
-                lines.append(f"   {link}")
-            point = _clean_ai_line(str((sums.get(i) or {}).get("video") or ""))
-            if point and point not in ("信息太少", "信息不足") and _line_is_fresh(point):
-                lines.append(f"   要点：{point}")
-        thought = _clean_ai_line(thought)
-        if thought and _line_is_fresh(thought):
-            lines.append(f"我的看法：{thought}")
+        if intro:
+            lines.append(intro)
         if url:
             lines.append(f"完整页面：{url}")
         return "\n".join(lines)
@@ -1001,6 +1054,9 @@ class WebLookupPlugin(Star):
             kw = " ".join(words).strip()
             deep = dict(self.cfg)
             deep["max_chars"] = 6000
+            if not kw and p:
+                # 只给了平台（/看视频 b站）：用它自己的热门词搜，而不是打印用法
+                kw = "热门"
             if not kw:
                 rows = _load_watch()
                 if not raw_all and rows:
@@ -1037,8 +1093,8 @@ class WebLookupPlugin(Star):
             yield event.plain_result("\n\n".join(out))
             return
         quoted = _reply_text(event)
-        if not quoted or not _at_self(event):
-            yield event.plain_result("要引用视频那条消息并 @ 我。")
+        if not quoted or not (_at_self(event) or event.is_private_chat()):
+            yield event.plain_result("要引用视频那条消息并 @ 我（私聊直接引用就行）。")
             return
         raw_p = (platform or "").strip()
         if raw_p.startswith("@") or raw_p.lower().startswith(("http://", "https://")):
@@ -1131,9 +1187,46 @@ class WebLookupPlugin(Star):
             wait_s = _video_read_delay(data, self.cfg, time.monotonic() - t0)
             if wait_s > 0:
                 await asyncio.sleep(wait_s)
-            yield event.plain_result(await self._video_report(event, data))
-            for u in (data.get("image_urls") or [])[:3]:
-                yield event.image_result(str(u))
+            report = await self._video_report(event, data)
+            summary = comment_sum = ""
+            for line in report.splitlines():
+                line = line.strip()
+                if line.startswith("视频总结：") and not summary:
+                    summary = line[len("视频总结："):].strip()
+                elif line.startswith("评论总结：") and not comment_sum:
+                    comment_sum = line[len("评论总结："):].strip()
+            row = {
+                "title": str(data.get("title") or "").strip(),
+                "url": lk,
+                "author": str(data.get("author") or "").strip(),
+                "duration": int(data.get("duration") or 0),
+                "play": data.get("play"),
+                "desc": str(data.get("desc") or "").strip(),
+                "sub": str(data.get("subtitle") or data.get("transcript") or "").strip(),
+                "comments": [str(c) for c in (data.get("comments") or [])][:3],
+                "sum": {"video": summary, "comment": comment_sum},
+            }
+            url = ""
+            try:
+                page = _merge_feed_page([row], [])
+                html = self.core.bili_page_html(
+                    page["items"],
+                    page["tags"],
+                    note="页面会一直累积，最多保留最近 200 条。",
+                    generated=page["updated"],
+                )
+                url = _write_feed_page(html)
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"[web_lookup] 看视频页面生成失败: {type(e).__name__}: {str(e)[:120]}")
+            head = row["title"] or "这条视频"
+            if row["author"]:
+                head = f"{head}｜{row['author']}"
+            lines = [head]
+            if summary:
+                lines.append(summary)
+            if url:
+                lines.append(f"完整页面：{url}")
+            yield event.plain_result("\n".join(lines))
             return
         try:
             text = await asyncio.wait_for(

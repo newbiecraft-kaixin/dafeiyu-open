@@ -113,7 +113,7 @@ def bili_page_html(
         desc = re.sub(r"\s+", " ", str(it.get("desc") or "")).strip()
         sub = re.sub(r"\s+", " ", str(it.get("sub") or "")).strip()
         cmts = [str(c).strip() for c in (it.get("comments") or []) if str(c).strip()][:3]
-        s = sums.get(i) or {}
+        s = it.get("sum") or sums.get(i) or {}
         vsum = str(s.get("video") or "").strip()
         csum = str(s.get("comment") or "").strip()
 
