@@ -8,6 +8,29 @@ from html import escape
 from .models import _fmt_play
 
 
+_BILI_PAGER_JS = """<script>
+(function(){
+  var cards=[].slice.call(document.querySelectorAll("main > .card"));
+  var per=10,pages=Math.ceil(cards.length/per);
+  if(cards.length<=per)return;
+  var page=1,box=document.getElementById("pager");
+  function render(){
+    cards.forEach(function(c,i){
+      c.style.display=(i>=(page-1)*per&&i<page*per)?"":"none";
+    });
+    var b1=document.createElement("button"),b2=document.createElement("button"),sp=document.createElement("span");
+    b1.textContent="上一页";b2.textContent="下一页";
+    sp.textContent="第 "+page+" / "+pages+" 页 · 共 "+cards.length+" 条";
+    b1.disabled=page<=1;b2.disabled=page>=pages;
+    b1.onclick=function(){if(page>1){page--;render();window.scrollTo({top:0,behavior:"smooth"})}};
+    b2.onclick=function(){if(page<pages){page++;render();window.scrollTo({top:0,behavior:"smooth"})}};
+    box.innerHTML="";box.appendChild(b1);box.appendChild(sp);box.appendChild(b2);
+  }
+  render();
+})();
+</script>"""
+
+
 def _dur_sec(v) -> int:
     """时长统一成秒：容忍 90 / "90" / "1:30" / "01:02:03"，认不出的记 0。
 
@@ -93,6 +116,9 @@ h1 b{color:#ffd166;font-weight:600}
 h2{margin:0 0 10px;font-size:17px;line-height:1.5;font-weight:600}
 h2 a{color:#e8edfb;text-decoration:none}
 h2 a:hover{color:#ffd166}
+.url{margin:-4px 0 10px;font-size:12.5px;word-break:break-all}
+.url a{color:#8fb4ff;text-decoration:none;border-bottom:1px solid rgba(143,180,255,.4)}
+.url a:hover{color:#ffd166;border-bottom-color:rgba(255,209,102,.6)}
 .rows{display:flex;flex-wrap:wrap;gap:6px 14px;color:#8f9bbd;font-size:12.5px}
 .rows b{color:#c7d2f0;font-weight:500}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
@@ -113,6 +139,12 @@ h2 a:hover{color:#ffd166}
 .more p{margin:2px 0 0;color:#c2cdec;font-size:13px;line-height:1.7;word-break:break-word}
 footer{margin-top:26px;color:#6f7b9a;font-size:12px;line-height:1.8}
 .none{padding:26px;border-radius:14px;border:1px dashed rgba(140,170,255,.25);color:#8f9bbd;text-align:center}
+.pager{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:26px 0 6px}
+.pager button{padding:8px 16px;border-radius:999px;font-size:13px;color:#c7d2f0;cursor:pointer;
+border:1px solid rgba(140,170,255,.25);background:rgba(255,255,255,.03);transition:.18s}
+.pager button:hover:not(:disabled){border-color:rgba(255,209,102,.45);color:#ffd166}
+.pager button:disabled{opacity:.35;cursor:default}
+.pager span{font-size:12.5px;color:#8f9bbd}
 @media (max-width:560px){
   body{padding:20px 12px 44px}
   h1{font-size:24px}
@@ -136,12 +168,27 @@ def bili_page_html(
     chips = "".join(f'<span class="chip on">{escape(t)}</span>' for t in tag_rows)
     now = generated or time.strftime("%Y-%m-%d %H:%M")
 
+    def _fresh_key(it: dict) -> tuple[int, int]:
+        try:
+            pub = int(it.get("pubdate") or 0)
+        except (TypeError, ValueError):
+            pub = 0
+        try:
+            ts = int(it.get("ts") or 0)
+        except (TypeError, ValueError):
+            ts = 0
+        return (pub or ts, ts)
+
+    # 页面按视频发布时间倒序；没抓到发布时间的退回入库时间
+    items = sorted(items, key=_fresh_key, reverse=True)
+
     cards: list[str] = []
     for i, it in enumerate(items, 1):
         d = _dur_sec(it.get("duration"))
         dur = f"{d // 60:02d}:{d % 60:02d}" if d else "?"
         title = escape(str(it.get("title") or "无标题"))
         url = escape(str(it.get("url") or "#"), quote=True)
+        disp_url = url.replace("https://", "").replace("http://", "").rstrip("/")
         author = escape(str(it.get("author") or "未知UP"))
         tname = escape(str(it.get("tname") or ""))
         kws = str(it.get("keywords") or "").strip()
@@ -161,6 +208,12 @@ def bili_page_html(
             meta.append(f"分区：{tname}")
         if int(it.get("parts") or 0) > 1:
             meta.append(f"分P：{int(it.get('parts'))}")
+        try:
+            pub = int(it.get("pubdate") or 0)
+        except (TypeError, ValueError):
+            pub = 0
+        if pub > 0:
+            meta.append("发布：" + time.strftime("%Y-%m-%d", time.localtime(pub)))
         rows_html = "".join(f"<span><b>{m}</b></span>" for m in meta)
 
         chips_small = ""
@@ -197,6 +250,7 @@ def bili_page_html(
             f'<div class="rank">#{i}</div>'
             '<div class="body">'
             f'<h2><a href="{url}" target="_blank" rel="noopener">{title}</a></h2>'
+            f'<div class="url"><a href="{url}" target="_blank" rel="noopener">{escape(disp_url)}</a></div>'
             f'<div class="rows">{rows_html}</div>'
             f"{chips_small}{more_html}"
             "</div></article>"
@@ -216,5 +270,7 @@ def bili_page_html(
         '<div class="eyebrow">BILIBILI FEED</div>'
         f"<h1>刷到 <b>{len(items)}</b> 条</h1>"
         f'<div class="meta">{chips}<span>{escape(now)}</span></div>'
-        f"{thought_html}</header>{body_html}{note_html}</main></body></html>"
+        f"{thought_html}</header>{body_html}"
+        '<div id="pager" class="pager"></div>'
+        f"{note_html}</main>{_BILI_PAGER_JS}</body></html>"
     )

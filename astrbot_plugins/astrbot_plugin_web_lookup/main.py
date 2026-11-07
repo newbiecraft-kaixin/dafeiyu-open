@@ -238,7 +238,10 @@ def _merge_feed_page(items: list[dict], tags: list[str] | None = None) -> dict:
         if not k or k in seen:
             continue
         seen.add(k)
-        fresh.append(dict(it))
+        row = dict(it)
+        if not row.get("ts"):
+            row["ts"] = int(time.time())
+        fresh.append(row)
     page["items"] = (fresh + page["items"])[:_FEED_PAGE_LIMIT]
 
     merged: list[str] = []
@@ -698,7 +701,7 @@ class WebLookupPlugin(Star):
                 page["items"],
                 page["tags"],
                 thought=thought,
-                note="页面会一直累积，最多保留最近 200 条；想换口味直接跟我说个词。",
+                note="页面按发布时间倒序累积，最多保留最近 200 条；想换口味直接跟我说个词。",
                 generated=page["updated"],
             )
             url = _write_feed_page(html, str(self.cfg.get("video_page_url") or ""))
@@ -1243,7 +1246,7 @@ class WebLookupPlugin(Star):
                 html = self.core.bili_page_html(
                     page["items"],
                     page["tags"],
-                    note="页面会一直累积，最多保留最近 200 条。",
+                    note="页面按发布时间倒序累积，最多保留最近 200 条。",
                     generated=page["updated"],
                 )
                 url = _write_feed_page(html, str(self.cfg.get("video_page_url") or ""))

@@ -126,7 +126,7 @@ _BILI_CARD_JS = r"""
     seen.add(m[1]);
     const card = a.closest('.bili-video-card, .video-item, li, div') || a;
     const t = card.querySelector('.bili-video-card__info--tit, .title, .bili-video-card__info--tit a');
-    const au = card.querySelector('.bili-video-card__info--author, .up-name, .bili-video-card__info--bottom a');
+    const au = card.querySelector('.bili-video-card__info--author, .up-name, .bili-video-card__info--bottom a, [class*="author"], [class*="up-name"]');
     const st = card.querySelectorAll('.bili-video-card__stats--item, .bili-video-card__stats span');
     const du = card.querySelector('.bili-video-card__stats__duration, .duration');
     out.push({
@@ -157,6 +157,8 @@ _BILI_DETAIL_JS = r"""
     tname: v.tname || '',
     pages: (v.pages || []).length,
     tags: tags,
+    author: (v.owner && v.owner.name) || '',
+    pubdate: v.pubdate || 0,
   };
 }
 """
@@ -278,10 +280,14 @@ async def _bili_browser_fetch(cfg: dict, tags: list[str], limit: int) -> list[di
                         if not title:
                             continue
                         seen.add(bvid)
+                        # 卡片底部常把「UP · 10月21日」写在一起，作者只留人名
+                        raw_author = re.split(
+                            r"\s*[·•]\s*", str(r.get("author") or "").strip()
+                        )[0].strip()
                         out.append({
                             "bvid": bvid,
                             "title": title[:120],
-                            "author": str(r.get("author") or "").strip(),
+                            "author": raw_author[:40],
                             "play": _play_count(r.get("play")),
                             "duration": _dur_sec(r.get("duration")),
                             "tag": str(tag),
@@ -304,6 +310,8 @@ async def _bili_browser_fetch(cfg: dict, tags: list[str], limit: int) -> list[di
                         await _human_scroll(detail_page)
                         d = await detail_page.evaluate(_BILI_DETAIL_JS)
                         if isinstance(d, dict) and d:
+                            if not str(it.get("author") or "").strip() and d.get("author"):
+                                it["author"] = str(d["author"]).strip()
                             it["desc"] = re.sub(r"\s+", " ", str(d.get("desc") or "")).strip()
                             if d.get("tname"):
                                 it["tname"] = str(d["tname"]).strip()
@@ -311,6 +319,11 @@ async def _bili_browser_fetch(cfg: dict, tags: list[str], limit: int) -> list[di
                                 it["keywords"] = "、".join(str(x) for x in d["tags"])
                             if int(d.get("pages") or 0) > 1:
                                 it["parts"] = int(d["pages"])
+                            if d.get("pubdate"):
+                                try:
+                                    it["pubdate"] = int(d["pubdate"])
+                                except (TypeError, ValueError):
+                                    pass
                             if not it.get("duration"):
                                 it["duration"] = _dur_sec(d.get("duration"))
                             if not it.get("play"):
@@ -429,6 +442,10 @@ async def _bili_meta(sess: aiohttp.ClientSession, cfg: dict, bvid: str) -> dict:
         out["aid"] = int(d.get("aid") or 0)
     except (TypeError, ValueError):
         pass
+    owner = d.get("owner") if isinstance(d.get("owner"), dict) else {}
+    aname = str(owner.get("name") or "").strip()
+    if aname:
+        out["author"] = aname
     desc = re.sub(r"\s+", " ", str(d.get("desc") or d.get("dynamic") or "")).strip()
     if desc and desc not in ("-", "—", "无", "暂无简介"):
         out["desc"] = desc[:260]
@@ -438,6 +455,12 @@ async def _bili_meta(sess: aiohttp.ClientSession, cfg: dict, bvid: str) -> dict:
     pages = d.get("pages") if isinstance(d.get("pages"), list) else []
     if len(pages) > 1:
         out["parts"] = len(pages)
+    try:
+        pub = int(d.get("pubdate") or d.get("ctime") or 0)
+    except (TypeError, ValueError):
+        pub = 0
+    if pub > 0:
+        out["pubdate"] = pub
     # 标签：标题党视频光看标题说不清内容，标签往往更准
     try:
         async with sess.get(
@@ -663,8 +686,12 @@ async def bili_browse(
     step = max(n * 2, 6)
     while rest and len(picked) < n:
         batch, rest = rest[:step], rest[step:]
-        # 浏览器模式已经在视频页拿过简介，只对缺的补一次接口，省请求也少触发风控
-        lack = [it for it in batch if not str(it.get("desc") or "").strip()]
+        # 浏览器模式已经在视频页拿过简介，只对缺字段的补一次接口，省请求也少触发风控
+        lack = [
+            it for it in batch
+            if not str(it.get("desc") or "").strip()
+            or not str(it.get("author") or "").strip()
+        ]
         try:
             if lack:
                 async with aiohttp.ClientSession(
