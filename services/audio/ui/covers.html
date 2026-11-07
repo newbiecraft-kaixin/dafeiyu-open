@@ -7,8 +7,8 @@
 <style>
   :root{
     --bg:#070a14;--card:#101731;--line:rgba(122,152,222,.22);
-    --text:#e9edff;--muted:#8b97bd;--acc:#bfd0ff;--blue:#6b8fff;
-    --good:#3ddc97;--bad:#ff617b;--warn:#ffcc66;
+    --text:#e9edff;--muted:#8b97bd;--acc:#9db8ff;--blue:#6b8fff;
+    --good:#3ddc97;--bad:#ff617b;--warn:#7cc4ff;
   }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;color:var(--text);
@@ -32,31 +32,37 @@
   .stat b{color:var(--acc)}
   .spacer{flex:1}
   .btn{cursor:pointer;border-radius:9px;border:1px solid var(--line);
-    background:#121a35;color:#dfe8ff;padding:7px 14px;font-size:13px;transition:.15s}
-  .btn:hover{border-color:rgba(107,143,255,.6);background:#16203f}
-  .btn.primary{background:linear-gradient(180deg,#4f74e8,#3a5bd0);
+    background:#121a35;color:#eaf0ff;padding:7px 14px;font-size:13px;transition:.15s}
+  .btn:hover{border-color:rgba(107,143,255,.6);background:#16203d}
+  .btn.primary{background:linear-gradient(180deg,#6b8fff,#4472e8);
     border-color:transparent;color:#fff}
   .btn.tiny{padding:4px 10px;font-size:12px}
-  .btn.danger{color:#ffc2cd;border-color:rgba(255,97,123,.35)}
+  .btn.danger{color:#ffb3c1;border-color:rgba(255,97,123,.35)}
   .btn.danger:hover{background:rgba(255,97,123,.15)}
   .btn:disabled{opacity:.45;cursor:not-allowed}
   .btn.on{border-color:rgba(107,143,255,.7);background:rgba(107,143,255,.18)}
   .msg{margin-top:10px;font-size:13px;min-height:20px;color:var(--muted)}
   .msg.err{color:var(--bad)}.msg.good{color:var(--good)}
   .player-box{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-    padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0c1328}
+    padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0b1222}
   .player-title{color:var(--acc);font-size:13px}
   audio{height:34px;flex:1 1 320px;min-width:220px}
   .list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
   .item{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-    padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:#0c1328}
+    padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:#0b1222}
   .item:hover{border-color:rgba(107,143,255,.45)}
   .tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
-  .tag.cover{color:#bfd0ff;background:rgba(107,143,255,.12)}
-  .tag.sing{color:#b9f5dd;background:rgba(61,220,151,.1)}
+  .tag.cover{color:#9db8ff;background:rgba(107,143,255,.12)}
+  .tag.sing{color:#c9f7e6;background:rgba(61,220,151,.1)}
   .name{font-size:13.5px;color:var(--text)}
   .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
   .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(122,152,222,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(122,152,222,.4);background-clip:content-box}
+::selection{background:rgba(107,143,255,.32)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>

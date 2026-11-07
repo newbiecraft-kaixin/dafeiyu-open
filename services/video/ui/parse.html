@@ -8,15 +8,15 @@
   :root{
     --bg:#070a14;
     --panel:#101731;
-    --panel-2:#131c3c;
-    --line:rgba(102,126,182,.32);
+    --panel-2:#141d3a;
+    --line:rgba(122,152,222,.32);
     --line-strong:rgba(107,143,255,.55);
     --text:#e9edff;
     --sub:#8b97bd;
-    --accent:#bfd0ff;
-    --warn:#ffd479;
+    --accent:#9db8ff;
+    --warn:#7cc4ff;
     --error:#ff9aa8;
-    --ok:#9ee6b4;
+    --ok:#8fe3bd;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -33,7 +33,7 @@
     border:1px solid var(--line);background:var(--panel);color:var(--sub);
   }
   .status.ok{color:var(--ok);border-color:rgba(158,230,180,.35)}
-  .status.warn{color:var(--warn);border-color:rgba(255,212,121,.45);background:rgba(255,212,121,.08)}
+  .status.warn{color:var(--warn);border-color:rgba(124,196,255,.45);background:rgba(124,196,255,.08)}
   .card{
     background:var(--panel);border:1px solid var(--line);border-radius:16px;
     padding:18px 20px;margin-bottom:16px;
@@ -48,13 +48,13 @@
   input[type=text]:focus,input[type=password]:focus{
     border-color:var(--line-strong);box-shadow:0 0 0 3px rgba(107,143,255,.14);
   }
-  input::placeholder{color:#5f6c92}
+  input::placeholder{color:#6f7ba0}
   button{
     padding:11px 22px;border-radius:11px;border:1px solid rgba(107,143,255,.5);
-    background:linear-gradient(180deg,#1c2a58,#16214a);color:var(--accent);
+    background:linear-gradient(180deg,#1e3057,#1a2647);color:var(--accent);
     font:inherit;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;
   }
-  button:hover:not(:disabled){border-color:var(--line-strong);background:linear-gradient(180deg,#22336a,#1a2757)}
+  button:hover:not(:disabled){border-color:var(--line-strong);background:linear-gradient(180deg,#22355e,#1c2c50)}
   button:disabled{opacity:.55;cursor:progress}
   button.ghost{
     background:transparent;border-color:var(--line);color:var(--sub);font-weight:400;padding:7px 14px;font-size:12px;
@@ -93,11 +93,11 @@
   .meta{color:var(--sub);font-size:13px;display:flex;flex-wrap:wrap;gap:14px}
   .meta b{color:var(--text);font-weight:500}
   h3{margin:0 0 10px;font-size:13px;color:var(--accent);letter-spacing:.5px}
-  .desc{white-space:pre-wrap;color:#cfd8f5;font-size:13px;line-height:1.8;margin:0}
+  .desc{white-space:pre-wrap;color:#dbe5ff;font-size:13px;line-height:1.8;margin:0}
   .scroll{max-height:380px;overflow:auto;padding-right:6px}
   .sub-title{font-size:12px;color:var(--sub);margin:0 0 8px}
-  .sub-body{white-space:pre-wrap;color:#d7e0ff;font-size:13px;line-height:1.9;margin:0}
-  ol.comments{margin:0;padding-left:22px;color:#d7e0ff;font-size:13px;line-height:1.85}
+  .sub-body{white-space:pre-wrap;color:#eaf0ff;font-size:13px;line-height:1.9;margin:0}
+  ol.comments{margin:0;padding-left:22px;color:#eaf0ff;font-size:13px;line-height:1.85}
   ol.comments li{margin-bottom:7px;word-break:break-word}
   ul.notes{margin:0;padding-left:20px;color:var(--warn);font-size:13px;line-height:1.8}
   ul.notes li{margin-bottom:5px}
@@ -113,6 +113,12 @@
     .row{flex-direction:column}
     button{padding:11px 16px}
   }
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(122,152,222,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(122,152,222,.4);background-clip:content-box}
+::selection{background:rgba(107,143,255,.32)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>

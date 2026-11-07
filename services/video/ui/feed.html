@@ -6,10 +6,10 @@
 <title>大肥鱼 · 刷B站</title>
 <style>
 :root{
-  --bg:#070a14; --panel:#101731; --panel-2:#131c3c;
-  --text:#e9edff; --muted:#8b97bd; --accent:#bfd0ff;
-  --line:rgba(102,126,182,.35); --line-hot:rgba(107,143,255,.6);
-  --bad:#ff8fa3; --good:#7ee2b8;
+  --bg:#070a14; --panel:#101731; --panel-2:#141d3a;
+  --text:#e9edff; --muted:#8b97bd; --accent:#9db8ff;
+  --line:rgba(122,152,222,.35); --line-hot:rgba(107,143,255,.6);
+  --bad:#ff8fa3; --good:#8fe3bd;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -31,7 +31,7 @@ p.sub{margin:4px 0 0;color:var(--muted);font-size:13px}
   padding:10px 16px;margin-bottom:20px;border:1px solid var(--line);
   border-radius:12px;background:rgba(16,23,49,.7);font-size:13px;color:var(--muted);
 }
-.dot{width:8px;height:8px;border-radius:50%;background:#5b6484;flex:0 0 auto}
+.dot{width:8px;height:8px;border-radius:50%;background:#6f7ba0;flex:0 0 auto}
 .dot.on{background:var(--good);box-shadow:0 0 8px rgba(126,226,184,.7)}
 .dot.off{background:var(--bad)}
 .bar .sep{width:1px;height:14px;background:var(--line)}
@@ -65,7 +65,7 @@ input{
   background:var(--bg);color:var(--text);font:inherit;outline:none;min-width:0;
 }
 input:focus{border-color:var(--line-hot);box-shadow:0 0 0 3px rgba(107,143,255,.15)}
-input::placeholder{color:#5b6484}
+input::placeholder{color:#6f7ba0}
 .row > input{flex:1 1 220px;width:auto}
 .grid input{max-width:160px}
 button{
@@ -73,12 +73,12 @@ button{
   background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer;
   transition:.16s;white-space:nowrap;
 }
-button:hover:not(:disabled){border-color:var(--line-hot);background:#17224a}
+button:hover:not(:disabled){border-color:var(--line-hot);background:#1a2647}
 button:disabled{opacity:.5;cursor:not-allowed}
 button.primary{
-  background:linear-gradient(135deg,#4b6bd8,#6b8fff);border-color:transparent;color:#fff;
+  background:linear-gradient(135deg,#4472e8,#6b8fff);border-color:transparent;color:#fff;
 }
-button.primary:hover:not(:disabled){background:linear-gradient(135deg,#5a7ae6,#7b9cff)}
+button.primary:hover:not(:disabled){background:linear-gradient(135deg,#5a86ff,#9db8ff)}
 button.ghost{background:transparent;color:var(--accent)}
 button.danger{color:var(--bad);border-color:rgba(255,143,163,.35);background:transparent}
 button.danger:hover:not(:disabled){background:rgba(255,143,163,.1);border-color:rgba(255,143,163,.6)}
@@ -99,7 +99,7 @@ button.like.on{color:var(--good);border-color:rgba(126,226,184,.45);background:r
 .pool{display:flex;flex-direction:column;gap:2px}
 .pool-item{
   display:flex;align-items:center;justify-content:space-between;gap:14px;
-  padding:10px 4px;border-bottom:1px solid rgba(102,126,182,.18);
+  padding:10px 4px;border-bottom:1px solid rgba(122,152,222,.18);
 }
 .pool-item:last-child{border-bottom:0}
 .pool-main{min-width:0;flex:1 1 auto}
@@ -113,7 +113,7 @@ button.like.on{color:var(--good);border-color:rgba(126,226,184,.45);background:r
   flex:0 0 auto;font-size:11.5px;color:var(--good);border:1px solid rgba(126,226,184,.4);
   background:rgba(126,226,184,.1);border-radius:999px;padding:1px 9px;
 }
-.empty{color:#5b6484;font-size:13px;margin:6px 0}
+.empty{color:#6f7ba0;font-size:13px;margin:6px 0}
 details.cookie summary{
   cursor:pointer;font-size:15px;font-weight:600;letter-spacing:.4px;
   list-style:none;display:flex;align-items:center;gap:10px;
@@ -136,6 +136,12 @@ details.cookie[open] summary::before{transform:rotate(90deg)}
   header{flex-direction:column;align-items:flex-start;gap:8px}
   .cards{grid-template-columns:1fr}
 }
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(122,152,222,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(122,152,222,.4);background-clip:content-box}
+::selection{background:rgba(107,143,255,.32)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
