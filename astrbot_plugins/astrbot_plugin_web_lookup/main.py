@@ -180,12 +180,16 @@ def _share_page_dir() -> str:
     return share
 
 
-def _write_feed_page(html_text: str) -> str:
-    """所有刷到的视频只写进同一个常驻页面，返回可发的 URL。"""
+def _write_feed_page(html_text: str, public_url: str = "") -> str:
+    """所有刷到的视频只写进同一个常驻页面，返回可发的 URL。
+
+    public_url 配了就用对外地址（和充值页共用同一条公网端口），
+    没配才退回本机 8712。
+    """
     path = os.path.join(_share_page_dir(), "bili_feed.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(html_text)
-    return _bili_qr_url(path)
+    return str(public_url or "").strip() or _bili_qr_url(path)
 
 
 def _feed_page_path() -> str:
@@ -670,7 +674,7 @@ class WebLookupPlugin(Star):
                 note="页面会一直累积，最多保留最近 200 条；想换口味直接跟我说个词。",
                 generated=page["updated"],
             )
-            url = _write_feed_page(html)
+            url = _write_feed_page(html, str(self.cfg.get("video_page_url") or ""))
         except Exception as e:  # noqa: BLE001
             logger.warning(f"[web_lookup] 刷B站页面生成失败: {type(e).__name__}: {str(e)[:120]}")
 
@@ -1215,7 +1219,7 @@ class WebLookupPlugin(Star):
                     note="页面会一直累积，最多保留最近 200 条。",
                     generated=page["updated"],
                 )
-                url = _write_feed_page(html)
+                url = _write_feed_page(html, str(self.cfg.get("video_page_url") or ""))
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"[web_lookup] 看视频页面生成失败: {type(e).__name__}: {str(e)[:120]}")
             head = row["title"] or "这条视频"

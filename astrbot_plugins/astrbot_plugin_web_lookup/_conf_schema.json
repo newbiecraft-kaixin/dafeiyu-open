@@ -26,5 +26,6 @@
   "video_audio_max_mb": {"type": "int", "hint": "音频临时文件大小上限(MB)", "default": 60},
   "video_read_ratio": {"type": "float", "hint": "解析视频后等多久才回复：按视频时长的比例（默认 1/3）", "default": 0.34},
   "video_read_min_s": {"type": "int", "hint": "上面那个等待的最少秒数", "default": 6},
-  "video_read_max_s": {"type": "int", "hint": "上面那个等待的最多秒数（超长视频别真等十几分钟）", "default": 300}
+  "video_read_max_s": {"type": "int", "hint": "上面那个等待的最多秒数（超长视频别真等十几分钟）", "default": 300},
+  "video_page_url": {"type": "string", "hint": "刷到的视频常驻页对外地址（如 https://你的域名/bili；留空用本机 8712）", "default": ""}
 }

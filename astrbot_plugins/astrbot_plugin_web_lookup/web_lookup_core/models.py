@@ -47,6 +47,8 @@ DEFAULT_CFG = {
     "video_parse_timeout_s": 180,    # 单条视频解析总超时（含下载+CPU 转写）
     "video_transcript_chars": 4000,  # 转写文本最多回多少字
     "video_audio_max_mb": 60,        # 音频临时文件大小上限
+    # 刷到的视频常驻页对外地址（和充值页共用一条公网端口）；留空用本机 8712
+    "video_page_url": "",
 }
 
 
