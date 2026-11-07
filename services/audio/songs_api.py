@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Optional, Tuple
 _HERE = Path(__file__).resolve()
 sys.path.insert(0, str(_HERE.parents[2] / "shared"))
 
-from infra import Blob, Html, fail, find_dir, ok  # noqa: E402
+from infra import Blob, Html, astrbot_dir, fail, find_dir, ok  # noqa: E402
 
 DATA_DIR = _HERE.parent / "data"
 SOURCES_FILE = DATA_DIR / "sources.json"
@@ -190,10 +190,92 @@ def _save_songs(rows: List[Dict[str, Any]]) -> None:
     _write_json(SONGS_FILE, rows)
 
 
+def _bot_library_file() -> Optional[Path]:
+    """机器人（basic_tools 插件）的曲库文件；中枢这边只读取展示，路径可用环境变量覆盖。"""
+    env = os.environ.get("SONGS_BOT_LIBRARY", "").strip()
+    if env:
+        candidate = Path(env).expanduser()
+        return candidate if candidate.is_file() else None
+    try:
+        bot = astrbot_dir()
+    except Exception:  # noqa: BLE001 - 找目录失败不影响自己的 songs.json
+        return None
+    if not bot:
+        return None
+    candidate = (
+        bot / "data" / "plugin_data" / "astrbot_plugin_basic_tools" / "music_library.json"
+    )
+    return candidate if candidate.is_file() else None
+
+
+def _bot_songs() -> List[Dict[str, Any]]:
+    """把插件曲库映射成中枢的歌曲结构（字段名不同：name/file → title/path）。"""
+    path = _bot_library_file()
+    if path is None:
+        return []
+    rows = _read_json(path, None)
+    if not isinstance(rows, list):
+        return []
+    music_dir = path.parent / "music"
+    songs: List[Dict[str, Any]] = []
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
+        file_name = str(item.get("file") or "").strip()
+        title = str(item.get("name") or "").strip() or Path(file_name).stem
+        if not title:
+            continue
+        added = item.get("added")
+        try:
+            added_at = (
+                time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(added)))
+                if added
+                else ""
+            )
+        except (TypeError, ValueError, OSError):
+            added_at = ""
+        songs.append(
+            {
+                "id": "bot:" + (file_name or title),
+                "title": title,
+                "artist": str(item.get("artist") or "").strip(),
+                "album": "",
+                "source": str(item.get("source") or "local").strip() or "local",
+                "source_id": str(item.get("contentId") or ""),
+                "path": str(music_dir / file_name) if file_name else "",
+                "url": "",
+                "duration": _parse_duration(item.get("duration")),
+                "added_at": added_at,
+                "origin": "bot",
+            }
+        )
+    return songs
+
+
+def _all_songs() -> List[Dict[str, Any]]:
+    """中枢自己的曲库 + 机器人曲库（同名同歌手去重），只用于展示/试听。"""
+    rows = _load_songs()
+    seen = {
+        (str(row.get("title") or "").lower(), str(row.get("artist") or "").lower())
+        for row in rows
+    }
+    try:
+        extra = _bot_songs()
+    except Exception:  # noqa: BLE001 - 插件曲库坏了也不拖垮本服务
+        extra = []
+    for row in extra:
+        key = (row["title"].lower(), row["artist"].lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(row)
+    return rows
+
+
 def status() -> Dict[str, Any]:
     """给 /health 用：歌曲数 + 启用音源数。读盘失败也要返回结构。"""
     try:
-        songs = _load_songs()
+        songs = _all_songs()
         sources = _load_sources()
     except Exception:  # noqa: BLE001 - health 不允许把服务带崩
         return {"songs": 0, "sources": 0, "sources_enabled": 0}
@@ -486,7 +568,7 @@ def handle_search(req) -> Any:  # noqa: ANN001
 
 def handle_songs_get(req) -> Any:  # noqa: ANN001
     keyword = str(req.q("q") or "").strip().lower()
-    rows = _load_songs()
+    rows = _all_songs()
     if keyword:
         rows = [
             row
@@ -553,10 +635,39 @@ def handle_songs_delete(req) -> Any:  # noqa: ANN001
         rows = _load_songs()
         kept = [row for row in rows if str(row.get("id")) != song_id]
         if len(kept) == len(rows):
+            if song_id.startswith("bot:"):
+                return _delete_bot_song(song_id)
             return fail(f"歌曲不存在：{song_id}", 404)
         _save_songs(kept)
     # 只删记录，不删本地文件
     return ok({"deleted": song_id})
+
+
+def _delete_bot_song(song_id: str) -> Any:
+    """删机器人曲库里的歌（条目 + 音频文件），和 QQ 里 /听歌 移除 一致。"""
+    path = _bot_library_file()
+    if path is None:
+        return fail("机器人曲库不可用", 404)
+    keep, removed = [], []
+    for item in _read_json(path, None) or []:
+        if not isinstance(item, dict):
+            continue
+        file_name = str(item.get("file") or "")
+        key = "bot:" + (file_name or str(item.get("name") or ""))
+        (removed if key == song_id else keep).append(item)
+    if not removed:
+        return fail(f"歌曲不存在：{song_id}", 404)
+    _write_json(path, keep)
+    music_dir = path.parent / "music"
+    for item in removed:
+        file_name = str(item.get("file") or "")
+        if not file_name:
+            continue
+        try:
+            (music_dir / file_name).unlink()
+        except OSError:
+            pass
+    return ok({"deleted": song_id, "removed": len(removed)})
 
 
 def _parse_range(size: int, header: str) -> Optional[Tuple[int, int]]:
@@ -602,7 +713,7 @@ def handle_audio(req) -> Any:  # noqa: ANN001
     song_id = str(req.q("id") or "").strip()
     if not song_id:
         return fail("缺少歌曲 id", 400)
-    song = next((row for row in _load_songs() if str(row.get("id")) == song_id), None)
+    song = next((row for row in _all_songs() if str(row.get("id")) == song_id), None)
     if song is None:
         return fail(f"歌曲不存在：{song_id}", 404)
 
