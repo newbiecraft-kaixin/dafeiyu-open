@@ -179,6 +179,51 @@ class MusicMixin:
             tail += f" · 下一页 /听歌 {p + 1}"
         return f"曲库（{len(lines)} 首）：\n{body}{tail}"
 
+    def _remove_song_text(self, keyword: str) -> str:
+        """从曲库删一首：先删资源库条目，再删音频文件（含没登记的同名文件）。"""
+        lib = _load_music_lib()
+        if lib is None:
+            return "乐曲资源库没加载起来（music_lib.py 缺失）"
+        name = re.sub(r"[《》\"'“”]", "", str(keyword or "")).strip()
+        if not name:
+            return "要移除哪首？发 /听歌 移除 歌名。"
+        removed = lib.library_remove(MUSIC_LIB, name)
+        gone, failed = [], []
+        for it in removed:
+            f = str(it.get("file") or "")
+            label = f"《{it.get('name') or name}》" + (
+                f" - {it['artist']}" if it.get("artist") else "")
+            if f:
+                try:
+                    os.remove(os.path.join(MUSIC_DIR, f))
+                except FileNotFoundError:
+                    pass
+                except OSError as e:  # noqa: BLE001
+                    failed.append(f"{label}（文件删不掉：{e.strerror or e}）")
+                    continue
+            gone.append(label)
+        # 资源库里没登记、但目录里躺着的音频也一起清掉
+        indexed = {str(it.get("file") or "") for it in lib.library_list(MUSIC_LIB)}
+        if os.path.isdir(MUSIC_DIR):
+            for fn in sorted(os.listdir(MUSIC_DIR)):
+                if not fn.lower().endswith((".mp3", ".m4a", ".flac", ".wav", ".ogg")):
+                    continue
+                if fn in indexed or name.lower() not in fn.lower():
+                    continue
+                try:
+                    os.remove(os.path.join(MUSIC_DIR, fn))
+                    gone.append(os.path.splitext(fn)[0])
+                except OSError as e:  # noqa: BLE001
+                    failed.append(f"{fn}（文件删不掉：{e.strerror or e}）")
+        if not gone and not failed:
+            return f"曲库里没有《{name}》，没删。"
+        parts = []
+        if gone:
+            parts.append("移除了：" + "、".join(gone))
+        if failed:
+            parts.append("没删掉：" + "；".join(failed))
+        return "；".join(parts) + "。"
+
     async def _kugou_qr_flow(self, event: AstrMessageEvent):
         """酷狗没登录时发二维码，扫码成功把 Cookie 写盘。"""
         mod = _load_kugou_login()
@@ -210,7 +255,8 @@ class MusicMixin:
 
     @filter.command("听歌", alias={"歌曲"})
     async def cmd_listen_song(self, event: AstrMessageEvent, song: str = ""):
-        """/听歌 [歌名或页码] —— 不带参数列曲库，数字翻页，歌名直接翻唱"""
+        """/听歌 [歌名或页码] —— 不带参数列曲库，数字翻页，歌名直接翻唱；
+        /听歌 移除 歌名 —— 从曲库删掉这首歌（仅主人）"""
         if str(event.get_platform_name() or "").lower() in (
                 "wechatauto", "weixin_oc"):
             yield event.plain_result("微信端只能发文字，唱不了歌；/听歌 只在 QQ 用。")
@@ -218,7 +264,15 @@ class MusicMixin:
         name = (song or "").strip()
         if not name:
             yield event.plain_result(
-                self._song_list_text("1") + "\n\n发 /听歌 歌名 直接唱。")
+                self._song_list_text("1")
+                + "\n\n发 /听歌 歌名 直接唱，发 /听歌 移除 歌名 删掉。")
+            return
+        m = re.match(r"^(?:移除|删除|删掉|删)\s*(.*)$", name)
+        if m:
+            if not self._is_admin(event):
+                yield event.plain_result("只有主人能删曲库里的歌。")
+                return
+            yield event.plain_result(self._remove_song_text(m.group(1)))
             return
         if name.isdigit():
             yield event.plain_result(self._song_list_text(name))

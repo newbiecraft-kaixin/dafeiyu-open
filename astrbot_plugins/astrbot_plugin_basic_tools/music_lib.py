@@ -308,6 +308,21 @@ def library_hits(lib_path: str, keyword: str, limit: int = 5) -> list[dict]:
     return hits[:limit]
 
 
+def library_remove(lib_path: str, keyword: str) -> list[dict]:
+    """按歌名/歌手/文件名从资源库删条目（文件由调用方删），返回被删掉的条目。"""
+    kw = _norm_name(keyword)
+    if not kw:
+        return []
+    keep, removed = [], []
+    for it in _library_load(lib_path):
+        hay = _norm_name(" ".join(
+            str(it.get(k) or "") for k in ("name", "artist", "file")))
+        (removed if kw in hay else keep).append(it)
+    if removed:
+        _library_save(lib_path, keep)
+    return removed
+
+
 def _norm_name(text: str) -> str:
     return re.sub(r"[\s\-_·、,，.。'\"“”《》()（）\[\]]+", "", _plain(text)).lower()
 
