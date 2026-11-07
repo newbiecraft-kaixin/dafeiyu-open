@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from datetime import datetime
 
@@ -42,6 +43,32 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_PATH = os.path.join(PLUGIN_DIR, "user_memory.json")
 
 PROFILE_MARK = "【你记得的这个人】"
+
+# AstrBot 群历史块的一行：[昵称/HH:MM:SS]: 内容
+_HISTORY_LINE_RE = re.compile(r"^\[(.+?)/(\d{1,2}:\d{2}(?::\d{2})?)\]:\s?")
+
+
+def _nick_matches(nick: str, names: set[str]) -> bool:
+    """历史块里的昵称没有 uid，只能按昵称匹配主人（兼容截断与 # 后缀差异）。"""
+    n = nick.strip()
+    if not n:
+        return False
+    for name in names:
+        a = str(name).strip()
+        if a and (n == a or n.startswith(a) or a.startswith(n)):
+            return True
+    return False
+
+
+def mark_admin_line(line: str, names: set[str]) -> str:
+    """把历史块里主人的发言行改成 [昵称(主人)/时间]: 内容。"""
+    m = _HISTORY_LINE_RE.match(line)
+    if not m:
+        return line
+    nick, when = m.group(1), m.group(2)
+    if nick.endswith("(主人)") or not _nick_matches(nick, names):
+        return line
+    return f"[{nick}(主人)/{when}]: {line[m.end():]}"
 
 DEFAULTS = {
     "history_max_records": 20,  # 群历史块最多注入最近多少条（0=不截断）
@@ -76,6 +103,8 @@ class SpeakerTagPlugin(Star):
                 logger.warning(f"[speaker_tag] 读取 config.json 失败: {e}")
         # 按会话（群/私聊 umo）隔离：{umo: {uid: 档案}}
         self._sessions: dict[str, dict[str, dict]] = {}
+        self._admins: set[str] = set()
+        self._load_admins()
         self._dirty = False
         self._last_save = 0.0
         self._load_memory()
@@ -100,7 +129,7 @@ class SpeakerTagPlugin(Star):
                     name = (event.get_sender_name() or "群友").split("#")[0][:16]
                     t = datetime.now().strftime("%H:%M")
                     req.prompt = f"[{name}/{t}]: {prompt}"
-                self._trim_history_block(req)
+                self._trim_history_block(event, req)
             self._inject_profile(event, req)
         except Exception as e:  # noqa: BLE001
             logger.warning(f"[speaker_tag] 处理失败: {type(e).__name__}: {e}")
@@ -285,15 +314,70 @@ class SpeakerTagPlugin(Star):
         except Exception as e:  # noqa: BLE001
             logger.warning(f"[speaker_tag] 写入 user_memory.json 失败: {e}")
 
-    # ==================== 群历史块截断 ====================
+    # ==================== 群历史块截断 + 主人标注 ====================
 
-    def _trim_history_block(self, req) -> None:
+    def _load_admins(self) -> None:
+        """主人 ID 以 AstrBot 主配置的 admins_id 为准。"""
+        try:
+            cfg_path = os.path.abspath(
+                os.path.join(PLUGIN_DIR, "..", "..", "cmd_config.json")
+            )
+            with open(cfg_path, encoding="utf-8-sig") as f:
+                cfg = json.load(f)
+            self._admins = {
+                str(a).strip() for a in (cfg.get("admins_id") or []) if str(a).strip()
+            }
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[speaker_tag] 读取 admins_id 失败: {type(e).__name__}: {e}")
+
+    def _group_window(self):
+        """取 group_window 插件实例（窗口里存了 uid，能给昵称找回 ID）。
+
+        context.get_registered_star 返回的是 StarMetadata，真正的插件实例在 star_cls。
+        """
+        info = None
+        try:
+            info = self.context.get_registered_star("astrbot_plugin_group_window")
+        except Exception:  # noqa: BLE001
+            info = None
+        if info is None:
+            try:
+                from astrbot.core.star.star import star_map
+
+                info = star_map.get("astrbot_plugin_group_window.main")
+            except Exception:  # noqa: BLE001
+                info = None
+        if info is None:
+            return None
+        inst = getattr(info, "star_cls", None) or getattr(info, "star", None)
+        return inst if inst is not None else (info if hasattr(info, "names_of") else None)
+
+    def _admin_names(self, event: AstrMessageEvent) -> set[str]:
+        """主人在本群用过的昵称集合：窗口里的历史昵称 + 档案里的最新昵称。"""
+        if not self._admins:
+            self._load_admins()
+        names: set[str] = set()
+        gw = self._group_window()
+        if gw is not None and hasattr(gw, "names_of"):
+            try:
+                names |= set(gw.names_of(event.get_group_id(), self._admins))
+            except Exception as e:  # noqa: BLE001
+                logger.debug(f"[speaker_tag] 取群窗口昵称失败: {type(e).__name__}: {e}")
+        users = self._sessions.get(self._session_of(event), {})
+        for uid in self._admins:
+            u = users.get(uid)
+            if u and u.get("name"):
+                names.add(str(u["name"]))
+        return {n for n in names if n}
+
+    def _trim_history_block(self, event: AstrMessageEvent, req) -> None:
         max_records = int(self.cfg.get("history_max_records", 20))
-        if max_records <= 0 or TextPart is None:
+        if TextPart is None:
             return
         parts = getattr(req, "extra_user_content_parts", None)
         if not parts:
             return
+        admin_names = self._admin_names(event)
         for i, part in enumerate(parts):
             text = getattr(part, "text", None)
             if not text or "--- BEGIN CONTEXT---" not in text:
@@ -313,13 +397,31 @@ class SpeakerTagPlugin(Star):
                     break
             header, records, footer = lines[:start_i], lines[start_i:end_i], lines[end_i:]
             records = [r for r in records if r.strip()]
-            if len(records) <= max_records:
+            if not records:
                 continue
-            omitted = len(records) - max_records
-            records = [f"（此前 {omitted} 条群消息已省略）"] + records[-max_records:]
+            changed = False
+            # 先给主人的发言打标：历史块里只有昵称，靠窗口/档案反查出来的昵称集合匹配
+            if admin_names:
+                marked = [mark_admin_line(r, admin_names) for r in records]
+                if marked != records:
+                    hit = sum(1 for a, b in zip(records, marked) if a != b)
+                    records, changed = marked, True
+                    if not getattr(self, "_mark_logged", False):
+                        self._mark_logged = True
+                        logger.info(
+                            f"[speaker_tag] 历史块主人标注生效：{hit} 行，昵称池={sorted(admin_names)}"
+                        )
+            if max_records > 0 and len(records) > max_records:
+                omitted = len(records) - max_records
+                records = [f"（此前 {omitted} 条群消息已省略）"] + records[-max_records:]
+                changed = True
+            if not changed:
+                continue
             new_text = "\n".join(header + records + footer)
             try:
                 parts[i] = TextPart(text=new_text)
-                logger.debug(f"[speaker_tag] 历史块截断：省略 {omitted} 条，保留最近 {max_records} 条")
+                logger.debug(
+                    f"[speaker_tag] 历史块已处理：标注主人={bool(admin_names)}，保留 {len(records)} 条"
+                )
             except Exception as e:  # noqa: BLE001
-                logger.warning(f"[speaker_tag] 历史块截断失败: {type(e).__name__}: {e}")
+                logger.warning(f"[speaker_tag] 历史块处理失败: {type(e).__name__}: {e}")
