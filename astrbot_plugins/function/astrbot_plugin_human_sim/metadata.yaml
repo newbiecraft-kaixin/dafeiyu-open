@@ -1,0 +1,8 @@
+name: astrbot_plugin_human_sim
+display_name: "模拟真人（潜水/插话/拍一拍）"
+desc: "在指定群里模拟真人：潜水插话、冷场开话头、冒泡发 QQ 表情、发言带表情包。拍一拍全链路：被拍必回（回戳/冒话/甩表情）、同一人连拍必回戳、回完人顺手拍一下；「拍拍我/戳我」这类纯动作在本地直接处理不进 AI。不聊天就不主动戳人（冷场、潜水、跟戳都不拍），只有回完对方的话或对方先戳自己才拍。全部带概率+冷却+每分钟限额+活动时段频控，夜间降频。"
+version: v1.4.2
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
+support_platforms:
+  - aiocqhttp

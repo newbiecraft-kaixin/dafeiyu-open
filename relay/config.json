@@ -1,0 +1,21 @@
+{
+    "port": 23334,
+    "pet": "http://127.0.0.1:3080",
+    "petPath": "/dsh-pet-7340/broadcast?pet=main&surface=desktop",
+    "petKind": "dsh-pet",
+    "ollama": "http://127.0.0.1:11434",
+    "model": "qwen3.5:9b",
+    "brain": "http://127.0.0.1:23402",
+    "brainTimeoutMs": 10000,
+    "narrate": false,
+    "timeoutMs": 15000,
+    "pendingTtlMs": 180000,
+    "pendingMaxAgeMs": 0,
+    "maxPending": 2,
+    "bootGraceMs": 0,
+    "forceSubtitle": true,
+    "injectRetry": 3,
+    "injectRetryGapMs": 1200,
+    "requeueMax": 20,
+    "requeueDelayMs": 5000
+}

@@ -1,0 +1,5 @@
+name: astrbot_plugin_group_window
+desc: "群聊动态窗口：被动记录每个群的聊天消息（不唤醒、不回复），机器人在群里要发言时把窗口内容注入上下文；小群默认整窗装入"
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open

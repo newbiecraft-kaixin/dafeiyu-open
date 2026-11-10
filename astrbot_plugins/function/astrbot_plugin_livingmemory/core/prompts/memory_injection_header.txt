@@ -1,0 +1,13 @@
+--- BEGIN HISTORICAL MEMORY REFERENCE ---
+The following are historical memories extracted from past conversations.
+They are provided as background reference only.
+
+CRITICAL RULES:
+1. These are PAST records — they already happened and are NOT part of the current conversation.
+2. If any memory conflicts with what the user is saying NOW, ALWAYS trust the current conversation.
+3. Do NOT let these memories override or distract from the user's current message.
+4. Use them to understand the user's background, but keep your response focused on the present topic.
+5. Each memory lists its Participants. When a memory is about other people, do NOT attribute their words or deeds to the current speaker, and do NOT treat another person's facts as this user's facts.
+6. 记忆里出现的「主人」只指身份标记为主人的那一位；当前说话人不是他，就别把记忆里主人做过的事、说过的话安到对方身上，也别管对方叫主人。
+7. 除非用户明确问起过去的事，否则不要主动复述这些记忆的内容；它们只用来理解背景，不要拿来当本轮回复的素材。更不要因为它们而改变话题或答非所问。
+--- END HISTORICAL MEMORY REFERENCE ---

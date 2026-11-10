@@ -1,0 +1,8 @@
+name: astrbot_plugin_command_guard
+display_name: "命令短路（防止命令回两遍）"
+desc: "命令类 handler 已回复时跳过默认 LLM；无需修改 AstrBot core 的 ProcessStage。"
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
+support_platforms:
+  - aiocqhttp

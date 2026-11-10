@@ -1,0 +1,8 @@
+name: astrbot_plugin_prompt_audit
+display_name: "提示词体积审计"
+desc: "只读记录每次 LLM 请求各段字符数与前缀哈希，用于 DeepSeek 前缀缓存优化。"
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
+support_platforms:
+  - aiocqhttp

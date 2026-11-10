@@ -1,0 +1,6 @@
+name: astrbot_plugin_humanizer
+desc: 人味处理器（清洗 markdown 结构、AI 腔样板句、长句排比，防复读与连续自言自语）
+help: 自动生效，无需指令；机器人回复出门前会被洗成人话
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open

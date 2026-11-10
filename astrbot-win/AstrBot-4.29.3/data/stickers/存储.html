@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>存储 · 大肥鱼表情库</title>
+<style>
+:root{
+  --bg:#0d0f16; --panel:#151823; --panel2:#1b1f2c;
+  --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.16);
+  --gold:#7c8cf8; --gold-dim:#5f6ee0; --cyan:#7c8cf8;
+  --text:#e9ecf5; --muted:#a7b0c6; --green:#46d39a; --red:#f2637e; --purple:#b9a8ff;
+  --navh:46px;   /* 吸顶导航高度：表头吸顶位置必须和它一致，否则中间会漏一条 */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  animation:pagefade .4s ease;
+  color:var(--text);font-family:"Microsoft YaHei","PingFang SC",sans-serif;line-height:1.6;padding:24px 18px 80px}
+@keyframes pagefade{from{opacity:0}to{opacity:1}}
+.wrap{width:100%;margin:0 auto;position:relative;z-index:1}
+h1{font-size:22px;letter-spacing:1px;color:var(--text);display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.topnav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:6px;height:var(--navh);
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:0 14px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.topnav .brand{font-weight:bold;color:var(--gold);margin-right:14px;letter-spacing:1px;font-size:13px}
+.topnav a.navlink{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 12px;border-radius:8px;border:1px solid transparent}
+.topnav a.navlink:hover{color:var(--text);background:var(--panel2)}
+.topnav a.navlink.active{color:#0d0f16;background:var(--gold);border-color:transparent;font-weight:bold;box-shadow:none}
+.topnav a.navlink.right{margin-left:auto;color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+button.primary{background:var(--gold);color:#0d0f16;border:none;border-radius:8px;padding:7px 18px;font-size:13px;cursor:pointer;font-weight:700;box-shadow:none}
+button.primary:hover{box-shadow:none;background:var(--gold)}
+button.del{background:transparent;color:var(--red);border:1px solid var(--red);border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+button.mini{background:transparent;border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:4px 12px;font-size:12.5px;cursor:pointer}
+button.mini:hover{border-color:var(--gold);color:var(--text)}
+input[type=text],input[type=search],select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:none}
+/* 原生下拉列表：深底浅字，避免白底白字看不清 */
+select{color-scheme:dark}
+select option,select optgroup{background-color:#1b1f2c;color:#e9ecf5}
+select option:checked,select option:hover{background-color:#2a3048;color:#fff}
+input[type=search]{width:240px}
+.count{font-size:12.5px;color:var(--muted);margin-left:auto}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:16px;font-size:13px;table-layout:fixed;box-shadow:0 8px 24px rgba(0,0,0,.35);overflow:hidden}
+th{background:var(--panel2);color:var(--muted);text-align:left;padding:10px 12px;font-size:11px;font-weight:600;letter-spacing:.06em;position:sticky;top:var(--navh);z-index:5}
+th:first-child{border-top-left-radius:16px}
+th:last-child{border-top-right-radius:16px}
+td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:middle;overflow-wrap:anywhere;transition:background .22s}
+tr:hover td{background:var(--panel2)}
+td img{width:52px;height:52px;object-fit:contain;border-radius:8px;background:var(--panel2);border:1px solid var(--line);display:block}
+.thumb-miss{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.facebox{width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-size:11px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:1px 6px;border:1px solid transparent;border-radius:8px;font-size:12px;font-weight:400;margin-left:8px;transition:border-color .14s ease}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;flex:none}
+tr:hover .badge{border-color:var(--line2)}
+.bg-fav{color:var(--purple)}.bg-fav::before{background:var(--purple)}
+.bg-dup{color:var(--red)}.bg-dup::before{background:var(--red)}
+.bg-loose{color:var(--green)}.bg-loose::before{background:var(--green)}
+.bg-ai{color:var(--gold)}.bg-ai::before{background:var(--gold)}
+.ai-prog{display:none;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+.ai-err{flex-basis:100%;font-size:11.5px;color:var(--red);line-height:1.55}
+.meta{display:grid;grid-template-columns:64px 1fr;gap:4px 10px;font-size:12.5px;margin:10px 0 2px;padding:9px 0 0;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0}
+.meta b{color:var(--muted);font-weight:normal}
+.meta span{word-break:break-all}
+.draft-tip{font-size:12px;color:var(--gold);background:transparent;border:1px dashed var(--line2);border-radius:8px;padding:6px 10px;margin:8px 0 0;line-height:1.6}
+.mono{font-family:Consolas,monospace;font-size:11px;color:var(--muted);word-break:break-all}
+.empty{color:var(--muted);text-align:center;padding:30px}
+.empty-t{color:var(--text);font-size:14px;font-weight:700;margin-bottom:6px}
+.empty-s{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;align-items:center;justify-content:center}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;max-width:560px;width:92%;
+  max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.modal h3{color:var(--gold);font-size:16px;margin-bottom:12px;flex:0 0 auto}
+#mbody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:6px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#mbody::-webkit-scrollbar{width:6px}
+#mbody::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.modal label.ml{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+.modal input,.modal select,.modal textarea{width:100%}
+.modal .mcode{display:block;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-family:Consolas,monospace;font-size:12px;color:var(--text);word-break:break-all}
+.modal .mmsg{font-size:13.5px;line-height:1.7}
+.modal .mfoot{display:flex;gap:10px;justify-content:flex-end;flex:0 0 auto;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.modal .mfoot .del{margin-right:auto}   /* 「删除」放左边，避免误点和「保存」挨着 */
+.modal code{background:var(--panel2);padding:1px 5px;border-radius:4px;color:var(--cyan);font-size:12px}
+/* 改「表情」弹窗：上图 + 上一条/下一条 + 保存不关窗 */
+.modal .eprev{margin:2px 0 10px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);border-radius:8px;min-height:110px;padding:6px}
+.modal .eprev img{max-width:100%;max-height:220px;object-fit:contain;border-radius:8px;display:block}
+.modal .eprev .thumb-miss{width:100%;height:110px}
+.modal .eprev .facebox{width:100%;height:110px;font-size:13px}
+.modal .enav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.modal .enav-i{font-size:12px;color:var(--muted);font-family:Consolas,monospace}
+.modal .ehint{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+button.mini:disabled{opacity:.4;cursor:not-allowed}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);color:var(--text);padding:9px 18px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:60;max-width:min(90vw,720px);text-align:center}
+#toast.show{opacity:1}
+#toast.err{border-color:var(--red);color:var(--red)}
+/* 弹窗打开时 toast 挪到顶部，避免挡住「核验通过 → 入库」按钮 */
+body.modal-open #toast{bottom:auto;top:18px}
+td .mini{white-space:nowrap}
+/* 点图放大：缩略图/弹窗里的图点一下铺满全屏看 */
+td img,.modal img{cursor:zoom-in}
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:80;align-items:center;justify-content:center;cursor:zoom-out;padding:16px}
+#lightbox img{max-width:94vw;max-height:94vh;border-radius:8px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#lightbox .lb-tip{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:12.5px}
+@media (max-width:900px){
+  table{table-layout:auto}      /* 窄屏别让「含义」列被挤成一条 */
+}
+@media (max-width:760px){
+  body{padding:14px 10px 60px}
+  .topnav{overflow-x:auto}
+  input[type=search]{width:100%;flex:1 1 200px}
+  .count{width:100%;margin-left:0}
+  .modal{max-width:94vw;padding:16px}
+}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);background-clip:content-box}
+::selection{background:rgba(124,140,248,.35)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
+/* ===== 活力增强层：氛围光 + 渐变描边 ===== */
+body{
+  background:
+    radial-gradient(900px 520px at 6% -12%, rgba(124,140,248,.18), transparent 62%),
+    radial-gradient(760px 480px at 96% 2%, rgba(34,211,238,.13), transparent 62%),
+    radial-gradient(700px 520px at 50% 110%, rgba(244,114,182,.10), transparent 60%),
+    linear-gradient(180deg,#0a0d14,#0d0f16 45%,#090b11);
+  background-attachment:fixed;
+}
+h1{
+  background:linear-gradient(100deg,#eef1fb 8%,#9db4ff 55%,#7ff0d4 95%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.topnav{box-shadow:0 8px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(124,140,248,.22), 0 0 24px rgba(124,140,248,.10)}
+table{box-shadow:0 10px 30px rgba(0,0,0,.42), 0 0 0 1px rgba(124,140,248,.18), 0 0 26px rgba(34,211,238,.06)}
+tr:hover td{background:linear-gradient(90deg, rgba(124,140,248,.12), rgba(34,211,238,.06))}
+button.primary{background:linear-gradient(135deg,#8b9cff,#5eead4); box-shadow:0 6px 18px rgba(124,140,248,.28)}
+button.primary:hover{background:linear-gradient(135deg,#9aabff,#78f4df); box-shadow:0 10px 26px rgba(124,140,248,.42)}
+button.mini:hover{box-shadow:0 0 0 1px rgba(124,140,248,.35)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topnav">
+    <span class="brand">🐟 大肥鱼表情库</span>
+    <a class="navlink" href="http://127.0.0.1:23408/ui" target="_blank" rel="noopener">中枢</a>
+    <a class="navlink active" href="/storage">存储</a>
+    <a class="navlink right" href="/storage" onclick="location.reload();return false;">↻ 刷新本页</a>
+  </div>
+  <h1><span>🗃</span> 表情库 · 存储</h1>
+
+  <div class="bar">
+    <button class="primary" onclick="openAdd()">＋ 新增</button>
+    <button class="mini" onclick="aiScan()" title="让本地视觉模型给未入库图片写草稿（仍需人工核验才入库）">🤖 一键 AI 识别</button>
+    <select id="aiLimit" title="本次最多识别多少张">
+      <option value="0" selected>全部未识别</option>
+      <option value="30">本次 30 张</option>
+      <option value="100">本次 100 张</option>
+    </select>
+    <span class="ai-prog" id="aiProg"></span>
+    <input type="search" id="q" placeholder="搜索：名称 / 含义 / 目标…" oninput="resetTopAndRender()">
+    <select id="scope" onchange="resetTopAndRender()">
+      <option value="all">全部库</option>
+      <option value="map">主库</option>
+      <option value="fav">收藏库</option>
+      <option value="disk">未入库（私藏）</option>
+    </select>
+    <select id="month" onchange="resetTopAndRender()">
+      <option value="all">不限月份</option>
+    </select>
+    <span class="count" id="count"></span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:64px">预览</th>
+      <th style="width:150px">名称</th>
+      <th>含义</th>
+      <th style="width:200px">目标</th>
+      <th style="width:70px">库</th>
+      <th style="width:130px">入库时间</th>
+      <th style="width:120px">操作</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<div class="modal-mask" id="mask">
+  <div class="modal"><h3 id="mtitle"></h3><div id="mbody"></div><div class="mfoot" id="mfoot"></div></div>
+</div>
+<div id="toast"></div>
+<div id="lightbox"><img alt=""><span class="lb-tip">点任意处 / Esc 关闭</span></div>
+
+<script>
+let DATA = [];   // 含 __i 的记录
+let MONTHS = [];
+let VISIBLE = [];      // 当前筛选后实际显示的记录（「上一条 / 下一条」按这个顺序走）
+let EDIT_CTX = null;   // {list, pos} —— 编辑弹窗打开期间有效，关闭时清空
+let ASSIGN_CTX = null; // {list, pos} —— 核验弹窗打开期间有效，关闭时清空
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m, err){ const t=document.getElementById("toast"); t.textContent=m; t.className="show"+(err?" err":""); setTimeout(()=>t.className="", 2600); }
+async function postJSON(p, o){
+  try{ const r=await fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)});
+    const j=await r.json(); if(!r.ok) return {...j, ok:false}; return j;
+  }catch(e){ return {ok:false, err:String(e)}; }
+}
+
+/* ---------- 弹窗（替代原生 confirm/prompt，兼容预览 webview） ---------- */
+function openModal(title, body, btns){
+  document.getElementById("mtitle").textContent = title;
+  document.getElementById("mbody").innerHTML = body;
+  const foot = document.getElementById("mfoot"); foot.innerHTML = "";
+  (btns && btns.length ? btns : [{label:"关闭", cls:""}]).forEach(b=>{
+    const el = document.createElement("button");
+    el.textContent = b.label; el.className = b.cls || "";
+    if(b.id) el.id = b.id;   // 供快捷键直接触发（核验回车入库）
+    el.onclick = async ()=>{ if(b.onClick){ const res = await b.onClick(); if(res === false) return; } closeModal(); };
+    foot.appendChild(el);
+  });
+  document.getElementById("mask").style.display = "flex";
+  document.body.classList.add("modal-open");
+  const bodyEl = document.getElementById("mbody"); if(bodyEl) bodyEl.scrollTop = 0;
+}
+function closeModal(){
+  document.getElementById("mask").style.display = "none";
+  document.body.classList.remove("modal-open");
+  EDIT_CTX = null;
+  ASSIGN_CTX = null;
+}
+/* 只有「真的按在遮罩上」才关闭：在弹窗里按住左键划出去再松手，不该算点遮罩。
+   用 pointerdown 而不是 click —— 浏览器是按「按下点与松开点的共同祖先」来派发 click 的，
+   从弹窗里拖到遮罩上松手时 click 的 target 正好是遮罩，才会误关。 */
+(function(){
+  const mask = document.getElementById("mask");
+  mask.addEventListener("pointerdown", e => {
+    if(e.target === mask) closeModal();
+  });
+})();
+
+/* ---------- 点图放大（表格缩略图和弹窗里的图都能点开看原图） ---------- */
+(function(){
+  const lb = document.getElementById("lightbox");
+  const lbimg = lb.querySelector("img");
+  function show(src){ lbimg.src = src; lb.style.display = "flex"; }
+  function hide(){ lb.style.display = "none"; lbimg.src = ""; }
+  document.addEventListener("click", e => {
+    const img = e.target.closest ? e.target.closest("img") : null;
+    if(!img || img === lbimg) return;
+    // 只管表情库里的图（表格 / 弹窗），别把导航图标之类也放大
+    if(!img.closest("#rows") && !img.closest("#mbody")) return;
+    if(!img.src) return;
+    show(img.src);
+  });
+  lb.addEventListener("click", hide);
+  document.addEventListener("keydown", e => { if(e.key === "Escape") hide(); });
+})();
+
+/* ---------- 一键 AI 识别（草稿只预填，人工核验才入库） ---------- */
+let AI_TIMER = null;
+let AI_PENDING = null;      // 配好 AI 之后要接着跑的动作（一键识别 / 单张识别）
+async function aiConfigStatus(){
+  try{ return await (await fetch("/api/sticker/ai_config",{cache:"no-store"})).json(); }
+  catch(e){ return {ready:false, reason:"读不到 AI 配置：" + e}; }
+}
+/* 识别前先确认 AI 能用；没配置（无本地视觉模型、也没填云端 Key）就弹窗让人填 */
+async function ensureAI(after){
+  const s = await aiConfigStatus();
+  if(s.ready) return true;
+  aiConfigModal(s, after);
+  return false;
+}
+function aiConfigModal(s, after){
+  AI_PENDING = after || null;
+  const has = !!(s && s.has_key);
+  openModal("先配置 AI 识别", `
+    <p class="mmsg">现在还识别不了：${esc((s && s.reason) || "没有可用的视觉模型")}</p>
+    <div class="draft-tip">两条路选一条：<br>
+      1) 本机跑：<code>ollama pull qwen2.5vl:3b</code>，不用 Key，识别都在本机；<br>
+      2) 云端：填一个 OpenAI 兼容的视觉接口（OpenAI / 阿里百炼 / 智谱 等）。Key 只写在本机 data/stickers/ai_config.json，不会上传。</div>
+    <label class="ml">接口地址（OpenAI 兼容，末尾带 /v1）</label>
+    <input type="text" id="ap-base" value="${esc(s && s.base ? s.base : "")}" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+    <label class="ml">API Key${has ? "（已保存：" + esc(s.key) + "，留空不改）" : ""}</label>
+    <input type="password" id="ap-key" placeholder="${has ? "留空 = 沿用已保存的 Key" : "sk-..."}">
+    <label class="ml">模型名（必须支持看图）</label>
+    <input type="text" id="ap-model" placeholder="qwen-vl-max / gpt-4o-mini / glm-4v">
+    <div class="ehint">保存后会自动接着开始识别。填错了随时再点「一键 AI 识别」重配；想改回本机模型，把 ai_config.json 删掉即可。</div>
+  `, [
+    {label:"取消", cls:"", onClick: ()=>{ AI_PENDING = null; }},
+    {label:"保存并开始识别", cls:"primary", onClick: async ()=>{
+      const base = document.getElementById("ap-base").value.trim();
+      const key = document.getElementById("ap-key").value.trim();
+      const model = document.getElementById("ap-model").value.trim();
+      if(!base || !model){ toast("接口地址和模型名必填", true); return false; }
+      if(!key && !has){ toast("还没有 API Key", true); return false; }
+      const j = await postJSON("/api/sticker/ai_config", {base, key, model});
+      if(!j.ok){ toast(j.err || "保存失败", true); return false; }
+      toast(`AI 已配置：${j.model}`);
+      const fn = AI_PENDING; AI_PENDING = null;
+      if(fn) setTimeout(fn, 80);
+    }}
+  ]);
+}
+async function aiScan(){
+  if(!await ensureAI(()=>aiScan())) return;
+  const lim = parseInt(document.getElementById("aiLimit").value, 10) || 0;
+  const j = await postJSON("/api/sticker/ai_scan", {limit: lim});
+  if(!j.ok){
+    if(j.need_config){ ensureAI(()=>aiScan()); return; }
+    toast(j.err || "启动失败", true); return;
+  }
+  toast(`已交给 ${j.model} 识别 ${j.total} 张`);
+  watchAI();
+}
+function watchAI(){
+  const box = document.getElementById("aiProg");
+  if(!box) return;
+  box.style.display = "inline-flex";
+  if(AI_TIMER) clearInterval(AI_TIMER);
+  const tick = async ()=>{
+    let s;
+    try{ s = await (await fetch("/api/sticker/ai_scan",{cache:"no-store"})).json(); }
+    catch(e){ return; }
+    const err = (s.errors || []).length
+      ? `<div class="ai-err">${(s.errors || []).slice(-3).map(e=>esc(e)).join("<br>")}</div>` : "";
+    if(s.running){
+      box.innerHTML = `<span>识别中 ${s.done} / ${s.total}${s.failed ? "（失败 " + s.failed + "）" : ""} · ${s.elapsed}s</span><button class="mini" onclick="stopAI()">停止</button>${err}`;
+    } else {
+      clearInterval(AI_TIMER); AI_TIMER = null;
+      if(s.total){
+        box.innerHTML = `<span>识别结束：成功 ${s.done} / 失败 ${s.failed}，草稿 ${s.drafts || 0} 条待核验</span><button class="mini" onclick="this.parentNode.style.display='none'">收起</button>${err}`;
+        toast(`AI 识别结束：成功 ${s.done}，失败 ${s.failed}（仍需人工核验才入库）`);
+        await boot();
+      } else { box.style.display = "none"; }
+    }
+  };
+  tick();
+  AI_TIMER = setInterval(tick, 1500);
+}
+async function stopAI(){
+  const j = await postJSON("/api/sticker/ai_scan_stop", {});
+  toast(j.note || "已请求停止");
+}
+function reopenAssignThenAI(target){
+  const rec = DATA.find(x=>x.target === target);
+  if(rec) openAssign(rec.__i);          // 配置窗顶掉了核验弹窗，这里重新打开
+  const nb = document.getElementById("ai-one");
+  if(nb) aiOne(target, nb);
+}
+async function aiOne(target, btn){
+  if(!await ensureAI(()=>reopenAssignThenAI(target))) return;
+  const j = await postJSON("/api/sticker/ai_scan", {targets:[target], force:true});
+  if(!j.ok){
+    if(j.need_config){ ensureAI(()=>reopenAssignThenAI(target)); return; }
+    toast(j.err || "启动失败", true); return;
+  }
+  const old = btn.textContent; btn.disabled = true; btn.textContent = "识别中…";
+  const t0 = Date.now();
+  while(Date.now() - t0 < 240000){
+    await new Promise(r=>setTimeout(r,1200));
+    let s;
+    try{ s = await (await fetch("/api/sticker/ai_scan",{cache:"no-store"})).json(); }
+    catch(e){ continue; }
+    if(s.running) continue;
+    const dr = ((await (await fetch("/api/sticker/ai_drafts",{cache:"no-store"})).json()).drafts || {})[target];
+    const nEl = document.getElementById("s-name"), dEl = document.getElementById("s-desc");
+    if(dr){
+      if(nEl) nEl.value = dr.name;
+      if(dEl) dEl.value = dr.desc;
+      toast("AI 草稿已填入，核对后勾选核验");
+    } else {
+      toast("这张没认出来，手动填一下也行", true);
+    }
+    btn.disabled = false; btn.textContent = old;
+    return;
+  }
+  btn.disabled = false; btn.textContent = old;
+  toast("等太久了，先关掉弹窗看看进度", true);
+}
+async function resumeAI(){
+  try{
+    const s = await (await fetch("/api/sticker/ai_scan",{cache:"no-store"})).json();
+    if(s.running) watchAI();
+  }catch(e){}
+}
+
+/* ---------- 界面状态记忆：筛选 + 滚动位置（刷新/改完数据不回到顶部） ---------- */
+const UI_KEY = "dfy_sticker_ui";
+let BOOTING = false;      // 重新拉数据期间页面会先塌成一行"正在读取"，别把这时的 scrollY 存进去
+let RESTORE_Y = null;     // 这一轮渲染完要回到的高度（null=用当前高度，0=回顶部）
+let UI_T = null;
+function readUI(){
+  try{ return JSON.parse(localStorage.getItem(UI_KEY) || "{}") || {}; }catch(e){ return {}; }
+}
+function writeUI(){
+  try{
+    localStorage.setItem(UI_KEY, JSON.stringify({
+      q: document.getElementById("q").value,
+      scope: document.getElementById("scope").value,
+      month: document.getElementById("month").value,
+      y: Math.round(window.scrollY || 0)
+    }));
+  }catch(e){}
+}
+function saveUILater(){
+  if(UI_T) return;
+  UI_T = setTimeout(()=>{ UI_T = null; writeUI(); }, 200);
+}
+window.addEventListener("scroll", ()=>{ if(!BOOTING) saveUILater(); }, {passive:true});
+
+/* ---------- 加载 ---------- */
+async function boot(){
+  BOOTING = true;
+  const saved = readUI();
+  // 改完数据重新拉取时用当前滚动位置；页面刚刷新（scrollY=0）则用上次记住的位置
+  RESTORE_Y = window.scrollY > 0 ? window.scrollY : (Number(saved.y) || 0);
+  document.getElementById("rows").innerHTML = '<tr><td colspan="7" class="empty">正在读取表情库…</td></tr>';
+  try{
+    const s = await (await fetch("/api/stickers", {cache:"no-store"})).json();
+    DATA = (s.records || []).map((r,i)=>({__i:i, ...r}));
+    MONTHS = s.months || [];
+    const ms = document.getElementById("month");
+    ms.innerHTML = '<option value="all">不限月份</option>'
+      + MONTHS.map(m=>`<option value="${m}">${m}</option>`).join("");
+    // 恢复上次的筛选（月份选项得先建好再赋值，否则浏览器会把它重置成 all）
+    document.getElementById("q").value = saved.q || "";
+    document.getElementById("scope").value = saved.scope || "all";
+    ms.value = saved.month || "all";
+    if(ms.value !== (saved.month || "all")) ms.value = "all";
+  }catch(e){
+    BOOTING = false;
+    toast("加载失败：" + e, true);
+    document.getElementById("rows").innerHTML = `<tr><td colspan="7" class="empty">
+      <div class="empty-t">没能连上表情库服务</div>
+      <div class="empty-s">本地服务没启动或已退出。在 stickers 目录执行 <code>python tools_source_server.py</code> 后刷新本页。</div>
+      <button class="primary" onclick="boot()">重新加载</button>
+    </td></tr>`;
+    return;
+  }
+  render();
+  BOOTING = false;
+}
+
+/* ---------- 查：筛选 + 渲染 ---------- */
+function resetTopAndRender(){ RESTORE_Y = 0; render(); writeUI(); }
+function render(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const sc = document.getElementById("scope").value;
+  const mo = document.getElementById("month").value;
+  // 数据更新（改/删/入库）停在上次的位置；切筛选/搜索由控件先把 RESTORE_Y 置 0 回顶部
+  const keepY = RESTORE_Y != null ? RESTORE_Y : (window.scrollY || 0);
+  RESTORE_Y = null;
+  const rows = DATA.filter(r=>{
+    if(sc !== "all" && r.scope !== sc) return false;
+    if(mo !== "all" && (r.month || "") !== mo) return false;
+    if(!q) return true;
+    return (r.name + " " + r.desc + " " + r.target).toLowerCase().includes(q);
+  });
+  VISIBLE = rows;
+  const tb = document.getElementById("rows");
+  tb.innerHTML = rows.slice(0, 800).map(r=>{
+    let thumb;
+    if(r.kind === "file"){
+      thumb = r.exists
+        ? `<img loading="lazy" src="/${esc(r.target)}" onerror="this.outerHTML='<div class=thumb-miss>缺失</div>'">`
+        : '<div class="thumb-miss">缺失</div>';
+    } else if(r.kind === "face"){
+      thumb = `<div class="facebox">face:${esc(r.face_id)}</div>`;
+    } else {
+      thumb = '<div class="thumb-miss">?</div>';
+    }
+    const isDisk = r.scope === "disk";
+    const badges = (r.scope === "fav" ? '<span class="badge bg-fav">收藏库</span>' : "")
+      + (isDisk ? '<span class="badge bg-loose">待核验</span>' : "")
+      + (r.draft ? '<span class="badge bg-ai">AI草稿</span>' : "")
+      + (r.dup ? '<span class="badge bg-dup">重名</span>' : "");
+    const descCell = r.desc
+      ? esc(r.desc)
+      : (r.draft && r.draft.desc
+          ? `<span style="color:var(--gold-dim)">AI：${esc(r.draft.desc)}</span>`
+          : '<span style="color:var(--muted)">未写含义</span>');
+    return `<tr>
+      <td>${thumb}</td>
+      <td>${isDisk ? esc(r.name) : `<b>:${esc(r.name)}:</b>`}${badges}</td>
+      <td>${descCell}</td>
+      <td class="mono">${esc(r.target)}</td>
+      <td>${isDisk ? "未入库" : (r.scope === "fav" ? "收藏库" : "主库")}</td>
+      <td class="mono">${r.mtime || "—"}</td>
+      <td>
+        ${isDisk
+          ? `<button class="mini" onclick="openAssign(${r.__i})">核验入库</button>`
+          : `<button class="mini" onclick="openEdit(${r.__i})">改</button>
+             <button class="mini" style="color:var(--red);border-color:var(--red)" onclick="openDel(${r.__i})">删</button>`}
+      </td></tr>`;
+  }).join("") || `<tr><td colspan="7" class="empty">
+      <div class="empty-t">没有匹配的表情</div>
+      <div class="empty-s">${DATA.length ? '换个关键词，或把「库」「月份」筛选改回全部。' : '表情库还是空的，点左上角「＋ 新增」，填一个 :名称: 就能用了。'}</div>
+      ${DATA.length ? '' : '<button class="primary" onclick="openAdd()">＋ 新增表情</button>'}
+    </td></tr>`;
+  const loose = DATA.filter(r=>r.scope === "disk").length;
+  document.getElementById("count").textContent =
+    `共 ${DATA.length} 张（已入库 ${DATA.length - loose} / 未入库 ${loose}），当前显示 ${Math.min(rows.length, 800)}`;
+  if(rows.length > 800){
+    tb.innerHTML += `<tr><td colspan="7" class="empty">还有 ${rows.length - 800} 条没显示，用上方搜索或「库 / 月份」筛选缩小范围。</td></tr>`;
+  }
+  // 表格重建会让浏览器把滚动位置归零，等这一帧排好版再拉回去
+  requestAnimationFrame(()=> window.scrollTo(0, keepY));
+}
+
+/* ---------- 增 ---------- */
+function toggleAdd(){
+  const w = document.getElementById("a-way").value;
+  document.getElementById("add-path").style.display  = w === "path"  ? "block" : "none";
+  document.getElementById("add-upload").style.display = w === "upload" ? "block" : "none";
+}
+function openAdd(){
+  openModal("新增表情", `
+    <label class="ml">方式</label>
+    <select id="a-way" onchange="toggleAdd()">
+      <option value="path">指定已有图片（填路径）</option>
+      <option value="upload">上传本机图片</option>
+    </select>
+    <div id="add-path">
+      <label class="ml">类型</label>
+      <select id="a-kind">
+        <option value="file">图片（相对路径，如 dafeiyu/xx.gif）</option>
+      </select>
+      <label class="ml">目标</label>
+      <input type="text" id="a-target" placeholder="dafeiyu/xx.gif">
+    </div>
+    <div id="add-upload" style="display:none">
+      <label class="ml">本机图片（≤10MB，gif/png/jpg/webp/bmp）</label>
+      <input type="file" id="a-file" accept=".gif,.png,.jpg,.jpeg,.webp,.bmp">
+    </div>
+    <label class="ml">名称（:名称: 触发，同名多张会随机发）</label>
+    <input type="text" id="a-name" placeholder="如 干饭" maxlength="40">
+    <label class="ml">含义（什么场景发）</label>
+    <input type="text" id="a-desc" placeholder="如 吃饭的时候" maxlength="120">
+    <label class="ml">存入</label>
+    <select id="a-scope">
+      <option value="map">主库</option>
+      <option value="fav">收藏库</option>
+    </select>
+  `, [
+    {label:"取消", cls:""},
+    {label:"新增", cls:"primary", onClick: async ()=>{
+      const name = document.getElementById("a-name").value.trim();
+      const desc = document.getElementById("a-desc").value.trim();
+      const scope = document.getElementById("a-scope").value;
+      if(!name || !desc){ toast("名称 / 含义必填", true); return false; }
+      if(document.getElementById("a-way").value === "path"){
+        const kind = document.getElementById("a-kind").value;
+        const target = document.getElementById("a-target").value.trim();
+        if(!target){ toast("目标必填", true); return false; }
+        const j = await postJSON("/api/sticker/add", {kind, scope, target, name, desc});
+        if(j.ok){ toast("已新增"); await boot(); }
+        else { toast(j.err || "新增失败", true); return false; }
+      } else {
+        const inp = document.getElementById("a-file");
+        const f = inp.files && inp.files[0];
+        if(!f){ toast("先选一张本机图片", true); return false; }
+        if(f.size > 10*1024*1024){ toast("图片超过 10MB", true); return false; }
+        const b64 = await new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=()=>res(String(rd.result)); rd.onerror=()=>rej(rd.error); rd.readAsDataURL(f); });
+        const j = await postJSON("/api/sticker/upload", {filename:f.name, data_b64:b64, name, desc, scope});
+        if(j.ok){ toast("已入库 " + j.target); await boot(); }
+        else { toast(j.err || "上传失败", true); return false; }
+      }
+    }}
+  ]);
+}
+
+/* ---------- 未入库（私藏）→ 人工核验后才允许入库 ---------- */
+function openAssign(i){
+  const r = DATA.find(x=>x.__i===i); if(!r) return;
+  // 待核验队列：按表格当前顺序，供 ↑ / ↓ 快捷键直接切换。
+  // 当前筛选/搜索把队列缩到只剩一条时，回退到全量待核验列表，
+  // 保证快捷键能一路核验下去，而不是卡在「已经是最后一张」。
+  let queue = VISIBLE.filter(x=>x.scope === "disk");
+  if(queue.length <= 1){
+    const all = DATA.filter(x=>x.scope === "disk");
+    if(all.length > queue.length) queue = all;
+  }
+  let qpos = queue.findIndex(x=>x.target === r.target);
+  if(qpos < 0) qpos = 0;
+  ASSIGN_CTX = {list: queue, pos: qpos};
+  const d = r.draft || null;
+  const fileName = String(r.target || "").split("/").pop();
+  const guess = String((d && d.name) || r.name || "").replace(/[:<>]/g, "_").slice(0, 40);
+  const meta = `
+    <div class="meta">
+      <b>标题</b><span>${esc((d && d.name) || r.name)}</span>
+      <b>文件</b><span>${esc(fileName)}</span>
+      <b>路径</b><span>${esc(r.target)}</span>
+      <b>大小</b><span>${r.kb ? r.kb + " KB" : "—"}</span>
+      <b>时间</b><span>${esc(r.mtime || "—")}${r.month ? " · " + esc(r.month) : ""}</span>
+      <b>状态</b><span>未入库 · 人工核验后才写入索引</span>
+    </div>`;
+  const tip = d
+    ? `<div class="draft-tip">AI 草稿（${esc(d.model || "本地模型")} · ${esc(d.ts || "")}）：<strong>${esc(d.name)}</strong> — ${esc(d.desc)}<br>草稿只做预填，认错了直接改；改完再勾选核验。</div>
+       <button class="mini" id="ai-one" style="margin-top:8px" onclick="aiOne('${esc(r.target)}', this)">🤖 AI 重新识别这张</button>`
+    : `<div class="draft-tip">这张还没有 AI 草稿。可以点下面按钮让本地模型先看一遍，也可以直接自己填。</div>
+       <button class="mini" id="ai-one" style="margin-top:8px" onclick="aiOne('${esc(r.target)}', this)">🤖 AI 识别这张</button>`;
+  openModal(`人工核验「${(d && d.name) || r.name}」`, `
+    <p class="mmsg">未入库的图片可以直接预览，也能作为素材使用，但<b>不会自动进索引</b>，避免 AI 识别错误。<br>请先看图确认内容，把标题和含义补全，勾选核验后才能入库。</p>
+    <div style="margin:10px 0;text-align:center">
+      <img src="/${esc(r.target)}" style="max-width:100%;max-height:220px;border-radius:8px;background:#0b1222">
+    </div>
+    ${meta}
+    ${tip}
+    <label class="ml">名称（:名称: 触发，同名多张会随机发）</label>
+    <input type="text" id="s-name" value="${esc(guess)}" maxlength="40">
+    <label class="ml">含义（什么场景发，写清看到的内容）</label>
+    <input type="text" id="s-desc" value="${esc(d ? d.desc : "")}" placeholder="如 吃饭的时候" maxlength="120">
+    <label class="ml">存入</label>
+    <select id="s-scope">
+      <option value="map">主库</option>
+      <option value="fav">收藏库</option>
+    </select>
+    <label class="ml">图片</label>
+    <span class="mcode">${esc(r.target)}</span>
+    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:13px;line-height:1.5">
+      <input type="checkbox" id="v-ok" style="width:auto;margin-top:2px">
+      <span>我已人工核验：图片内容和上面填的含义一致（不是 AI 猜的、不是重复图）</span>
+    </label>
+    <div class="ehint">快捷：<b>↑ / ↓</b>（或 Alt+↑ / Alt+↓）切上一条 / 下一条未入库图；<b>回车</b> = 核验通过入库（自动勾选）；<b>Esc</b> 取消。入库后弹窗不关，会自动跳到下一条未入库的图，可以一路核验下去。</div>
+  `, [
+    {label:"删除", cls:"del", onClick: ()=>{ discardDisk(r); return false; }},
+    {label:"取消", cls:""},
+    {label:"核验通过 → 入库", cls:"primary", id:"m-commit", onClick: async ()=>{
+      const okEl = document.getElementById("v-ok");
+      if(!okEl || !okEl.checked){ toast("先勾选「我已人工核验」才能入库", true); return false; }
+      const name = document.getElementById("s-name").value.trim();
+      const desc = document.getElementById("s-desc").value.trim();
+      const scope = document.getElementById("s-scope").value;
+      if(!name || !desc){ toast("名称 / 含义必填", true); return false; }
+      if(name.includes(":")){ toast("名称不能含冒号", true); return false; }
+      const j = await postJSON("/api/sticker/add",
+        {kind:"file", scope, target:r.target, name, desc});
+      if(j.ok){
+        // 入库后不关窗：接着核验下一条未入库的图（按表格当前顺序）
+        const before = VISIBLE.filter(x=>x.scope === "disk");
+        const idx = Math.max(before.findIndex(x=>x.target === r.target), 0);
+        await boot();
+        const rest = VISIBLE.filter(x=>x.scope === "disk");
+        if(!rest.length){ toast("已入库（机器人重载插件后生效），这批核验完了"); return; }
+        toast(`已入库，还剩 ${rest.length} 张待核验`);
+        openAssign(rest[Math.min(idx, rest.length - 1)].__i);
+        return false;
+      }
+      else { toast(j.err || "入库失败", true); return false; }
+    }}
+  ]);
+}
+
+/* 核验弹窗的键盘快捷操作：↑/↓ 切条、回车入库、Esc 关闭 */
+function assignNav(delta){
+  if(!ASSIGN_CTX) return;
+  const np = ASSIGN_CTX.pos + delta;
+  if(np < 0 || np >= ASSIGN_CTX.list.length){
+    toast(delta < 0 ? "已经是第一张了" : "已经是最后一张了");
+    return;
+  }
+  const item = ASSIGN_CTX.list[np];
+  if(item) openAssign(item.__i);
+}
+
+function assignSubmit(){
+  const ok = document.getElementById("v-ok");
+  if(ok && !ok.checked) ok.checked = true;   // 回车即代表已看图确认，免去再点勾选框
+  const btn = document.getElementById("m-commit");
+  if(btn) btn.click();
+}
+
+/* 核验弹窗里的删除：丢弃这张未入库图片（不在索引里，删掉 = 文件直接从磁盘消失） */
+function discardDisk(r){
+  ASSIGN_CTX = null;   // 确认删除期间别让 ↑/↓ 又切回核验
+  const all = VISIBLE.filter(x=>x.scope === "disk");
+  const idx = Math.max(all.findIndex(x=>x.target === r.target), 0);
+  openModal("删除未入库图片", `
+    <p class="mmsg">确定丢弃「<b>${esc(r.name)}</b>」？<br>这张还没入库，删了就是<b>从磁盘彻底删除文件，不可恢复</b>。</p>
+    <div class="eprev"><img src="/${esc(r.target)}" alt=""></div>
+  `, [
+    {label:"返回核验", cls:"", onClick: ()=>{ openAssign(r.__i); return false; }},
+    {label:"删除（连文件）", cls:"del", onClick: async ()=>{
+      const j = await postJSON("/api/sticker/delete",
+        {scope:"disk", target:r.target, delete_file:true});
+      if(!j.ok){ toast(j.err || "删除失败", true); return false; }
+      toast(j.note || "已删除");
+      await boot();
+      const rest = VISIBLE.filter(x=>x.scope === "disk");
+      if(!rest.length){ closeModal(); return false; }
+      openAssign(rest[Math.min(idx, rest.length - 1)].__i);   // 接着核验下一条
+      return false;
+    }}
+  ]);
+}
+
+/* ---------- 改 ---------- */
+function openEdit(i){
+  const r = DATA.find(x=>x.__i===i); if(!r) return;
+  // 「上一条 / 下一条」按表格当前显示的顺序走（跳过未入库的私藏）
+  let list = VISIBLE.filter(x=>x.scope !== "disk");
+  if(!list.some(x=>x.__i===i)) list = DATA.filter(x=>x.scope !== "disk");
+  let pos = list.findIndex(x=>x.__i===i);
+  if(pos < 0){ list = [r]; pos = 0; }
+  renderEdit(list, pos);
+}
+
+function editNav(delta){
+  if(!EDIT_CTX) return;
+  const np = EDIT_CTX.pos + delta;
+  if(np < 0 || np >= EDIT_CTX.list.length) return;
+  renderEdit(EDIT_CTX.list, np);
+}
+
+function renderEdit(list, pos){
+  const r = list[pos]; if(!r) return;
+  EDIT_CTX = {list, pos};
+  const preview = r.kind === "file"
+    ? (r.exists
+        ? `<img src="/${esc(r.target)}" alt="" onerror="this.outerHTML='<div class=thumb-miss>图片缺失</div>'">`
+        : '<div class="thumb-miss">图片缺失</div>')
+    : (r.kind === "face"
+        ? `<div class="facebox">face:${esc(r.face_id)}</div>`
+        : '<div class="thumb-miss">?</div>');
+  const nav = `<div class="enav">
+      <button class="mini" ${pos <= 0 ? "disabled" : ""} onclick="editNav(-1)">↑ 上一条</button>
+      <span class="enav-i">${pos + 1} / ${list.length}</span>
+      <button class="mini" ${pos >= list.length - 1 ? "disabled" : ""} onclick="editNav(1)">↓ 下一条</button>
+    </div>`;
+  openModal(`修改「${r.name}」（${pos + 1}/${list.length}）`, `
+    <div class="eprev">${preview}</div>
+    ${nav}
+    <label class="ml">名称</label>
+    <input type="text" id="e-name" value="${esc(r.name)}" maxlength="40">
+    <label class="ml">含义</label>
+    <input type="text" id="e-desc" value="${esc(r.desc)}" maxlength="120">
+    <label class="ml">目标（不可改）</label>
+    <span class="mcode">${esc(r.target)}</span>
+    <div class="ehint">↑ / ↓ 键（或 Alt+↑ / Alt+↓）也能直接切上一条 / 下一条；按 <b>回车</b> 保存；保存后弹窗保持打开，可以接着改下一条。</div>
+  `, [
+    {label:"删除", cls:"del", onClick: ()=>{ openDelInEdit(); return false; }},
+    {label:"关闭", cls:""},
+    {label:"保存", cls:"primary", onClick: ()=>{ submitEdit(); return false; }}
+  ]);
+}
+
+/* 保存当前正在编辑的那条（按钮和回车键共用；保存完弹窗不关，停在这一条） */
+let EDIT_SAVING = false;
+async function submitEdit(){
+  const cur = EDIT_CTX && EDIT_CTX.list[EDIT_CTX.pos];
+  if(!cur || EDIT_SAVING) return;
+  const name = (document.getElementById("e-name") || {}).value || "";
+  const desc = (document.getElementById("e-desc") || {}).value || "";
+  const n = name.trim(), d = desc.trim();
+  if(!n || !d){ toast("名称 / 含义必填", true); return; }
+  EDIT_SAVING = true;
+  try{
+    const j = await postJSON("/api/sticker/save",
+      {scope:cur.scope, target:cur.target, orig_name:cur.name, name:n, desc:d});
+    if(!j.ok){ toast(j.err || "保存失败", true); return; }
+    toast("已保存（重载插件后生效）");
+    await boot();   // 重新拉数据，弹窗不关
+    // 重新定位刚才那条（名称可能变了、筛选后也可能不显示了），定位不到就退回全量列表
+    let keep = VISIBLE.filter(x=>x.scope !== "disk");
+    let np = keep.findIndex(x=>x.scope===cur.scope && x.target===cur.target);
+    if(np < 0){
+      keep = DATA.filter(x=>x.scope !== "disk");
+      np = keep.findIndex(x=>x.scope===cur.scope && x.target===cur.target);
+    }
+    if(np < 0){ closeModal(); return; }
+    renderEdit(keep, np);
+  } catch(err){
+    toast("保存失败: " + (err && err.message ? err.message : err), true);
+  } finally {
+    EDIT_SAVING = false;
+  }
+}
+/* 编辑弹窗里的上下键快捷切换 + 回车保存：
+   光标在输入框里时方向键只认 Alt，回车在输入法选字（isComposing）时不触发 */
+document.addEventListener("keydown", e => {
+  if(!EDIT_CTX) return;
+  if(document.getElementById("mask").style.display !== "flex") return;
+  const t = e.target;
+  const inField = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
+  if(e.key === "Enter"){
+    if(!t || t.tagName !== "INPUT" && t.tagName !== "TEXTAREA") return;
+    if(e.isComposing || e.keyCode === 229) return;   // 输入法选字时的那下回车不算
+    e.preventDefault();
+    submitEdit();
+    return;
+  }
+  if(e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+  if(inField && !e.altKey) return;
+  e.preventDefault();
+  editNav(e.key === "ArrowUp" ? -1 : 1);
+});
+
+/* 核验弹窗快捷键：↑/↓（输入框里用 Alt）切上一条 / 下一条，
+   回车 = 核验通过入库（自动勾选），Esc = 关闭（看图放大时先关大图） */
+document.addEventListener("keydown", e => {
+  if(!ASSIGN_CTX || document.getElementById("mask").style.display !== "flex") return;
+  if(e.isComposing || e.keyCode === 229) return;
+  const t = e.target;
+  const inField = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
+  if(e.key === "Escape"){
+    if(document.getElementById("lightbox").style.display === "flex") return; // 交给大图那套
+    e.preventDefault();
+    closeModal();
+    return;
+  }
+  if(e.key === "Enter"){
+    // 焦点在按钮 / 下拉上时交给控件自己响应；其余位置（输入框、勾选框、弹窗空白处）
+    // 回车都当作「核验通过入库」，免得点过勾选框或点空白后回车失效。
+    if(t && (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "A")) return;
+    e.preventDefault();
+    assignSubmit();
+    return;
+  }
+  if(e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+  if(inField && !e.altKey) return;
+  e.preventDefault();
+  assignNav(e.key === "ArrowUp" ? -1 : 1);
+});
+
+/* 列表页：按 / 直接聚焦搜索框，Esc 清空并退出搜索 */
+document.addEventListener("keydown", e => {
+  if(document.getElementById("mask").style.display === "flex") return;
+  const t = e.target;
+  const inField = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
+  if(e.key === "/" && !inField && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault();
+    const q = document.getElementById("q");
+    if(q){ q.focus(); q.select(); }
+    return;
+  }
+  if(e.key === "Escape" && t && t.id === "q"){
+    t.value = ""; resetTopAndRender(); t.blur();
+  }
+});
+
+/* 编辑弹窗里的「删除」：先就地确认，取消回编辑，删完自动切到下一条（弹窗不关） */
+function openDelInEdit(){
+  const ctx = EDIT_CTX; if(!ctx) return;
+  const cur = ctx.list[ctx.pos]; if(!cur) return;
+  const hasFile = cur.kind === "file" && cur.exists;
+  EDIT_CTX = null;   // 确认期间别让 ↑/↓ 把弹窗又切回编辑
+  let msg = `确定删除「<b>${esc(cur.name)}</b>」？<br>该条目会从索引移除。`;
+  if(hasFile) msg += `<br><br>图片文件会<b>从磁盘彻底删除，不可恢复</b>。`;
+  openModal("删除表情", `
+    <p class="mmsg">${msg}</p>
+    <div class="eprev">${cur.kind === "file" && cur.exists ? `<img src="/${esc(cur.target)}" alt="">` : ""}</div>
+  `, [
+    {label:"返回编辑", cls:"", onClick: ()=>{ renderEdit(ctx.list, ctx.pos); return false; }},
+    {label: hasFile ? "删除（连文件）" : "删除", cls:"del", onClick: async ()=>{
+      const j = await postJSON("/api/sticker/delete",
+        {scope:cur.scope, target:cur.target, orig_name:cur.name, delete_file:hasFile});
+      if(!j.ok){ toast(j.err || "删除失败", true); return false; }
+      toast(j.note || "已删除");
+      await boot();
+      let keep = VISIBLE.filter(x=>x.scope !== "disk");
+      if(!keep.length) keep = DATA.filter(x=>x.scope !== "disk");
+      if(!keep.length){ closeModal(); return false; }
+      renderEdit(keep, Math.min(ctx.pos, keep.length - 1));
+      return false;   // 不关闭弹窗，直接接着看下一条
+    }}
+  ]);
+}
+
+/* 删除 */
+function openDel(i){
+  const r = DATA.find(x=>x.__i===i); if(!r) return;
+  const hasFile = r.kind === "file" && r.exists;
+  let msg = `确定删除「<b>${esc(r.name)}</b>」？<br>该条目会从索引移除。`;
+  if(hasFile) msg += `<br><br>图片文件会<b>从磁盘彻底删除，不可恢复</b>。`;
+  openModal("删除表情", `<p class="mmsg">${msg}</p>`, [
+    {label:"取消", cls:""},
+    {label: hasFile ? "删除（连文件）" : "删除", cls:"del", onClick:()=>doDel(r, hasFile)}
+  ]);
+}
+async function doDel(r, delFile){
+  const j = await postJSON("/api/sticker/delete",
+    {scope:r.scope, target:r.target, orig_name:r.name, delete_file: delFile});
+  if(j.ok){ toast(j.note || "已删除"); await boot(); }
+  else { toast(j.err || "删除失败", true); return false; }
+}
+
+boot();
+resumeAI();
+</script>
+</body>
+</html>

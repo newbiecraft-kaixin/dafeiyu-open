@@ -1,0 +1,45 @@
+大肥鱼 Dafeiyu（dafeiyu-open）
+Copyright (C) 2026 newbiecraft-kaixin 及贡献者
+
+本仓库是「大肥鱼」自研部分的开源发布，同时修改、组合并对接了多个上游开源项目。
+它属于上游作品的修改版：相关修改时间为 2026 年 11 月。
+上游作品的版权归其各自作者所有，本文件仅作署名与许可告知，不改变上游许可。
+
+一、随仓库分发，或直接改造自上游的模块
+1. pet/dsh-pet（DeepSeek Harness 桌宠插件）
+   上游：dsh-pet <https://github.com/PC2005-cloud/dsh-pet>
+   许可：MIT
+   说明：安装包 dsh-pet-0.4.1.tgz 原样随仓库分发，包内 package/LICENSE 保留上游版权声明；
+        我们未改动其源码，只提供安装脚本与示例配置。
+2. relay/pet-relay.js、services/pet（桌宠桥接与状态服务）
+   上游：clawd-on-desk <https://github.com/rullerzhou-afk/clawd-on-desk>
+   许可：AGPL-3.0
+   说明：在原项目窗口 / 气泡 / 动作 / 语音链路基础上改造，文件头已标注来源与修改时间。
+3. services/io-wechat、astrbot_plugins/function/astrbot_plugin_wechat_oc_bridge
+   上游：wechatauto-replica <https://github.com/fanyuantaier/wechatauto-replica>
+   许可：Apache-2.0
+   说明：基于其 UIA 微信自动化库对接。
+4. services/voice、tools/ 下的 CosyVoice 脚本、audio/cosyvoice_ref/
+   上游：CosyVoice <https://github.com/QwenAudio/CosyVoice>
+   许可：Apache-2.0
+   说明：其代码与模型权重未随本仓库分发。
+
+二、以依赖形式使用、未随本仓库分发的项目
+- AstrBot（AGPL-3.0）<https://github.com/AstrBotDevs/AstrBot>
+- NapCat（AGPL-3.0）<https://github.com/NapNeko/NapCatQQ>
+- livingmemory（AGPL-3.0）<https://github.com/lxfight-s-Astrbot-Plugins/astrbot_plugin_livingmemory>
+- CosyVoice（Apache-2.0）<https://github.com/QwenAudio/CosyVoice>
+
+三、本仓库原创部分
+services/hub、model、store、brain、audio、video、subtitle、shared/infra，
+以及 human_sim、group_window、sticker_pack、face_convert、tool_gate、provider_router、basic_tools 等插件，
+以 AGPL-3.0 发布（见 LICENSE）。
+
+四、再分发要求
+再分发本仓库或其修改版时，请保留本 NOTICE、LICENSE 以及上游项目的版权与许可声明；
+上游组件按其各自许可使用。
+
+---
+Dafeiyu (dafeiyu-open) is a derivative work: it modifies and integrates the upstream
+projects listed above (modified in November 2026). Copyright of upstream code remains
+with the original authors. All upstream licenses are preserved as stated.

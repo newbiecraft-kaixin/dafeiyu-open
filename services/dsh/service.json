@@ -1,0 +1,22 @@
+{
+  "name": "dsh",
+  "license": "MIT",
+  "kind": "edge",
+  "layer": "监控层",
+  "port": 3080,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "pin": true,
+  "responsibility": "桌宠宿主（DSH web profile）：桌宠窗口、OCR 点评、插件设置；挂了可从面板重启",
+  "ui": "http://127.0.0.1:3080",
+  "runtime": {
+    "cwd": "dsh",
+    "entry": "dsh/node_modules/@deepseek-ai/dsh/lib/bin.js",
+    "node": "system",
+    "args": ["--profile", "web", "--no-open"]
+  },
+  "links": {
+    "控制台": "http://127.0.0.1:3080"
+  }
+}

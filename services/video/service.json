@@ -1,0 +1,22 @@
+{
+  "name": "video",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 23368,
+  "probe": "port",
+  "optional": true,
+  "domain": "media",
+  "responsibility": "视频能力域（可选）：解析 B站/抖音/快手/西瓜 链接的标题、字幕与评论；按标签刷 B站/抖音/快手 并维护片单池",
+  "entry": "service.py",
+  "endpoints": [
+    "GET /health",
+    "POST /video/parse",
+    "GET /video/feed",
+    "GET /video/pool"
+  ],
+  "links": {
+    "看视频": "http://127.0.0.1:23368/ui/parse",
+    "刷视频": "http://127.0.0.1:23368/ui/feed"
+  },
+  "status": "active"
+}

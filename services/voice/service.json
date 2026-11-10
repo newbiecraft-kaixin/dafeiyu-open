@@ -1,0 +1,29 @@
+{
+  "name": "voice",
+  "license": "Apache-2.0",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 8714,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "domain": "audio",
+  "responsibility": "语音合成（归入音频域展示）：OpenAI 兼容 /v1/audio/speech，后端可选本地 CosyVoice2（himeko / xiaoyi / liuying）或任何 OpenAI 兼容第三方（火山方舟 / 硅基流动 / OpenAI）；依赖装在 Python 默认环境（site-packages，含 GPU 版 torch），保留 8714 独立进程",
+  "ui": "http://127.0.0.1:8714/health",
+  "links": {
+    "健康检查": "http://127.0.0.1:8714/health",
+    "音色列表": "http://127.0.0.1:8714/v1/audio/voices"
+  },
+  "env_note": "换第三方语音：TTS_PROVIDER=openai + TTS_BASE_URL=https://ark.cn-beijing.volces.com/api/v3 + TTS_API_KEY=xxx + TTS_MODEL=xxx + TTS_VOICE=xxx；不设则用本地 CosyVoice，调用方无需改代码",
+  "entry": "tools/cosyvoice_tts_server.py",
+  "runtime": {
+    "cwd": "tools",
+    "entry": "tools/cosyvoice_tts_server.py",
+    "python": "audio/seedvc_env/Scripts/python.exe",
+    "args": [],
+    "env": {
+      "COSYVOICE_REPO_DIR": "audio/CosyVoice",
+      "COSYVOICE_MODEL_DIR": "audio/cosyvoice_models/CosyVoice2-0.5B"
+    }
+  }
+}

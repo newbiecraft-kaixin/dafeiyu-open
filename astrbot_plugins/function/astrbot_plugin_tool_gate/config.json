@@ -1,0 +1,13 @@
+{
+    "enabled": true,
+    "open_providers": [
+        "deepseek",
+        "zhipu"
+    ],
+    "open_provider_ids": [],
+    "provider_bind_skip_prefixes": [
+        "dsh"
+    ],
+    "owner_ids": [],
+    "owner_full_access": true
+}

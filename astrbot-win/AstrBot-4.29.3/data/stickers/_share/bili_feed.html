@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>B站 · 刷视频</title><style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:28px 16px 56px;color:#e8edfb;
+  font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(1100px 640px at 12% -8%, rgba(86,120,255,.20), transparent 60%),
+    radial-gradient(900px 560px at 92% 6%, rgba(255,184,107,.12), transparent 55%),
+    linear-gradient(180deg,#080e20 0%,#05080f 100%);
+}
+main{width:min(980px,100%);margin:0 auto}
+header{margin-bottom:26px}
+.eyebrow{font-size:12px;letter-spacing:.3em;color:#8f9bbd;text-transform:uppercase}
+h1{margin:8px 0 10px;font-size:30px;font-weight:600;letter-spacing:.03em}
+h1 b{color:#ffd166;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:#8f9bbd;font-size:13px}
+.chip{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid rgba(140,170,255,.22);background:rgba(255,255,255,.03);color:#c7d2f0}
+.chip.on{border-color:rgba(255,209,102,.45);color:#ffd166;background:rgba(255,209,102,.08)}
+.thought{margin:18px 0 0;padding:13px 16px;border-left:3px solid #ffd166;background:rgba(255,209,102,.07);border-radius:8px;color:#dbe4ff;font-size:14px;line-height:1.7}
+.card{display:flex;gap:14px;margin-top:18px;padding:18px 18px 16px;border-radius:16px;border:1px solid rgba(140,170,255,.18);background:rgba(18,26,48,.72);box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.rank{flex:0 0 42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#ffd166;border:1px solid rgba(255,209,102,.35);background:rgba(255,209,102,.08)}
+.body{min-width:0;flex:1}
+h2{margin:0 0 10px;font-size:17px;line-height:1.5;font-weight:600}
+h2 a{color:#e8edfb;text-decoration:none}
+h2 a:hover{color:#ffd166}
+.url{margin:-4px 0 10px;font-size:12.5px;word-break:break-all}
+.url a{color:#8fb4ff;text-decoration:none;border-bottom:1px solid rgba(143,180,255,.4)}
+.url a:hover{color:#ffd166;border-bottom-color:rgba(255,209,102,.6)}
+.rows{display:flex;flex-wrap:wrap;gap:6px 14px;color:#8f9bbd;font-size:12.5px}
+.rows b{color:#c7d2f0;font-weight:500}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.sum{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(86,120,255,.09);border:1px solid rgba(140,170,255,.16);font-size:13px;line-height:1.7}
+.sum .k{color:#ffd166;font-size:12px;letter-spacing:.06em}
+.sum p{margin:2px 0 0}
+.text{margin:10px 0 0;font-size:13px;line-height:1.8;color:#b9c5e6;white-space:pre-wrap;word-break:break-word}
+.text em{font-style:normal;color:#7f8db0}
+.cmts{margin:10px 0 0;padding-left:18px;color:#9faccb;font-size:12.5px;line-height:1.75}
+.cmts li{margin:3px 0}
+.more{margin-top:10px}
+.more>summary{cursor:pointer;color:#8fb4ff;font-size:12.5px;outline:none;user-select:none}
+.more>summary::-webkit-details-marker{display:none}
+.more>summary::before{content:"▸ ";color:#8fb4ff}
+.more[open]>summary::before{content:"▾ "}
+.more .box{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:10px;background:rgba(86,120,255,.07);border:1px solid rgba(140,170,255,.14)}
+.more .k{color:#ffd166;font-size:12px;letter-spacing:.06em}
+.more p{margin:2px 0 0;color:#c2cdec;font-size:13px;line-height:1.7;word-break:break-word}
+footer{margin-top:26px;color:#6f7b9a;font-size:12px;line-height:1.8}
+.none{padding:26px;border-radius:14px;border:1px dashed rgba(140,170,255,.25);color:#8f9bbd;text-align:center}
+.pager{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:26px 0 6px}
+.pager button{padding:8px 16px;border-radius:999px;font-size:13px;color:#c7d2f0;cursor:pointer;
+border:1px solid rgba(140,170,255,.25);background:rgba(255,255,255,.03);transition:.18s}
+.pager button:hover:not(:disabled){border-color:rgba(255,209,102,.45);color:#ffd166}
+.pager button:disabled{opacity:.35;cursor:default}
+.pager span{font-size:12.5px;color:#8f9bbd}
+@media (max-width:560px){
+  body{padding:20px 12px 44px}
+  h1{font-size:24px}
+  .card{padding:14px 14px 12px;gap:10px}
+  .rank{flex-basis:34px;height:34px;font-size:12px}
+}
+</style></head><body><main><header><div class="eyebrow">BILIBILI FEED</div><h1>刷到 <b>6</b> 条</h1><div class="meta"><span class="chip on">我的世界</span><span>2026-11-07 12:18</span></div><div class="thought">这回翻的是我的世界，有整活的也有正经教程，随便挑。</div></header><article class="card"><div class="rank">#1</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV12T4j6dEgZ" target="_blank" rel="noopener">我的世界限时福利来袭！全套兑换码整理完毕，50000 钻石 + 机甲外观轻松拿下，亲测领取秒到账！pcnb</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV12T4j6dEgZ" target="_blank" rel="noopener">www.bilibili.com/video/BV12T4j6dEgZ</a></div><div class="rows"><span><b>UP：swavymrqlp974</b></span><span><b>播放：166</b></span><span><b>时长：00:41</b></span><span><b>发布：2026-11-07</b></span></div><div class="tags"><span class="chip">沙盒游戏</span><span class="chip">我的世界</span><span class="chip">我的世界攻略</span><span class="chip">帝皇侠</span><span class="chip">小橙子姐姐</span><span class="chip">像素风</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>还有什么方块是我副科圣手挖不了的？来辣！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！</p><div class="k">热门评论</div><ul class="cmts"><li>http://b23.tv/BV1ELo4BjEqc/../%63%6D%2D%63%6D%74%2D%31%2D%31%50%4A%63%56%4F%6E%6</li><li>http://b23.tv/BV1ELo4BjEqc/../%63%6D%2D%63%6D%74%2D%31%2D%31%50%4A%63%56%4F%6E%6</li><li>up主太懂观众了，三连支持，希望这种好内容不断出现！</li></ul></div></details></div></article><article class="card"><div class="rank">#2</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV11K4j64EaP" target="_blank" rel="noopener">你召唤的不是Boss，是基岩下的囚徒｜BlackBone 展示｜Legendary Bosses 【我的世界模组】</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV11K4j64EaP" target="_blank" rel="noopener">www.bilibili.com/video/BV11K4j64EaP</a></div><div class="rows"><span><b>UP：Door3172</b></span><span><b>播放：844</b></span><span><b>时长：01:43</b></span><span><b>发布：2026-11-07</b></span></div><div class="tags"><span class="chip">我的世界</span><span class="chip">MOD</span><span class="chip">BOSS</span><span class="chip">模组</span><span class="chip">沙盒游戏</span><span class="chip">我的世界模组</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>&quot;基岩下面什么都没有&quot; 自制模组《Legendary Bosses》的新传奇：BlackBone，基岩囚徒 · 召唤：3x3 岩浆块，中间放凋灵骷髅头颅，四个角放铁栏杆，拿下界合金锭右键点头颅 · 他破土而出时，周围 80 格会变成熔岩火山口，战斗结束后地形全部复原 · 骑士 → 落马 → 炼狱，三个形态各有不同的招式 · 招牌技&quot;断层&quot;之后会露出破绽，近战命中可以处决 BlackBone 现已更新 模组中现有的传奇：Herobrine、Entity 303、Null、恐惧魔王、Notch 支持 Forge 1.2</p><div class="k">热门评论</div><ul class="cmts"><li>武器颜色没有跟动画完全一模一样是因为我做出来之后感觉怪怪的 所以调了一下颜色[委屈]</li><li>新boss依旧这么帅，实在是太棒了，美术这一块真的太合我口味了[打call] up要是什么时候能多出点boss相关的武器装备就好了[蹲蹲]</li><li>我们将掉落物加一个“布莱克伯恩头颅”怎么样，用这个脑袋还可以延伸出新的boss，比如什么特殊凋灵</li></ul></div></details></div></article><article class="card"><div class="rank">#3</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV1uL4V69E3C" target="_blank" rel="noopener">我的世界：32个已被移除的游戏特性</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV1uL4V69E3C" target="_blank" rel="noopener">www.bilibili.com/video/BV1uL4V69E3C</a></div><div class="rows"><span><b>UP：D3困困黑眼圈</b></span><span><b>播放：862</b></span><span><b>时长：07:58</b></span><span><b>发布：2026-11-07</b></span></div><div class="tags"><span class="chip">沙盒游戏</span><span class="chip">我的世界</span><span class="chip">单机游戏</span><span class="chip">Minecraft</span><span class="chip">游戏盘点</span><span class="chip">MC特性</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>中文配音 素材作者：Prism 原作：https://www.youtube.com/watch?v=KGpuxWXfhlY</p><div class="k">热门评论</div><ul class="cmts"><li>Rana breat_boy Steve black_Steve实际上有行走动画，但没被做进游戏</li><li>我是考古专家</li></ul></div></details></div></article><article class="card"><div class="rank">#4</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV1xs4B69Ebd" target="_blank" rel="noopener">他们为什么打架？</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV1xs4B69Ebd" target="_blank" rel="noopener">www.bilibili.com/video/BV1xs4B69Ebd</a></div><div class="rows"><span><b>UP：纪夫Junly</b></span><span><b>播放：6.5万</b></span><span><b>时长：01:14</b></span><span><b>发布：2026-11-06</b></span></div><div class="tags"><span class="chip">方块制片局</span><span class="chip">MC动画</span><span class="chip">Minecraft</span><span class="chip">纪夫Junly</span><span class="chip">群骑纷争</span><span class="chip">我的世界群骑纷争</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>我们不打你们看什么？...不对我们没有在打架 动画制作Mod：BBS Mod 动画制作：纪夫Junly 群起纷争，寸草不生 嘿！大家好我是纪夫Junly！如果你喜欢我的视频点个赞或者订阅我都是可以的哦~ 请大家忽略或举报垃圾信息、负面言论和仇恨言论。我们只在这里分享快乐，谢谢大家，尽情享受~</p></div></details></div></article><article class="card"><div class="rank">#5</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV1wzxp6KEki" target="_blank" rel="noopener">一分钟学透千里马！mc教学（坐骑篇）</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV1wzxp6KEki" target="_blank" rel="noopener">www.bilibili.com/video/BV1wzxp6KEki</a></div><div class="rows"><span><b>UP：Minecraft我的世界官方</b></span><span><b>播放：5.4万</b></span><span><b>时长：04:31</b></span><span><b>发布：2026-11-01</b></span></div><div class="tags"><span class="chip">MC</span><span class="chip">沙盒游戏</span><span class="chip">我的世界</span><span class="chip">我的世界群骑纷争</span><span class="chip">教程攻略</span><span class="chip">我的世界中国版</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>一分钟带你光速学会驯服千里马！快为你的长矛搭配一匹千里马吧！ 视频作者：@盖宝gaiber</p></div></details></div></article><article class="card"><div class="rank">#6</div><div class="body"><h2><a href="https://www.bilibili.com/video/BV1n1nq6fESF" target="_blank" rel="noopener">PCL2不能下载MC了？还能正常使用吗？最新我的世界安装教程!</a></h2><div class="url"><a href="https://www.bilibili.com/video/BV1n1nq6fESF" target="_blank" rel="noopener">www.bilibili.com/video/BV1n1nq6fESF</a></div><div class="rows"><span><b>UP：EMOCHAN</b></span><span><b>播放：21.0万</b></span><span><b>时长：05:58</b></span><span><b>发布：2026-10-21</b></span></div><div class="tags"><span class="chip">安装</span><span class="chip">我的世界</span><span class="chip">教程</span><span class="chip">pcl2</span><span class="chip">安装教程</span></div><details class="more"><summary>详细</summary><div class="box"><div class="k">简介</div><p>PCL2老版下载链接 夸克：https://pan.quark.cn/s/80057d4d1d5f 百度网盘：https://pan.baidu.com/s/1HFznxX1NuAgye4x4rPLiug?pwd=d1hs 提取码：d1hs 蓝奏云:https://wwbxn.lanzouu.com/ijhbv4cthdof 密码:3q0c 命令：SystemSystemUpdate:3 粉丝群：简介 ---------------------------------------------------------</p><div class="k">热门评论</div><ul class="cmts"><li>当时我看了有多远</li><li>居然有这么良心的Up 但是我觉得 在Github PCL2发行版本中下载2.14或之前版本下载.zip解压后再解压:最新正式版就可以以了[笑哭] 也不知道有些人</li><li>【互相转告】PCL不再提供原版游戏下载 由于一些特殊原因，PCL推送强制更新且更新后无法下载游戏 现有的旧版PCL请不要启动！ 现有的旧版PCL请不要启动！ 现</li></ul></div></details></div></article><div id="pager" class="pager"></div><footer>页面会一直累积，最多保留最近 200 条；想换口味直接跟我说个词。</footer></main><script>
+(function(){
+  var cards=[].slice.call(document.querySelectorAll("main > .card"));
+  var per=10,pages=Math.ceil(cards.length/per);
+  if(cards.length<=per)return;
+  var page=1,box=document.getElementById("pager");
+  function render(){
+    cards.forEach(function(c,i){
+      c.style.display=(i>=(page-1)*per&&i<page*per)?"":"none";
+    });
+    var b1=document.createElement("button"),b2=document.createElement("button"),sp=document.createElement("span");
+    b1.textContent="上一页";b2.textContent="下一页";
+    sp.textContent="第 "+page+" / "+pages+" 页 · 共 "+cards.length+" 条";
+    b1.disabled=page<=1;b2.disabled=page>=pages;
+    b1.onclick=function(){if(page>1){page--;render();window.scrollTo({top:0,behavior:"smooth"})}};
+    b2.onclick=function(){if(page<pages){page++;render();window.scrollTo({top:0,behavior:"smooth"})}};
+    box.innerHTML="";box.appendChild(b1);box.appendChild(sp);box.appendChild(b2);
+  }
+  render();
+})();
+</script></body></html>

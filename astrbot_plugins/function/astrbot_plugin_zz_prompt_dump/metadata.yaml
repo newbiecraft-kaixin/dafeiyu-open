@@ -1,0 +1,5 @@
+name: astrbot_plugin_zz_prompt_dump
+desc: llm-monitor 配套调试插件：LLM 请求/回复全链路 dump（文本总流 + 按群独立 JSON 供 llm-monitor 可视化读取）。zz_ 前缀保证最后加载，抓到全部插件注入完之后的最终内容。
+version: v1.1.0
+author: kaixin
+repo: ""

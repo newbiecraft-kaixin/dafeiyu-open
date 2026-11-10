@@ -1,0 +1,31 @@
+{
+  "name": "rag",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 23409,
+  "ui": "http://127.0.0.1:23409/",
+  "responsibility": "知识库（RAG）：资料入库、分块索引、BM25 检索；管理页负责存储与维护相关资料；支持远程访问（RAG_HOST / RAG_TOKEN）与远端知识库代理（RAG_UPSTREAM_BASE_URL）",
+  "depends": ["infra"],
+  "entry": "service.py",
+  "env": {
+    "RAG_HOST": "127.0.0.1",
+    "RAG_TOKEN": "",
+    "RAG_UPSTREAM_BASE_URL": "",
+    "RAG_UPSTREAM_TOKEN": ""
+  },
+  "env_note": "远程访问：RAG_HOST 改 0.0.0.0，RAG_TOKEN 填随机串（客户端带 Authorization: Bearer <值>，也支持 ?token=）；用别人的知识库：RAG_UPSTREAM_BASE_URL=http://远端:23409，本机 23409 变成统一入口，页面/接口都不变",
+  "endpoints": [
+    "GET /health",
+    "GET /documents",
+    "POST /documents",
+    "DELETE /documents",
+    "POST /search"
+  ],
+  "files": {
+    "db": "data/rag.db"
+  },
+  "links": {
+    "知识库管理": "http://127.0.0.1:23409/"
+  },
+  "status": "active"
+}

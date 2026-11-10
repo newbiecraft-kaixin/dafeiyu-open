@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' http: https: data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: data: file:; media-src 'self' http: https: blob:; font-src 'self' http: https: data:"
+    />
+    <title>dsh-pet 桌宠（桌面模式）</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+        user-select: none;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      /* 宠物 sprite：绝对定位在画布内，由 renderer 按角落/边距或拖拽位置计算 left/top */
+      .pet-sprite {
+        position: absolute;
+        left: 0;
+        top: 0;
+        pointer-events: none;
+        z-index: 2;
+      }
+      /* 背景泡泡：桌宠身后的水泡缓缓上浮，可点击戳破（爆开特效见 renderer.js，无音效） */
+      #pet-bubbles {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+      }
+      /* 背景海草：与泡泡同属背景层（比泡泡更靠后），纯 CSS 摇摆，不接收鼠标、不登记命中区 */
+      #pet-seaweed {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .pet-seaweed-blade {
+        position: absolute;
+        bottom: -8px;
+        transform-origin: 50% 100%;
+        /* 细长椭圆的水草叶片：底部深、顶端透，形状靠 border-radius 收窄，
+           不用 clip-path（透明窗口 + 合成层下 clip-path 会导致整片不绘制）。 */
+        border-radius: 52% 48% 40% 60% / 62% 58% 38% 42%;
+        background: linear-gradient(
+          to top,
+          hsla(var(--sw-h, 168), 66%, 26%, 0.9) 0%,
+          hsla(var(--sw-h, 168), 68%, 42%, 0.7) 46%,
+          hsla(var(--sw-h, 168), 72%, 62%, 0.4) 84%,
+          hsla(var(--sw-h, 168), 74%, 72%, 0.22) 100%
+        );
+        box-shadow:
+          inset 0 0 6px hsla(var(--sw-h, 168), 70%, 62%, 0.35),
+          0 0 8px hsla(var(--sw-h, 168), 72%, 56%, 0.22);
+        animation: petSeaweedSway var(--sway-dur, 6.5s) ease-in-out var(--sway-delay, 0s) infinite alternate;
+        will-change: transform;
+      }
+      /* 叶片中心的一道亮边，模拟水草透光的脉络 */
+      .pet-seaweed-blade::after {
+        content: '';
+        position: absolute;
+        left: 46%;
+        top: 8%;
+        width: 2px;
+        height: 76%;
+        border-radius: 2px;
+        background: linear-gradient(
+          to top,
+          hsla(var(--sw-h, 168), 78%, 74%, 0) 0%,
+          hsla(var(--sw-h, 168), 82%, 82%, 0.42) 55%,
+          hsla(var(--sw-h, 168), 86%, 90%, 0.18) 100%
+        );
+      }
+      @keyframes petSeaweedSway {
+        from {
+          transform: rotate(calc(var(--sway-amp, 6deg) * -1)) skewX(calc(var(--sway-skew, 2deg) * -1));
+        }
+        to {
+          transform: rotate(var(--sway-amp, 6deg)) skewX(var(--sway-skew, 2deg));
+        }
+      }
+      .pet-bubble-dot {
+        position: absolute;
+        top: 100%;
+        border-radius: 50%;
+        pointer-events: auto;
+        cursor: pointer;
+        /* 真实水泡：中心接近全透明，只在边缘与高光处有明显折射。图层自上而下：
+           左上小亮点 → 贴边折射环 → 中心极薄色雾 → 整体淡底色。
+           颜色（同一色系的描边/高光/反光/内阴影/外发光）由 renderer.js 逐颗随机写进变量。 */
+        background:
+          radial-gradient(
+            circle at 30% 24%,
+            var(--bub-hi, rgba(255, 255, 255, 0.95)) 0%,
+            rgba(255, 255, 255, 0.75) 6%,
+            rgba(255, 255, 255, 0) 18%
+          ),
+          radial-gradient(
+            circle closest-side at 50% 50%,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0) 78%,
+            var(--bub-ring, rgba(212, 240, 255, 0.42)) 90%,
+            rgba(255, 255, 255, 0) 100%
+          ),
+          radial-gradient(
+            circle closest-side at 50% 50%,
+            var(--bub-core, hsla(200, 88%, 84%, 0.07)) 0%,
+            rgba(255, 255, 255, 0) 72%
+          ),
+          var(--bub-edge, rgba(190, 228, 255, 0.025));
+        border: 1px solid var(--bub-border, rgba(255, 255, 255, 0.75));
+        box-shadow:
+          inset 0 0 5px var(--bub-inner, rgba(210, 240, 255, 0.16)),
+          inset 1px 1px 7px rgba(255, 255, 255, 0.12),
+          inset -2px -2px 7px rgba(8, 40, 60, 0.05),
+          0 0 10px var(--bub-glow, rgba(160, 220, 255, 0.3));
+        /* 两条独立动画：rise 负责上浮/透明度/缩放，sway 负责左右摇摆；
+           时长、延迟、漂移幅度都由 renderer.js 逐颗随机。 */
+        animation-name: petBubbleRise, petBubbleSway;
+        animation-duration: var(--rise-dur, 10s), var(--sway-dur, 4.6s);
+        animation-delay: var(--rise-delay, 0s), var(--sway-delay, 0s);
+        animation-timing-function: linear, ease-in-out;
+        /* 上浮只走一遍（到顶就消失，由 renderer.js 在别处补一颗新的），摇摆继续循环：
+           不然同一批泡泡按固定周期反复回到起点，一眼就看出是循环。 */
+        animation-iteration-count: 1, infinite;
+        animation-fill-mode: forwards, none;
+        will-change: top, translate, scale, opacity;
+      }
+      /* 右下弧形反光：与左上高光呼应，弧线贴着下半缘走 */
+      .pet-bubble-dot::after {
+        content: '';
+        position: absolute;
+        left: 56%;
+        top: 52%;
+        width: 36%;
+        height: 36%;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-right-color: var(--bub-arc, rgba(226, 246, 255, 0.34));
+        border-bottom-color: var(--bub-arc, rgba(226, 246, 255, 0.34));
+        transform: rotate(14deg);
+        pointer-events: none;
+      }
+      /* 命中范围比视觉大一圈：外扩值由 renderer.js 写进 --hit-pad，与 input.js 的命中矩形同源；
+         小泡泡另有最小命中直径（--hit-min）兜底（伪元素同样参与命中，视觉大小不变） */
+      .pet-bubble-dot::before {
+        content: '';
+        position: absolute;
+        inset: calc(var(--hit-pad, 22px) * -1);
+        border-radius: 50%;
+      }
+      @keyframes petBubbleRise {
+        0% {
+          top: 100%;
+          scale: 0.55;
+          opacity: 0;
+        }
+        8% {
+          opacity: 1;
+        }
+        82% {
+          opacity: 0.95;
+        }
+        100% {
+          top: -12%;
+          scale: 1.05;
+          opacity: 0;
+        }
+      }
+      /* 横向摇摆：与上浮完全独立的周期/相位，translate 和 rise 的 scale 互不覆盖 */
+      @keyframes petBubbleSway {
+        0%,
+        100% {
+          translate: calc(var(--drift, 0px) * -1) 0;
+        }
+        50% {
+          translate: var(--drift, 0px) 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pet-bubble-dot {
+          animation: none;
+          opacity: 0;
+        }
+        #pet-seaweed {
+          display: none;
+        }
+      }
+      /* 戳破泡泡的爆炸特效：冲击环 + 向外喷散的小水珠（见 renderer.js，点击只有视觉） */
+      .pet-bubble-burst {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1;
+        width: 0;
+        height: 0;
+      }
+      .pet-bubble-burst-ring {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: calc(var(--r) * 2);
+        height: calc(var(--r) * 2);
+        border-radius: 50%;
+        border: 1px solid rgba(214, 242, 255, 0.92);
+        box-shadow: 0 0 10px rgba(160, 220, 255, 0.7);
+        animation: petBubbleBurstRing 260ms ease-out forwards;
+      }
+      @keyframes petBubbleBurstRing {
+        0% {
+          transform: translate(-50%, -50%) scale(0.55);
+          opacity: 0.95;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1.75);
+          opacity: 0;
+        }
+      }
+      .pet-bubble-burst-drop {
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #ffffff, rgba(180, 225, 255, 0.78));
+        animation: petBubbleBurstDrop 260ms ease-out forwards;
+      }
+      @keyframes petBubbleBurstDrop {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.95;
+        }
+        100% {
+          transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, 0px))) scale(0.3);
+          opacity: 0;
+        }
+      }
+      .pet-stage {
+        position: relative;
+        width: var(--pet-size, 462px);
+        height: calc(var(--pet-size, 462px) * 9 / 16);
+        pointer-events: none;
+      }
+      video.pet-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.18s ease;
+      }
+      video.pet-video.is-front {
+        opacity: 1;
+      }
+      .pet-hit {
+        position: absolute;
+        pointer-events: auto;
+        cursor: grab;
+        z-index: 1;
+      }
+      .pet-hit.dragging {
+        cursor: grabbing;
+      }
+      /* 余额气泡：与浏览器 overlay 同一套视觉（白色圆润泡 + 峰/谷/错误着色）。
+         尺寸分两类锚点：盒子（宽度/内边距/圆角/尾巴/阴影/行间距）锚在字号 --f 上——字号调大盒子同步变大，
+         文字不会顶出白底；位置（bottom 偏移）仍锚在宠物宽度 var(--pet-size)，气泡始终贴着宠物头顶。
+         宽度必须写 width:max-content：气泡是 left:50% 的绝对定位盒，可用宽度只有包含块一半，
+         shrink-to-fit 会先被这道墙卡死（max-width 调多大都不生效）；写 max-content 后按内容取宽，
+         再由 max-width 收口，上限同时不超过宠物宽度（桌面窗口只比宠物大一圈，超了会被裁）。
+         字体经 renderer 注入上首软糖体 @font-face */
+      .pet-bubble {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%) translateY(8px) scale(0.88);
+        transform-origin: 50% 100%;
+        bottom: calc(100% - var(--pet-size, 462px) * 0.108);
+        width: max-content;
+        /* 钉死 content-box：本文件全局设了 border-box，那会让 min/max-width 把内边距也算进去，
+           内容可用宽度被悄悄缩掉一圈（表现为「明明还有空位却折行」）。与浏览器 bubble.ts 同一口径 */
+        box-sizing: content-box;
+        min-width: calc(var(--f) * 5.7143);
+        max-width: min(calc(var(--f) * 16), 100%);
+        padding: calc(var(--f) * 0.4835) calc(var(--f) * 0.6593);
+        border-radius: calc(var(--f) * 0.7692);
+        background: rgba(255, 255, 255, 0.92);
+        color: #2b2b2b;
+        /* 字体族走全局配置变量（renderer.js 注入到 documentElement）：对话窗/得分弹窗挂在 body 下、
+           继承不到宠物根容器，气泡也统一从这里取；回退参数是变量未注入时的默认字体栈 */
+        font-family: var(
+          --dsh-pet-font-family,
+          'ShangshouSoftCandy',
+          'Yuanti SC',
+          'YouYuan',
+          '幼圆',
+          'Comic Sans MS',
+          'PingFang SC',
+          'Microsoft YaHei',
+          sans-serif
+        );
+        /* 字号：正文取 --dsh-pet-font-bubble（sprite.js 按本宠物尺寸算好注入）；--f0 是收起态的字号，
+           --f 是当前生效值（展开态在 .is-expanded 里按 --f0 折算 60%），气泡内其余层级都从 --f 派生 */
+        --f0: var(--dsh-pet-font-bubble, calc(var(--pet-size, 462px) * 0.0455));
+        --f: var(--f0);
+        font-size: var(--f);
+        line-height: 1.6;
+        z-index: 3;
+        pointer-events: none;
+        box-shadow:
+          0 calc(var(--f) * 0.1978) calc(var(--f) * 0.7692) rgba(0, 0, 0, 0.14),
+          0 1px 3px rgba(0, 0, 0, 0.08);
+        opacity: 0;
+        transition:
+          opacity 0.22s ease,
+          transform 0.42s cubic-bezier(0.18, 1.5, 0.4, 1);
+        will-change: transform, opacity;
+        /* 不锁 nowrap：折行只在内容真超过宽度上限时才发生；break-word 只在整词放不下时断，
+           不会把 85% / ¥12.34 这类数字拆到两行 */
+        white-space: normal;
+        overflow-wrap: break-word;
+      }
+      .pet-bubble::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: calc(var(--f) * -0.3736);
+        transform: translateX(-50%);
+        border: calc(var(--f) * 0.3736) solid transparent;
+        border-top-color: rgba(255, 255, 255, 0.92);
+        border-bottom: none;
+      }
+      .pet-bubble.is-on {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+      /* 呼吸阴影：显示期间轻微起伏，不至于像一张贴纸钉在屏幕上；余额纯文字态不套用 */
+      .pet-bubble.is-on:not(.is-balance-plain) {
+        animation: petBubbleBreathe 3.8s ease-in-out infinite;
+      }
+      @keyframes petBubbleBreathe {
+        0%, 100% {
+          box-shadow:
+            0 calc(var(--f) * 0.1978) calc(var(--f) * 0.7692) rgba(0, 0, 0, 0.14),
+            0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        50% {
+          box-shadow:
+            0 calc(var(--f) * 0.27) calc(var(--f) * 1.02) rgba(0, 0, 0, 0.21),
+            0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+      }
+      /* 换新的一句碎碎念时补一个短促的弹跳（入场动画只在从无到有播放一次） */
+      .pet-bubble.is-on.is-pop {
+        animation:
+          petBubblePop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1),
+          petBubbleBreathe 3.8s ease-in-out 0.5s infinite;
+      }
+      @keyframes petBubblePop {
+        0% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+        38% { transform: translateX(-50%) translateY(-3px) scale(1.05); filter: brightness(1.06); }
+        100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+      }
+      /* 小尾巴跟着轻轻摆，给静态气泡一点活着的感觉 */
+      .pet-bubble.is-on::after {
+        transform-origin: 50% 0;
+        animation: petBubbleTail 3.2s ease-in-out infinite;
+      }
+      @keyframes petBubbleTail {
+        0%, 100% { transform: translateX(-50%) rotate(0deg); }
+        30% { transform: translateX(-52%) rotate(-6deg); }
+        65% { transform: translateX(-48%) rotate(6deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pet-bubble.is-on,
+        .pet-bubble.is-on::after { animation: none; }
+      }
+      /* 碎碎念变体：与浏览器 overlay 一致 —— 字号缩到余额气泡的 0.75、宽度下限更窄（0.10 → 2.1978），
+         上限与余额气泡相同；宽度取宽/折行规则继承 .pet-bubble，高度随行数自然增长 */
+      .pet-bubble.is-whisper {
+        font-size: calc(var(--f) * 0.7473);
+        min-width: calc(var(--f) * 2.1978);
+        /* 完整消息会折行：上限放到整泡宽度，避免窄条把长消息拉成一长串行 */
+        max-width: min(calc(var(--f) * 16), 100%);
+      }
+      .pet-bub-row {
+        display: flex;
+        justify-content: space-between;
+        gap: calc(var(--f) * 0.6593);
+        flex-wrap: wrap;
+      }
+      /* 说话气泡的「头像 + 文字」一行：头像在左，文字占满剩余宽度并正常折行 */
+      .pet-bub-say {
+        display: flex;
+        align-items: flex-start;
+        gap: calc(var(--f) * 0.34);
+      }
+      .pet-bub-say .pet-bub-row {
+        flex: 1;
+        min-width: 0;
+      }
+      /* 发送者小头像：圆形（约 22px，随气泡字号缩放），头像为空时元素根本不会创建 */
+      .pet-bub-avatar {
+        flex: 0 0 auto;
+        width: calc(var(--f) * 1.1);
+        height: calc(var(--f) * 1.1);
+        margin-top: calc(var(--f) * 0.16);
+        border-radius: 50%;
+        object-fit: cover;
+        pointer-events: none;
+        user-select: none;
+      }
+      /* 档位行由多个片段拼成：只允许在片段之间换行，片段内部不拆字 */
+      .pet-bub-row > span {
+        white-space: nowrap;
+      }
+      .pet-bub-sub {
+        font-size: calc(var(--f) * 0.7692);
+        color: rgba(43, 43, 43, 0.6);
+      }
+      .pet-bub-err {
+        color: #d94f3d;
+        font-size: calc(var(--f) * 0.7692);
+      }
+      .pet-bub-tier {
+        font-weight: 700;
+      }
+      .pet-bub-tier-peak {
+        color: #e53935;
+      }
+      .pet-bub-tier-idle {
+        color: #2e9e4f;
+      }
+      /* ---- 展开态（点余额气泡后的完整额度）：每窗口一行，进度条长度 = 已用百分比 ----
+         与浏览器端 src/client/bubble.ts 的规则逐条对应（两端样式各存一份，数值必须同步） */
+      /* 余额只显示文字：去掉白底/圆角/阴影/尾巴，白字加深色描边，深浅壁纸都读得清 */
+      .pet-bubble.is-balance-plain {
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: calc(var(--f) * 0.1) calc(var(--f) * 0.15);
+        color: #fff;
+        text-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.9),
+          0 0 8px rgba(0, 0, 0, 0.6);
+      }
+      .pet-bubble.is-balance-plain::after {
+        display: none;
+      }
+      .pet-bubble.is-balance-plain .pet-bub-sub,
+      .pet-bubble.is-balance-plain .pet-bub-quota-label,
+      .pet-bubble.is-balance-plain .pet-bub-quota-reset,
+      .pet-bubble.is-balance-plain .pet-bub-usage-title,
+      .pet-bubble.is-balance-plain .pet-bub-usage-period {
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .pet-bubble.is-balance-plain .pet-bub-err {
+        color: #ffb3a7;
+      }
+      .pet-bubble.is-balance-plain .pet-bub-tier-peak {
+        color: #ff9d93;
+      }
+      .pet-bubble.is-balance-plain .pet-bub-tier-idle {
+        color: #a8f0b4;
+      }
+      .pet-bubble.is-balance-plain .pet-bub-quota-used,
+      .pet-bubble.is-balance-plain .pet-bub-usage-total,
+      .pet-bubble.is-balance-plain .pet-bub-usage-spend {
+        color: #fff;
+      }
+      .pet-bubble.is-balance-plain .pet-bub-quota-bar,
+      .pet-bubble.is-balance-plain .pet-bub-usage-bar {
+        background: rgba(255, 255, 255, 0.28);
+      }
+      /* ---- 主气泡背景板 / 壁纸（bubbleBoardEnabled；默认关闭，类不出现时下面整段都不生效） ----
+         底板 = 三层 background 叠加：遮罩 → 壁纸 → 底色/渐变，三层都由 bubble.js 写进 CSS 变量。
+         预设只负责给变量赋值与文字明暗，所以加预设 = 加一组变量，不用改结构。
+         宽度/高度仍由内容决定（见 .pet-bubble 的 max-content + max-width），底板只换 paint，不参与布局。 */
+      .pet-bubble.is-board {
+        --dsh-bub-board-fill: rgba(255, 255, 255, 0.92);
+        --dsh-bub-board-image: none;
+        --dsh-bub-board-scrim: none;
+        --dsh-bub-board-tail: rgba(255, 255, 255, 0.92);
+        background: var(--dsh-bub-board-scrim), var(--dsh-bub-board-image), var(--dsh-bub-board-fill);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      .pet-bubble.is-board::after {
+        border-top-color: var(--dsh-bub-board-tail, rgba(255, 255, 255, 0.92));
+      }
+      /* 壁纸边缘颜色不可预知：尾巴收掉，避免一截纯色三角挂在图上 */
+      .pet-bubble.is-board-image::after {
+        display: none;
+      }
+      /* 玻璃：半透明白 + 背景模糊；outline 不占布局，气泡尺寸不受影响 */
+      .pet-bubble.is-board-glass {
+        --dsh-bub-board-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58));
+        --dsh-bub-board-scrim: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+        --dsh-bub-board-tail: rgba(255, 255, 255, 0.7);
+        outline: 1px solid rgba(255, 255, 255, 0.62);
+        outline-offset: -1px;
+        -webkit-backdrop-filter: blur(10px) saturate(1.3);
+        backdrop-filter: blur(10px) saturate(1.3);
+      }
+      /* 纸张：暖白纸底 + 极淡的横向纹理；深字保证对比度 */
+      .pet-bubble.is-board-paper {
+        --dsh-bub-board-fill: linear-gradient(180deg, #fdf8ec 0%, #f2e8d5 100%);
+        --dsh-bub-board-scrim: repeating-linear-gradient(
+          0deg,
+          rgba(120, 90, 40, 0.05) 0 1px,
+          rgba(255, 255, 255, 0) 1px 3px
+        );
+        --dsh-bub-board-tail: #f2e8d5;
+        color: #4a3b28;
+        outline: 1px solid rgba(150, 120, 70, 0.24);
+        outline-offset: -1px;
+      }
+      /* 暗夜：深色半透明底 + 一点冷色反光；亮字 + 深色描边 */
+      .pet-bubble.is-board-night {
+        --dsh-bub-board-fill: linear-gradient(160deg, rgba(34, 39, 54, 0.94), rgba(16, 19, 28, 0.9));
+        --dsh-bub-board-scrim: linear-gradient(160deg, rgba(120, 160, 255, 0.14), rgba(0, 0, 0, 0));
+        --dsh-bub-board-tail: rgba(20, 23, 32, 0.92);
+        color: #f2f5ff;
+        outline: 1px solid rgba(255, 255, 255, 0.14);
+        outline-offset: -1px;
+      }
+      /* 文字明暗：三个类比预设多一层，用户显式指定时以它为准 */
+      .pet-bubble.is-board.is-board-text-dark {
+        color: #2b2b2b;
+      }
+      .pet-bubble.is-board.is-board-text-light {
+        color: #fff;
+        text-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.6),
+          0 0 6px rgba(0, 0, 0, 0.4);
+      }
+      /* 亮字下所有次级文字同步提亮，否则深色壁纸上会糊成一片 */
+      .pet-bubble.is-board.is-board-text-light .pet-bub-sub,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-quota-label,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-quota-reset,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-usage-title,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-usage-period {
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .pet-bubble.is-board.is-board-text-light .pet-bub-err {
+        color: #ffb3a7;
+      }
+      .pet-bubble.is-board.is-board-text-light .pet-bub-tier-peak {
+        color: #ff9d93;
+      }
+      .pet-bubble.is-board.is-board-text-light .pet-bub-tier-idle {
+        color: #a8f0b4;
+      }
+      .pet-bubble.is-board.is-board-text-light .pet-bub-quota-used,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-usage-total,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-usage-spend {
+        color: #fff;
+      }
+      .pet-bubble.is-board.is-board-text-light .pet-bub-quota-bar,
+      .pet-bubble.is-board.is-board-text-light .pet-bub-usage-bar {
+        background: rgba(255, 255, 255, 0.28);
+      }
+      /* 可点：气泡默认 pointer-events:none（不挡下层应用），只有这张可展开的余额气泡才开命中。
+         光有 DOM 可点还不够——窗口级穿透由 main 的 setIgnoreMouseEvents 管，气泡矩形要经
+         syncInputRegions 上报给主进程，见 sprite.js */
+      .pet-bubble.is-clickable {
+        pointer-events: auto;
+        cursor: pointer;
+      }
+      /* 收起态宽度上限 10.989em 排不下四列，展开态单独给一档更宽的：21em（60% 字号下 ≈265px）。
+         整体缩到收起字号的 60%：--f 是盒内所有尺寸的锚点（字号/内边距/圆角/进度条高度全跟着它缩） */
+      .pet-bubble.is-expanded {
+        --f: calc(var(--f0) * 0.6);
+        width: min(calc(var(--f) * 21), 100%);
+        max-width: 100%;
+      }
+      /* 淡出：换内容前先降到透明（.25s，复用 opacity 那条过渡曲线），换完去掉这个类再淡入 */
+      .pet-bubble.is-on.is-fading {
+        opacity: 0;
+      }
+      .pet-bub-quota {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--f) * 0.4);
+        margin: calc(var(--f) * 0.13) 0;
+      }
+      .pet-bub-quota-label {
+        flex: none;
+        min-width: calc(var(--f) * 1.9);
+        font-size: calc(var(--f) * 0.7692);
+        color: rgba(43, 43, 43, 0.6);
+      }
+      .pet-bub-quota-bar {
+        flex: 1 1 auto;
+        height: calc(var(--f) * 0.5);
+        border-radius: calc(var(--f) * 0.25);
+        background: rgba(43, 43, 43, 0.12);
+        overflow: hidden;
+      }
+      .pet-bub-quota-fill {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: #2e9e4f;
+      }
+      .pet-bub-quota-fill.pet-bub-quota-warn {
+        background: #e8952f;
+      }
+      .pet-bub-quota-fill.pet-bub-quota-crit {
+        background: #e53935;
+      }
+      .pet-bub-quota-used {
+        flex: none;
+        min-width: calc(var(--f) * 2.2);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 650;
+        color: #1f1f1f;
+      }
+      .pet-bub-quota-reset {
+        flex: none;
+        min-width: calc(var(--f) * 2.6);
+        text-align: right;
+        font-size: calc(var(--f) * 0.7692);
+        color: rgba(43, 43, 43, 0.6);
+      }
+      /* 用量页（第三页）：三行两列占满展开态宽度，总量是唯一的大字。
+         配色只给进/出两处强调，其余沿用次级灰——同页里超过两种彩色会盖过数值本身。
+         与浏览器端 src/client/bubble.ts 的规则逐条对应，数值必须同步 */
+      .pet-bub-usage {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--f) * 0.22);
+        margin: calc(var(--f) * 0.1) 0;
+      }
+      .pet-bub-usage-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: calc(var(--f) * 0.8);
+        line-height: 1.45;
+      }
+      .pet-bub-usage-title {
+        font-size: calc(var(--f) * 0.7692);
+        color: rgba(43, 43, 43, 0.62);
+      }
+      .pet-bub-usage-total {
+        font-size: calc(var(--f) * 1.45);
+        line-height: 1.2;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        color: #1f1f1f;
+      }
+      .pet-bub-usage-in {
+        font-size: calc(var(--f) * 0.7692);
+        font-variant-numeric: tabular-nums;
+        color: #3f6ea8;
+      }
+      .pet-bub-usage-out {
+        font-size: calc(var(--f) * 0.7692);
+        font-variant-numeric: tabular-nums;
+        color: #b4703c;
+      }
+      .pet-bub-usage-period {
+        font-size: calc(var(--f) * 0.7692);
+        color: rgba(43, 43, 43, 0.62);
+      }
+      .pet-bub-usage-spend {
+        font-size: calc(var(--f) * 0.7692);
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        color: #1f1f1f;
+      }
+      /* 进出比例条：两段按真实占比分宽，颜色与下面的数字一一对应；占比极小时只留一条细线，不放大 */
+      .pet-bub-usage-bar {
+        display: flex;
+        height: calc(var(--f) * 0.3);
+        border-radius: calc(var(--f) * 0.15);
+        overflow: hidden;
+        background: rgba(43, 43, 43, 0.1);
+        margin: calc(var(--f) * 0.05) 0;
+      }
+      .pet-bub-usage-bar-in {
+        display: block;
+        height: 100%;
+        background: #3f6ea8;
+      }
+      .pet-bub-usage-bar-out {
+        display: block;
+        height: 100%;
+        background: #b4703c;
+      }
+      /* 配置错误提示（大声报错，不做静默兜底）：配置缺失/非法时显示，每 5s 自动重试 */
+      .pet-error {
+        position: fixed;
+        left: 50%;
+        top: 24px;
+        transform: translateX(-50%);
+        max-width: 80vw;
+        background: rgba(217, 79, 61, 0.95);
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-size: 13px;
+        line-height: 1.5;
+        display: none;
+        z-index: 999;
+        pointer-events: none;
+        word-break: break-all;
+      }
+      .pet-error.visible {
+        display: block;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        video.pet-video {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="pet-error" class="pet-error"></div>
+    <!-- 共享纯逻辑（src/shared 的 iife 构建产物，window.PetShared）——经经典 script，避开 file:// ESM 的 CORS 限制。
+         桌面端同模式拆分：shared-core（纯逻辑）→ constants（基础设施）→ sprite（宠物本体与几何）→ sprite-*（原型扩展，
+         须排在 sprite.js 之后）→ events（事件联动）→ renderer（启动入口） -->
+    <script src="./shared-core.js"></script>
+    <script src="./constants.js"></script>
+    <script src="./sprite.js"></script>
+    <script src="./sprite/init.js"></script>
+    <script src="./sprite/playback.js"></script>
+    <script src="./sprite/motion.js"></script>
+    <script src="./sprite/input.js"></script>
+    <script src="./sprite/bubble.js"></script>
+    <script src="./sprite/menu.js"></script>
+    <script src="./events.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

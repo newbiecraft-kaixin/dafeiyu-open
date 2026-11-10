@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "output_path": "",
+  "max_bytes": 300000,
+  "group_dump_enabled": true,
+  "group_dump_dir": "",
+  "group_keep": 1,
+  "context_tail": 0,
+  "dump_response": true
+}

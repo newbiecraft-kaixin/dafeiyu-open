@@ -1,0 +1,7 @@
+{
+  "name": "dafeiyu-web-pet",
+  "version": "1.0.0",
+  "description": "大肥鱼桌面宠物（完整版网页桌宠的 Electron 透明置顶壳）",
+  "main": "main.js",
+  "private": true
+}

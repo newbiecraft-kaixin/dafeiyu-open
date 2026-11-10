@@ -1,0 +1,123 @@
+"""web_lookup_core：联网查证核心实现（分词、抓取、清洗、站点适配、渲染）。"""
+
+from .bili_api import (
+    _BILI_CONCLUSION,
+    _BILI_DETAIL,
+    _BILI_NAV,
+    _BILI_TAGS,
+    _BILI_VIEW,
+    _WBI_TAB,
+    _bili_conclusion,
+    _bili_date,
+    _bili_headers,
+    _bili_hot_comments,
+    _bili_hot_replies,
+    _bili_reply_list,
+    _bili_subtitles,
+    _bili_wbi_mixin,
+    _wbi_mixin,
+    _wbi_signed,
+)
+from .bili_browse import (
+    _BILI_CARD_JS,
+    _BILI_DETAIL_JS,
+    _BILI_LIKE,
+    _BILI_POPULAR,
+    _BILI_SEARCH,
+    _bili_browser_fetch,
+    _bili_cookie_jar,
+    _bili_dwell,
+    _bili_has_content,
+    _bili_meta,
+    _bili_popular,
+    _bili_search_tag,
+    _human_scroll,
+    _label_match_score,
+    _norm_bili_item,
+    _play_count,
+    bili_browse,
+    bili_like,
+    bili_pool_load,
+    bili_pool_save,
+    bili_pool_text,
+)
+from .bili_login import (
+    _BILI_QR_GEN,
+    _BILI_QR_POLL,
+    _COOKIE_KEYS,
+    _cookie_from_login_url,
+    _cookie_from_set_cookie,
+    bili_login_status,
+    bili_qr_generate,
+    bili_qr_png,
+    bili_qr_poll,
+)
+from .bili_summary import _bili_summary
+from .entry import (
+    _CACHE,
+    _CACHE_TTL_S,
+    _GOOD_SCORE,
+    _reduced_query,
+    _run_once,
+    fetch_url,
+    lookup,
+)
+from .extract import (
+    _ARTICLE_RE,
+    _ARTICLE_XPATH,
+    _DEAD_RE,
+    _INDEX_HINT,
+    _JIEBA,
+    _NAV_WORDS,
+    _NOISE_TAGS,
+    _PAYWALL_STRONG,
+    _PAYWALL_WEAK,
+    _avg_sentence_len,
+    _bigrams,
+    _is_dead_page,
+    _jieba_mod,
+    _looks_nav,
+    _looks_paywall,
+    _lxml_text,
+    _page_bonus,
+    _path_depth,
+    _pre_rank,
+    _words,
+    html_to_text,
+    similarity,
+)
+from .http import (
+    _JUMP_REFERER,
+    _JS_REDIRECT,
+    _META_REFRESH,
+    _RETRY_REASONS,
+    _fetch_all,
+    _fetch_one,
+    _redirect_target,
+    _retry_wait,
+)
+from .loader import _VIDEO_PARSE, _video_parse
+from .models import (
+    DEFAULT_CFG,
+    HEADERS,
+    UA,
+    _HOST_RE,
+    _JUNK_HOSTS,
+    _STOP_WORDS,
+    _TRACK_PREFIX,
+    _W_HIGH,
+    _W_LOW,
+    _W_OFFICIAL,
+    _cite_url,
+    _domain_weight,
+    _dur_sec,
+    _fmt_play,
+    _host,
+    _norm_url,
+    _ok_url,
+)
+from .render import _BILI_PAGE_CSS, _bili_line, bili_page_html
+from .search import _baidu, _bing, _core_query, _search, _so360, _sogou
+from .text_extract import _TextExtract
+
+__all__ = [name for name in globals() if not name.startswith("__") and name != "__builtins__"]

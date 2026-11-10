@@ -1,0 +1,8 @@
+data/temp/
+data/dist/
+data/dashboard.zip
+data/webchat/
+data/logs/
+*.pyc
+__pycache__/
+.venv/

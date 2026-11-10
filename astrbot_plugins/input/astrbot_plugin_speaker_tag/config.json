@@ -1,0 +1,10 @@
+{
+  "history_max_records": 20,
+  "user_memory": true,
+  "user_keep_msgs": 30,
+  "user_max_users": 200,
+  "user_min_msgs": 3,
+  "user_recent_inject": 6,
+  "user_inject_chars": 300,
+  "user_save_interval": 60
+}

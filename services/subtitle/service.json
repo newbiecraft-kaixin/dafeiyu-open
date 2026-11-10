@@ -1,0 +1,22 @@
+{
+  "name": "subtitle",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 23405,
+  "merged_into": "audio",
+  "responsibility": "已并入 audio 服务同一进程：语音/视频转写（faster-whisper）、画面描述（Ollama 视觉）；23405 端口由 audio 副监听线程继续提供，旧调用方无需改动",
+  "depends": ["infra"],
+  "entry": "service.py",
+  "endpoints": [
+    "GET /",
+    "GET /health",
+    "GET /records",
+    "POST /asr",
+    "POST /vision"
+  ],
+  "links": {
+    "控制台": "http://127.0.0.1:23405/"
+  },
+  "optional": true,
+  "status": "active"
+}

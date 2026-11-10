@@ -1,0 +1,16 @@
+{
+    "port": 23334,
+    "pet": "http://127.0.0.1:3080",
+    "petPath": "/dsh-pet-7340/broadcast?pet=main&surface=desktop",
+    "petKind": "dsh-pet",
+    "ollama": "http://127.0.0.1:11434",
+    "model": "qwen3.5:9b",
+    "brain": "http://127.0.0.1:23402",
+    "brainTimeoutMs": 10000,
+    "narrate": false,
+    "timeoutMs": 15000,
+    "pendingTtlMs": 20000,
+    "pendingMaxAgeMs": 15000,
+    "maxPending": 1,
+    "bootGraceMs": 20000
+}

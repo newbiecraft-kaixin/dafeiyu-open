@@ -1,0 +1,8 @@
+name: astrbot_plugin_prompt_cache
+display_name: "提示词前缀优化"
+desc: "裁剪用不上的技能清单，保证 system prompt 动态段位于尾部，稳定 DeepSeek 前缀缓存。"
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
+support_platforms:
+  - aiocqhttp

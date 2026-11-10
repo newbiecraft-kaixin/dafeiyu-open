@@ -1,0 +1,102 @@
+{
+    "default_role": "大肥鱼",
+    "platform_defaults": {
+        "qq": "大肥鱼",
+        "wechat": "女仆"
+    },
+    "admins": {
+        "qq": [],
+        "wechat": []
+    },
+    "identities": [],
+    "harness": {
+        "dsh_root": "dsh",
+        "dsh_home": "",
+        "timeout_s": 180,
+        "max_parallel": 3,
+        "dotenv": [
+            ".env",
+            "services/brain/.env"
+        ],
+        "persona_drop_sections": [
+            "用虚拟手机逛 App",
+            "语音与行动"
+        ],
+        "memory": {
+            "facts_per_scope": 8,
+            "fact_chars": 120,
+            "total_chars": 1200,
+            "recent_messages": 6,
+            "recent_chars": 160
+        }
+    },
+    "tools": {
+        "disabled": [
+            "tool-plugin-manager",
+            "tool-working-directory",
+            "tool-pwsh",
+            "tool-bash",
+            "tool-jobs",
+            "tool-fs",
+            "tool-fs-search",
+            "tool-skill",
+            "tool-subagent",
+            "tool-subagent-fork",
+            "tool-subagent-control",
+            "tool-subagent-list-agents",
+            "tool-workflow",
+            "tool-todo",
+            "tool-goal",
+            "tool-web",
+            "mcp-resources",
+            "agent-instructions",
+            "skill",
+            "skill-filesystem",
+            "hmr",
+            "plan-mode"
+        ]
+    },
+    "roles": {
+        "大肥鱼": {
+            "display": "大肥鱼",
+            "profile": "brain-dafeiyu",
+            "credential": {
+                "mode": "account"
+            },
+            "model": "deepseek-flash",
+            "reasoning_effort": "high",
+            "persona_files": [
+                "stack/persona-大肥鱼.md"
+            ],
+            "workspace": "services/brain/workspaces/brain-dafeiyu"
+        },
+        "桌宠": {
+            "display": "桌宠",
+            "profile": "brain-pet",
+            "credential": {
+                "mode": "account"
+            },
+            "model": "deepseek-flash",
+            "reasoning_effort": "low",
+            "persona_files": [
+                "stack/persona-桌宠.md"
+            ],
+            "workspace": "services/brain/workspaces/brain-pet"
+        },
+        "女仆": {
+            "display": "女仆",
+            "profile": "brain-maid",
+            "credential": {
+                "mode": "api_key",
+                "env": "DEEPSEEK_API_KEY_MAID"
+            },
+            "model": "deepseek-flash",
+            "reasoning_effort": "medium",
+            "persona_files": [
+                "stack/persona-大肥鱼.md",
+                "stack/persona-女仆强化.md"
+            ],
+            "workspace": "services/brain/workspaces/brain-maid"
+        }
+    }
+}

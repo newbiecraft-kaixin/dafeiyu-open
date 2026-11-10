@@ -1,0 +1,130 @@
+// dsh-pet 个人配置示例（~/.dsh/dsh-pet/main-config.jsonc）
+// install.ps1 在该文件不存在时会用本示例铺一份；改完重启 DSH 生效。
+//
+// 合并口径（容易踩坑）：顶层字段是「整段替换」——写了哪一段就整段用自己的，缺的子键不会
+// 从包内默认补回来；完全没写的顶层字段才回落到 assets/config.jsonc 的默认值。
+// 所以下面把常用的开关都显式写全；animations / memes 这类长清单留在包内默认，
+// 要定制时从 assets/config.jsonc 整段复制过来再改，别只写一半。
+{
+  // ===================== 桌宠实例（实例级，每只独立；pets[] 里可继续加条目） =====================
+  // 可选：在条目里写 "whisperPrompt" 可覆盖下面的人设，只对这一只生效。
+  "pets": [
+    {
+      "id": "main",
+      "name": "大肥鱼",            // 桌宠名字（气泡/日志里显示）
+      "size": 462,                 // 显示尺寸（px）
+      "balanceEnabled": true,      // 余额气泡
+      "whisperEnabled": true,      // 碎碎念
+      "workStatusEnabled": true,   // 工作状态气泡
+      "fixedEnabled": false,
+      "display": "both",
+      "position": { "corner": "top-right", "marginX": 24, "marginY": 100 }
+    }
+  ],
+
+  // ===================== 人设与台词 =====================
+  // 碎碎念人设：想换人设只改这一段（名字和日期由程序自动追加，别写在这里）
+  "whisperPrompt": "你是主人桌面上的Q版大肥鱼，会时不时碎碎念一句。说话要自然随意、短短一句（20字以内），俏皮可爱，说人话不啰嗦，不要解释你自己，不要提你是AI。",
+  // 睡觉时被叫醒前的拒绝台词
+  "sleepRefuseTexts": ["我在睡觉，别烦我……", "唔……让我再睡一会儿。"],
+  // 入睡 / 醒来的台词
+  "sleepStartTexts": ["好困……我先睡一会儿。", "那我去睡啦，晚安。"],
+  "sleepEndTexts": ["唔……我醒了。", "睡饱啦，主人！"],
+
+  // ===================== 模型 =====================
+  // 留空 = 跟随当前对话的模型；也可给碎碎念单独指定便宜/快的模型
+  "chatMemoryRounds": 10,
+  "whisperModel": { "provider": "", "model": "" },
+  "chatModel": { "provider": "", "model": "" },
+
+  // ===================== 配图 / 动作联动 =====================
+  "whisperImageEnabled": true,      // 碎碎念随机配一张表情包
+  "chatImageEnabled": true,         // 对话时由模型挑一张表情包
+  "chatAnimationEnabled": true,     // 对话时允许模型触发动作
+  "chatImageLimit": 20,             // 每次对话最多发几张表情包清单（0 = 不限制）
+
+  // ===================== 看屏 / OCR / 本机操作 =====================
+  "visionToolsEnabled": true,       // 把看屏、点击、输入、切窗口等本机工具交给模型
+  "visionWatchEnabled": true,       // 定时偷看当前窗口并点评（需本机 Ollama 有视觉模型；嫌吵改 false）
+  "visionWatchSec": 900,
+  "ollamaModel": "qwen2.5vl:3b",    // 看屏点评用的本地视觉模型
+  "ollamaBase": "http://127.0.0.1:11434",
+  "visionWechatBase": "http://127.0.0.1:23392",  // 本机 io-wechat 服务
+  "actionSubtitleEnabled": true,    // 点播动作时弹字幕并念出来
+
+  // ===================== 语音播报 =====================
+  // 包内默认是关的（voiceEnabled=false），这份示例按「开箱就想听声」写成了 true；不想要改回 false。
+  // voiceEnabled 是总开关：关掉时下面两个分场景开关一律不生效。
+  // voiceName 必须是 /voice/voices 里的 id：克隆声线取 cosyvoice_ref/profiles 下含 ref.wav 的目录名，
+  // 另有 10 个热门 Edge 音色（晓晓、晓伊、云希等，tag 标「热门音色」）；写错/留空回落到 zh-CN-XiaoyiNeural，档案已删的旧名回落到 小忆。
+  // voiceVolume 只改播放响度（0–1），不会多花一次 TTS 请求。
+  "voiceEnabled": true,
+  "voiceName": "zh-CN-XiaoyiNeural",
+  "voiceVolume": 1,
+  "voiceWhisperEnabled": true,      // 周期碎碎念要不要念
+  "voiceTodoEnabled": false,        // 待办提醒要不要念
+
+  // ===================== 海草 + 背景泡泡 =====================
+  "bubbleBackdropEnabled": true,     // 总开关：false = 不显示
+  "bubbleRiseSfxEnabled": true,      // 泡泡上浮音效
+  "bubbleBurstSfxEnabled": true,     // 戳破泡泡的爆裂声
+  "bubbleBackdropCount": 9,          // 泡泡数量
+  "bubbleBackdropMotion": "normal",  // calm | normal | lively
+  "bubbleBackdropPalette": "candy",  // 配色主题
+
+  // ===================== 主气泡背景板 / 壁纸（桌面模式专用） =====================
+  // 总开关默认 false：主气泡保持原来的白底观感，完全不变。打开后才按下面的预设上底板。
+  "bubbleBoardEnabled": false,
+  "bubbleBoardPreset": "glass",       // glass 玻璃 | paper 纸张 | night 暗夜 | custom 自定义
+  "bubbleBoardMode": "gradient",      // custom 下的底子：solid 纯色 | gradient 渐变 | image 图片壁纸
+  "bubbleBoardColor": "#ffffff",              // custom + solid 的底色
+  "bubbleBoardGradientFrom": "#ffffff",       // custom + gradient 的起色
+  "bubbleBoardGradientTo": "#dbe7ff",         // custom + gradient 的止色
+  "bubbleBoardImage": "",             // custom + image 的壁纸：http(s) URL、data: 或本地绝对路径（C:\...）
+  "bubbleBoardScrim": 0.32,           // 壁纸遮罩强度 0–0.8（亮字压暗 / 暗字提亮，保证对比度）
+  "bubbleBoardText": "auto",          // auto | light 亮字 | dark 暗字
+
+  // ===================== 全局开关（都是必填布尔值：缺失会被判「配置错误」，右键菜单/设置页的开关也存不回去） =====================
+  "notificationsEnabled": true,      // 系统通知
+  "clickSoundEnabled": true,         // 点击音效
+  "confineToScreen": false,          // true = 只在当前屏幕内活动
+  "trayEnabled": true,               // 系统托盘图标
+
+  // ===================== 物理手感（拖拽抛掷） =====================
+  "physics": {
+    "gravity": 1400,
+    "restitution": 0.78,
+    "groundFriction": 2.5,
+    "ceilingBounce": true,
+    "throwPower": 1,
+    "petCollision": true,
+    "hapticEnabled": true,           // 撞墙/落地/互撞时的震动反馈
+    "tiltGravity": true,
+    "shakeThrow": true
+  },
+
+  // ===================== 气泡字体 =====================
+  "font": { "family": "candy", "size": 21, "followPet": true },
+
+  // ===================== 工作状态台词（按阶段各一组：思考 / 进行 / 收尾 / 等待 / 完成 / 失败） =====================
+  "workStatusTexts": [
+    ["正在认真想下一步呢", "让我整理一下思路~", "正在梳理接下来要做什么"],
+    ["正在处理任务呢", "这一步正在进行中哦", "正在继续干活呢，别打扰我~"],
+    ["这一步处理好啦，接着看下一步", "搞定一步，继续看看哦~"],
+    ["需要你确认一下呢", "这里要等你看一下哦", "轮到你来决定啦，等你~"],
+    ["这一轮搞定啦，真棒！", "任务完成咯，可以摸鱼啦~"],
+    ["这一步好像没跑通呢", "刚才的操作遇到点问题哦", "这里卡了一下，再等等你呢"]
+  ],
+
+  // ===================== 动画节奏权重（具体动画清单与分类权重沿用包内默认） =====================
+  // idle + turn + move + animations.categories 各 weight 合计 = 100（默认 10+5+5+80）。
+  // 要改分类权重得连 animations 整段一起改写，别只改这三项。
+  "animationWeights": { "idle": 10, "turn": 5, "move": 5 },
+
+  // ===================== 周期事件（秒） =====================
+  "eventsRefreshSec": {
+    "balance": 1800,   // 余额刷新
+    "whisper": 300,    // 碎碎念
+    "sleepTalk": 60    // 睡话
+  }
+}

@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 知识库</title>
+<style>
+  :root{
+    --bg:#0b0e15;--card:#151925;--card-hi:#1a1f2e;--well:#0f121b;
+    --line:rgba(255,255,255,.085);--line-hi:rgba(255,255,255,.16);
+    --text:#e8ecf8;--muted:#8b96ad;--dim:#606b84;
+    --acc:#8fb2dd;--blue:#5f86d8;
+    --good:#46d39a;--bad:#ff617b;--warn:#ffc46b;
+    --layer:#5f86d8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);
+    font:14px/1.65 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1100px 560px at 16% -16%,rgba(95,134,216,.11),transparent 62%),
+      radial-gradient(900px 520px at 92% -4%,rgba(60,126,176,.09),transparent 62%),
+      linear-gradient(180deg,#0a0d14,#0b0e15 52%);
+    background-attachment:fixed;
+    animation:pageIn .32s ease both}
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 20px 64px;position:relative;z-index:1}
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora i{position:absolute;border-radius:50%;filter:blur(100px);opacity:.45}
+  .aurora .a1{width:520px;height:520px;left:-160px;top:-160px;
+    background:radial-gradient(circle,rgba(95,134,216,.45),transparent 70%);
+    animation:drift1 26s ease-in-out infinite alternate}
+  .aurora .a2{width:460px;height:460px;right:-140px;top:8%;
+    background:radial-gradient(circle,rgba(60,126,176,.35),transparent 70%);
+    animation:drift2 32s ease-in-out infinite alternate}
+  .aurora .a3{width:380px;height:380px;left:42%;bottom:-180px;
+    background:radial-gradient(circle,rgba(127,166,214,.22),transparent 70%);
+    animation:drift3 20s ease-in-out infinite alternate}
+  @keyframes drift1{to{transform:translate(70px,60px) scale(1.08)}}
+  @keyframes drift2{to{transform:translate(-90px,70px) scale(.94)}}
+  @keyframes drift3{to{transform:translate(60px,-70px) scale(1.1)}}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
+  header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+    align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  h1{margin:0;display:flex;align-items:center;gap:10px;font-size:19px;font-weight:600;
+    letter-spacing:.4px;color:#eaf0ff}
+  .sub{margin:5px 0 0;color:var(--muted);font-size:12.5px}
+  a.back,button.back{font-size:12.5px;color:var(--muted);white-space:nowrap}
+  a.back{text-decoration:none;line-height:30px}
+  a.back:hover{color:var(--acc)}
+  button.back{height:30px;padding:0 12px;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,.03);border:1px solid var(--line);transition:.16s ease}
+  button.back:hover{color:#e6ecff;border-color:var(--line-hi);background:rgba(255,255,255,.06)}
+  .stats{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;font-size:12.5px}
+  .stats span{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:9px;
+    color:var(--muted);border:1px solid var(--line);background:rgba(255,255,255,.025)}
+  .stats b{color:#dbe4ff;font-weight:600;font-variant-numeric:tabular-nums}
+  .layout{margin-top:20px;display:grid;grid-template-columns:minmax(340px,4.8fr) minmax(430px,7fr);
+    gap:20px;align-items:start}
+  @media (max-width:980px){.layout{grid-template-columns:1fr}}
+  .panel{padding:18px 20px 20px;border-radius:14px;
+    background:linear-gradient(180deg,var(--card-hi),var(--card));
+    border:1px solid var(--line);
+    box-shadow:0 16px 36px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.045);
+    transition:border-color .18s ease}
+  .panel:hover{border-color:var(--line-hi)}
+  .panel + .panel{margin-top:18px}
+  h2{margin:0 0 14px;display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:600;color:#dfe6fa;letter-spacing:.3px}
+  h2::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--layer);
+    box-shadow:0 0 8px rgba(95,134,216,.55)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .bar h2{margin:0}
+  .bar input[type=text]{width:auto}
+  .spacer{flex:1}
+  label{display:block;margin:0 0 12px;font-size:12px;color:var(--muted);letter-spacing:.2px}
+  label input,label textarea{display:block;width:100%;margin-top:6px}
+  input,textarea{font:inherit;font-size:13.5px;color:var(--text);background:var(--well);
+    border:1px solid rgba(255,255,255,.09);border-radius:9px;
+    padding:0 12px;height:36px;width:100%;outline:none;
+    transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  textarea{height:auto;min-height:176px;padding:10px 12px;line-height:1.7;resize:vertical}
+  input::placeholder,textarea::placeholder{color:var(--dim)}
+  input:hover,textarea:hover{border-color:rgba(255,255,255,.15)}
+  input:focus,textarea:focus{background:#111624;border-color:rgba(95,134,216,.55);
+    box-shadow:0 0 0 3px rgba(95,134,216,.14)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    height:36px;padding:0 16px;border-radius:9px;cursor:pointer;font-size:13px;
+    color:#dee6fb;border:1px solid var(--line);
+    background:rgba(255,255,255,.04);transition:.16s ease}
+  .btn:hover{background:rgba(255,255,255,.075);border-color:var(--line-hi)}
+  .btn.primary{color:#fff;border-color:rgba(120,165,235,.45);
+    background:linear-gradient(180deg,#4f83d3,#3b70b6);
+    box-shadow:0 8px 18px rgba(60,126,176,.22)}
+  .btn.primary:hover{background:linear-gradient(180deg,#5a8ee0,#4279c4)}
+  .btn.tiny{height:28px;padding:0 10px;font-size:12px;border-radius:7px}
+  .btn.danger{color:#ffb3c1;border-color:rgba(255,97,123,.30);background:rgba(255,97,123,.05)}
+  .btn.danger:hover{background:rgba(255,97,123,.14);border-color:rgba(255,97,123,.45)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .msg{margin-top:12px;font-size:12.5px;min-height:18px;color:var(--muted)}
+  .msg.err{color:var(--bad)}.msg.good{color:var(--good)}
+  .list,.results{margin-top:14px;display:flex;flex-direction:column;gap:8px;
+    overflow:auto;padding-right:2px}
+  .list{max-height:520px}
+  .results{max-height:400px}
+  .item{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;
+    padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.07);
+    background:#121724;box-shadow:inset 2px 0 0 rgba(95,134,216,.55);
+    transition:border-color .16s ease,background .16s ease}
+  .item:hover{border-color:rgba(95,134,216,.38);background:#171c2b}
+  .item-main{flex:1 1 220px;min-width:0}
+  .item-title{font-size:13.5px;color:#e6ebff;word-break:break-word}
+  .item-meta{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.6;word-break:break-word}
+  .item-actions{display:flex;gap:6px;flex-shrink:0}
+  .chip{display:inline-block;margin:0 5px 3px 0;padding:1px 8px;border-radius:6px;
+    font-size:11px;color:#a9c6ef;border:1px solid rgba(95,134,216,.30);
+    background:rgba(95,134,216,.10)}
+  .hit{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.07);
+    background:#121724;box-shadow:inset 2px 0 0 rgba(95,134,216,.55);
+    transition:border-color .16s ease}
+  .hit:hover{border-color:rgba(95,134,216,.35)}
+  .hit-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+  .score{padding:1px 8px;border-radius:6px;font-size:11px;color:#a8e6f5;
+    font-variant-numeric:tabular-nums;border:1px solid rgba(60,126,176,.32);
+    background:rgba(60,126,176,.10)}
+  .dim{color:var(--muted);font-size:12px}
+  .snippet{margin:8px 0 0;color:#c3cde9;font-size:12.5px;line-height:1.75;word-break:break-word}
+  .empty{display:flex;align-items:center;justify-content:center;
+    min-height:132px;padding:20px;border-radius:12px;
+    border:1px dashed rgba(255,255,255,.10);background:rgba(255,255,255,.012);
+    color:var(--muted);font-size:12.5px;text-align:center}
+  dialog{border:1px solid var(--line-hi);border-radius:16px;background:#0e1220;
+    color:var(--text);width:min(860px,92vw);max-height:86vh;padding:0;
+    box-shadow:0 40px 90px rgba(0,0,0,.60)}
+  dialog::backdrop{background:rgba(3,6,14,.74);backdrop-filter:blur(3px)}
+  .dlg-head{display:flex;gap:12px;align-items:center;padding:16px 22px;
+    border-bottom:1px solid var(--line)}
+  .dlg-head h3{margin:0;font-size:15px;font-weight:600;flex:1;word-break:break-word}
+  .dlg-meta{padding:12px 22px 0;color:var(--muted);font-size:12px}
+  .dlg-body{padding:14px 22px 22px;max-height:58vh;overflow:auto;white-space:pre-wrap;
+    word-break:break-word;font-size:13px;line-height:1.8;color:#d6def8}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(95,134,216,.22);border-radius:8px;
+    border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(95,134,216,.4);background-clip:content-box}
+  ::selection{background:rgba(60,126,176,.30)}
+  button{transition:.16s ease}
+  button:active{transform:translateY(1px)}
+  /* ===== 层级色：知识库 ===== */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{transition:none!important; animation:none!important;}
+  }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>知识库 · RAG</h1>
+      <p class="sub">把资料收进来，按关键词 / 片段检索；桌宠与机器人后续都从这里取知识。</p>
+    </div>
+    <button class="back" id="tokenBtn" title="远程访问令牌（RAG_TOKEN）">令牌</button>
+    <a class="back" id="hubLink" href="http://127.0.0.1:23408/ui">← 返回中枢</a>
+  </header>
+
+  <div class="stats" id="stats"><span>读取概况中…</span></div>
+
+  <div class="layout">
+    <section class="panel">
+      <h2 id="formTitle">收录资料</h2>
+      <label>标题
+        <input id="title" placeholder="留空自动取正文首行">
+      </label>
+      <div class="row">
+        <label>标签
+          <input id="tags" placeholder="逗号分隔，如：产品,FAQ">
+        </label>
+        <label>来源
+          <input id="source" placeholder="可选，如：官网文档">
+        </label>
+      </div>
+      <label>归属
+        <input id="scope" placeholder="留空=公共（所有群/好友可见）；填群号、QQ 号或会话 umo">
+      </label>
+      <label>正文
+        <textarea id="text" placeholder="粘贴资料正文，或点「读取本地文件」导入 txt / md / json / csv 等文本文件"></textarea>
+      </label>
+      <div class="bar">
+        <button class="btn primary" id="save">保存资料</button>
+        <button class="btn" id="pickFile">读取本地文件</button>
+        <button class="btn" id="reset">清空</button>
+        <input type="file" id="file" hidden
+          accept=".txt,.md,.markdown,.json,.csv,.log,.py,.html,.htm,.yaml,.yml,.ini,.xml">
+      </div>
+      <div class="msg" id="formMsg"></div>
+    </section>
+
+    <div>
+      <section class="panel">
+        <h2>检索测试</h2>
+        <div class="bar">
+          <input type="text" id="query" placeholder="输入关键词或一句话，回车检索" style="flex:1 1 240px">
+          <button class="btn primary" id="searchBtn">检索</button>
+        </div>
+        <div class="results" id="results">
+          <div class="empty">检索结果会显示在这里。</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="bar">
+          <h2 style="margin:0">资料库</h2>
+          <span class="spacer"></span>
+          <input type="text" id="filter" placeholder="按标题 / 标签过滤"
+            style="flex:0 1 220px;height:30px;font-size:12.5px">
+          <button class="btn tiny" id="refresh">刷新</button>
+        </div>
+        <div class="list" id="docs">
+          <div class="empty">还没有资料，先在左边粘贴一段内容保存。</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<dialog id="viewer">
+  <div class="dlg-head">
+    <h3 id="viewerTitle">—</h3>
+    <button class="btn tiny" id="viewerClose">关闭</button>
+  </div>
+  <div class="dlg-meta" id="viewerMeta"></div>
+  <div class="dlg-body" id="viewerBody"></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { docs: [], editing: null };
+
+const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g,
+  (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+const fmtTime = (ts) => {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  return d.toLocaleString('zh-CN', {hour12: false});
+};
+
+function ragToken() {
+  try { return localStorage.getItem('ragToken') || ''; } catch (err) { return ''; }
+}
+
+async function api(path, options) {
+  const opts = Object.assign({cache: 'no-store'}, options || {});
+  const token = ragToken();
+  if (token) {
+    // 远程访问时服务端可能要求令牌；本机没设 RAG_TOKEN 时带了也无害
+    opts.headers = Object.assign({'Authorization': 'Bearer ' + token}, opts.headers || {});
+  }
+  const response = await fetch(path, opts);
+  let body = null;
+  try { body = await response.json(); } catch (err) { body = null; }
+  if (response.status === 401) {
+    throw new Error('未授权：点右上角「令牌」填入 RAG_TOKEN');
+  }
+  if (!response.ok || !body || body.ok === false) {
+    throw new Error((body && body.error) || ('请求失败（HTTP ' + response.status + '）'));
+  }
+  return body.data !== undefined ? body.data : body;
+}
+
+function setMsg(text, kind) {
+  const el = $('formMsg');
+  el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+function tagsHtml(tags) {
+  return String(tags || '').split(/[,，;；\s]+/).filter(Boolean)
+    .map((tag) => '<span class="chip">' + esc(tag) + '</span>').join('');
+}
+
+/* ---------------- 概况与列表 ---------------- */
+async function loadStats() {
+  try {
+    const info = await api('/health');
+    const s = (info && info.stats) || {};
+    $('stats').innerHTML =
+      '<span>文档 <b>' + (s.documents || 0) + '</b></span>' +
+      '<span>分块 <b>' + (s.chunks || 0) + '</b></span>' +
+      '<span>字符 <b>' + (s.chars || 0) + '</b></span>' +
+      '<span>词项 <b>' + (s.terms || 0) + '</b></span>';
+  } catch (err) {
+    $('stats').innerHTML = '<span>概况读取失败：' + esc(err.message) + '</span>';
+  }
+}
+
+async function loadDocs() {
+  try {
+    state.docs = await api('/documents?limit=500');
+    paintDocs();
+  } catch (err) {
+    $('docs').innerHTML = '<div class="empty">读取失败：' + esc(err.message) + '</div>';
+  }
+}
+
+function paintDocs() {
+  const keyword = $('filter').value.trim().toLowerCase();
+  const rows = state.docs.filter((doc) => {
+    if (!keyword) return true;
+    return (doc.title || '').toLowerCase().includes(keyword) ||
+      (doc.tags || '').toLowerCase().includes(keyword) ||
+      (doc.scope || '').toLowerCase().includes(keyword);
+  });
+  const box = $('docs');
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty">' +
+      (state.docs.length ? '没有匹配的资料。' : '还没有资料，先在左边粘贴一段内容保存。') +
+      '</div>';
+    return;
+  }
+  box.innerHTML = rows.map((doc) => `
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">${esc(doc.title)}</div>
+        <div class="item-meta">
+          ${tagsHtml(doc.tags)}
+          ${doc.scope ? '归属 ' + esc(doc.scope) : '公共'}
+          · ${doc.chunks} 块 · ${doc.chars} 字 · ${fmtTime(doc.updated)}
+          ${doc.source ? ' · ' + esc(doc.source) : ''}
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="btn tiny" data-act="view" data-id="${doc.id}">查看</button>
+        <button class="btn tiny" data-act="edit" data-id="${doc.id}">编辑</button>
+        <button class="btn tiny danger" data-act="del" data-id="${doc.id}">删除</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ---------------- 新增 / 更新 / 删除 ---------------- */
+function resetForm() {
+  state.editing = null;
+  $('title').value = '';
+  $('tags').value = '';
+  $('source').value = '';
+  $('scope').value = '';
+  $('text').value = '';
+  $('formTitle').textContent = '收录资料';
+  $('save').textContent = '保存资料';
+  setMsg('');
+}
+
+async function saveDoc() {
+  const text = $('text').value.trim();
+  if (!text) { setMsg('正文不能为空', 'err'); return; }
+  $('save').disabled = true;
+  try {
+    const payload = {
+      title: $('title').value.trim(),
+      tags: $('tags').value.trim(),
+      source: $('source').value.trim(),
+      scope: $('scope').value.trim(),
+      text: text,
+    };
+    if (state.editing) payload.id = state.editing;
+    const row = await api('/documents', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    setMsg((state.editing ? '已更新：' : '已保存：') + row.title + '（' + row.chunks + ' 块）', 'good');
+    resetForm();
+    await Promise.all([loadDocs(), loadStats()]);
+  } catch (err) {
+    setMsg('保存失败：' + err.message, 'err');
+  } finally {
+    $('save').disabled = false;
+  }
+}
+
+async function editDoc(id) {
+  try {
+    const doc = await api('/documents/' + id);
+    state.editing = doc.id;
+    $('title').value = doc.title || '';
+    $('tags').value = doc.tags || '';
+    $('source').value = doc.source || '';
+    $('scope').value = doc.scope || '';
+    $('text').value = doc.text || '';
+    $('formTitle').textContent = '编辑资料 #' + doc.id;
+    $('save').textContent = '更新资料';
+    setMsg('正在编辑《' + doc.title + '》，保存后整篇替换。');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  } catch (err) {
+    setMsg('读取失败：' + err.message, 'err');
+  }
+}
+
+async function deleteDoc(id) {
+  const doc = state.docs.find((row) => row.id === id);
+  if (!confirm('确定删除《' + (doc ? doc.title : id) + '》及其全部分块？')) return;
+  try {
+    await api('/documents?id=' + id, {method: 'DELETE'});
+    if (state.editing === id) resetForm();
+    await Promise.all([loadDocs(), loadStats()]);
+  } catch (err) {
+    setMsg('删除失败：' + err.message, 'err');
+  }
+}
+
+/* ---------------- 查看 ---------------- */
+async function viewDoc(id) {
+  try {
+    const doc = await api('/documents/' + id);
+    $('viewerTitle').textContent = doc.title;
+    $('viewerMeta').innerHTML = tagsHtml(doc.tags) +
+      ' ' + doc.chunks.length + ' 块 · ' + (doc.text || '').length + ' 字 · 更新于 ' + fmtTime(doc.updated) +
+      (doc.source ? ' · 来源：' + esc(doc.source) : '');
+    $('viewerBody').textContent = doc.text || '';
+    if (typeof $('viewer').showModal === 'function') $('viewer').showModal();
+    else $('viewer').setAttribute('open', 'open');
+  } catch (err) {
+    setMsg('读取失败：' + err.message, 'err');
+  }
+}
+
+/* ---------------- 检索 ---------------- */
+async function runSearch() {
+  const query = $('query').value.trim();
+  if (!query) { $('query').focus(); return; }
+  const box = $('results');
+  box.innerHTML = '<div class="empty">检索中…</div>';
+  try {
+    const body = {query: query, top_k: 8};
+    const scope = $('scope').value.trim();
+    if (scope) body.scope = scope;
+    const data = await api('/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!data.results.length) {
+      box.innerHTML = '<div class="empty">没有命中，换个关键词试试。</div>';
+      return;
+    }
+    box.innerHTML = data.results.map((hit) => `
+      <div class="hit">
+        <div class="hit-top">
+          <span class="score">得分 ${hit.score}</span>
+          <b>${esc(hit.title)}</b>
+          <span class="dim">${hit.scope ? '归属 ' + esc(hit.scope) : '公共'} · 第 ${hit.chunk + 1} 块</span>
+          <span class="spacer"></span>
+          <button class="btn tiny" data-open="${hit.doc_id}">查看全文</button>
+        </div>
+        <p class="snippet">${esc(hit.snippet)}</p>
+      </div>`).join('');
+  } catch (err) {
+    box.innerHTML = '<div class="empty">检索失败：' + esc(err.message) + '</div>';
+  }
+}
+
+/* ---------------- 事件 ---------------- */
+$('save').addEventListener('click', saveDoc);
+$('reset').addEventListener('click', resetForm);
+$('searchBtn').addEventListener('click', runSearch);
+$('query').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') runSearch(); });
+$('filter').addEventListener('input', paintDocs);
+$('refresh').addEventListener('click', () => { loadDocs(); loadStats(); });
+
+$('docs').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (btn.dataset.act === 'view') viewDoc(id);
+  else if (btn.dataset.act === 'edit') editDoc(id);
+  else if (btn.dataset.act === 'del') deleteDoc(id);
+});
+
+$('results').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-open]');
+  if (btn) viewDoc(Number(btn.dataset.open));
+});
+
+$('viewerClose').addEventListener('click', () => $('viewer').close());
+$('viewer').addEventListener('click', (ev) => {
+  if (ev.target === $('viewer')) $('viewer').close();
+});
+
+$('pickFile').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', () => {
+  const file = $('file').files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { setMsg('文件超过 2MB，请拆分后再导入', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    $('text').value = String(reader.result || '');
+    if (!$('title').value.trim()) $('title').value = file.name.replace(/\.[^.]+$/, '');
+    if (!$('source').value.trim()) $('source').value = file.name;
+    setMsg('已读取 ' + file.name + '，确认内容后点保存。', 'good');
+  };
+  reader.onerror = () => setMsg('文件读取失败', 'err');
+  reader.readAsText(file, 'utf-8');
+  $('file').value = '';
+});
+
+$('tokenBtn').textContent = ragToken() ? '令牌 ✓' : '令牌';
+$('tokenBtn').addEventListener('click', () => {
+  const next = prompt('RAG_TOKEN（远程访问令牌；留空表示不带令牌）', ragToken());
+  if (next === null) return;
+  const value = next.trim();
+  try {
+    if (value) localStorage.setItem('ragToken', value);
+    else localStorage.removeItem('ragToken');
+  } catch (err) {}
+  $('tokenBtn').textContent = value ? '令牌 ✓' : '令牌';
+  loadStats();
+  loadDocs();
+});
+if (location.hostname && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
+  // 从别的机器打开时，「返回中枢」也要指向那台机器而不是访问者的 127.0.0.1
+  $('hubLink').href = 'http://' + location.hostname + ':23408/ui';
+}
+
+loadStats();
+loadDocs();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+﻿{
+  "strip_markdown": true,
+  "strip_ai_tone": true,
+  "strip_emoji": true,
+  "drop_period_prob": 0.75,
+  "oral_noise_prob": 0.15,
+  "max_sentences": 3,
+  "long_bypass_chars": 150,
+  "tail_split_probability": 0,
+  "multi_bubble_probability": 0,
+  "max_bubbles": 3,
+  "typing_delay": true,
+  "repeat_guard": true,
+  "consecutive_cap": 4
+}

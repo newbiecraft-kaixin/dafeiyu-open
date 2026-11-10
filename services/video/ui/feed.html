@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 刷B站</title>
+<style>
+:root{
+  --bg:#0d0f16; --panel:#151823; --panel-2:#1b1f2c;
+  --text:#e9ecf5; --muted:#a7b0c6; --accent:#5f86d8;
+  --line:rgba(255,255,255,.10); --line-hot:rgba(94,124,196,.45);
+  --bad:#f2637e; --good:#46d39a;
+  --layer:#5f86d8;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;background:linear-gradient(180deg,#0a0d14 0%,#0d0f16 55%,#090b11 100%) fixed;color:var(--text);
+  font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  animation:page-fade .4s ease both;
+}
+@keyframes page-fade{from{opacity:0}to{opacity:1}}
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora i{position:absolute;display:block;border-radius:50%;filter:blur(90px)}
+.aurora .a1{width:520px;height:520px;left:-140px;top:-160px;background:rgba(74,109,164,.16);animation:drift-a 26s ease-in-out infinite alternate}
+.aurora .a2{width:640px;height:640px;right:-200px;top:8%;background:rgba(84,102,160,.16);animation:drift-b 22s ease-in-out infinite alternate}
+.aurora .a3{width:520px;height:520px;left:28%;bottom:-220px;background:rgba(60,126,176,.12);animation:drift-c 30s ease-in-out infinite alternate}
+@keyframes drift-a{to{transform:translate(130px,90px) scale(1.15)}}
+@keyframes drift-b{to{transform:translate(-150px,110px) scale(1.1)}}
+@keyframes drift-c{to{transform:translate(110px,-130px) scale(1.2)}}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px;position:relative;z-index:1}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+h1{margin:0;font-size:26px;letter-spacing:.5px;color:#7c9ad8}
+p.sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+.back{font-size:13px;color:var(--muted);white-space:nowrap}
+.back:hover{color:var(--accent)}
+.bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 16px;margin-bottom:20px;border:1px solid var(--line);
+  border-radius:10px;background:rgba(15,16,40,.72);font-size:13px;color:var(--muted);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:#6f7ba0;flex:0 0 auto}
+.dot.on{background:var(--good);animation:dot-pulse 2.4s ease-in-out infinite}
+@keyframes dot-pulse{0%,100%{box-shadow:0 0 0 0 rgba(126,226,184,.30)}50%{box-shadow:0 0 0 4px rgba(126,226,184,0)}}
+.dot.off{background:var(--bad)}
+.bar .sep{width:1px;height:14px;background:rgba(95,134,216,.35)}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;margin-bottom:18px;
+  transition:border-color .18s;
+}
+.panel:hover{border-color:rgba(84,102,160,.35)}
+.panel h2{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:15px;font-weight:600;letter-spacing:.4px}
+.panel h2::before{content:"";flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:#5466a0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.panel-head h2{margin:0}
+.count{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+.hint{color:var(--muted);font-size:12.5px;margin:12px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:28px;align-items:center}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:0;
+  font-size:12px;color:var(--muted);background:transparent;border:0;
+}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:#5f86d8}
+.chip-x{
+  border:0;background:none;color:var(--accent);cursor:pointer;font-size:14px;
+  line-height:1;padding:0 0 0 1px;
+}
+.chip-x:hover{color:var(--bad)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row.end{justify-content:flex-end;margin-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:14px}
+label.field{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:12.5px;position:relative;padding-left:10px}
+label.field::before{content:"";position:absolute;left:0;top:5px;width:3px;height:10px;border-radius:2px;background:#5466a0;opacity:.8}
+input{
+  width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(255,255,255,.04);color:var(--text);font:inherit;outline:none;min-width:0;
+}
+input:focus{border-color:rgba(84,102,160,.55);box-shadow:0 0 0 3px rgba(84,102,160,.12)}
+input::placeholder{color:#6f7ba0}
+.row > input{flex:1 1 220px;width:auto}
+.grid input{max-width:160px}
+button{
+  padding:9px 16px;border-radius:8px;border:1px solid rgba(95,134,216,.25);
+  background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer;
+  transition:.16s;white-space:nowrap;
+}
+button:hover:not(:disabled){border-color:rgba(84,102,160,.45);background:#1b1c45}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{
+  background:linear-gradient(135deg,#3c7eb0,#5f86d8);border-color:transparent;color:#fff;
+  box-shadow:0 2px 12px rgba(95,134,216,.22);
+}
+button.primary:hover:not(:disabled){background:linear-gradient(135deg,#6f9cc0,#5f86d8);box-shadow:0 3px 12px rgba(95,134,216,.26)}
+button.ghost{background:transparent;color:var(--accent)}
+button.danger{color:var(--bad);border-color:rgba(255,143,163,.35);background:transparent}
+button.danger:hover:not(:disabled){background:rgba(255,143,163,.1);border-color:rgba(255,143,163,.6)}
+.msg{margin:10px 0 0;font-size:12.5px;color:var(--muted);min-height:18px}
+.meta{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{
+  display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:10px;
+  background:var(--panel-2);border:1px solid var(--line);transition:border-color .16s;
+}
+.card:hover{border-color:rgba(84,102,160,.35)}
+.card h3{margin:0;font-size:14.5px;font-weight:600;line-height:1.55;word-break:break-word}
+.card h3 a{color:var(--text)}
+.card h3 a:hover{color:var(--accent);text-decoration:none}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto}
+button.like{padding:5px 12px;border-radius:8px;font-size:12px}
+button.like.on{color:var(--good);border-color:rgba(126,226,184,.45);background:rgba(126,226,184,.1)}
+.pool{display:flex;flex-direction:column;gap:2px}
+.pool-item{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:10px 4px;border-bottom:1px solid rgba(139,132,230,.18);
+  transition:background .18s,border-color .18s;border-radius:8px;
+}
+.pool-item:last-child{border-bottom:0}
+.pool-item:hover{background:rgba(139,92,246,.06);border-bottom-color:rgba(167,139,250,.35)}
+.pool-main{min-width:0;flex:1 1 auto}
+.pool-title{
+  display:block;color:var(--text);font-size:13.5px;line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pool-title:hover{color:#c4b5fd}
+.pool-meta{color:var(--muted);font-size:12px;margin-top:2px}
+.badge{
+  flex:0 0 auto;font-size:12px;color:var(--good);border:1px solid rgba(126,226,184,.35);
+  background:transparent;border-radius:8px;padding:1px 9px;
+}
+.empty{color:#6f7ba0;font-size:13px;margin:6px 0}
+details.adv summary{
+  cursor:pointer;font-size:12.5px;color:var(--muted);
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"▸";color:#5f86d8;transition:.16s}
+details.adv[open] summary::before{transform:rotate(90deg)}
+details.adv > *:not(summary){margin-top:12px}
+.login-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.login-cell{
+  display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:12px;
+  background:var(--panel-2);border:1px solid var(--line);
+}
+.login-cell .lh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.login-cell .pname{font-size:13.5px;font-weight:600}
+.qr-wrap{display:flex;justify-content:center;padding:4px 0}
+.qr-wrap[hidden]{display:none}
+.qr-wrap img{width:164px;height:164px;display:block;border-radius:10px;background:#fff;padding:6px}
+.qr-ph{
+  width:164px;height:164px;border-radius:10px;border:1px dashed rgba(139,132,230,.45);
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:12px;color:#6f7ba0;font-size:12px;line-height:1.6;
+}
+.lmsg{font-size:12px;color:var(--muted);min-height:16px;margin:0}
+.lmsg.ok{color:var(--good)}
+.lmsg.bad{color:var(--bad)}
+.state{font-size:12px;font-weight:400;color:var(--bad);border:1px solid rgba(255,143,163,.35);
+  border-radius:8px;padding:1px 9px}
+.state.on{color:var(--good);border-color:rgba(126,226,184,.4)}
+.notice{color:var(--good);font-size:12.5px;margin:10px 0 0}
+.error{
+  color:var(--bad);background:rgba(255,143,163,.08);border:1px solid rgba(255,143,163,.35);
+  border-radius:10px;padding:10px 14px;margin:0 0 18px;font-size:13px;
+}
+.msg.err,.msg.bad{color:var(--bad)}
+.msg.ok{color:var(--good)}
+@media (max-width:560px){
+  .wrap{padding:20px 14px 48px}
+  header{flex-direction:column;align-items:flex-start;gap:8px}
+  .cards{grid-template-columns:1fr}
+}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(139,132,230,.25);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(139,132,230,.45);background-clip:content-box}
+::selection{background:rgba(167,139,250,.35)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
+  /* ===== 层级色：视频层 ===== */
+  h1::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--layer);margin-right:9px;vertical-align:-1px}
+  .card,.pool-item{box-shadow:inset 2px 0 0 var(--layer)}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>刷 B 站</h1>
+      <p class="sub">按标签取片单 · 维护片单池 · 记录喜欢</p>
+    </div>
+    <a class="back" href="/">← 返回视频能力</a>
+  </header>
+
+  <div class="bar">
+    <span class="dot" id="dot"></span>
+    <span id="statusText">读取服务状态…</span>
+    <span class="sep"></span>
+    <span id="statusExtra"></span>
+  </div>
+
+  <p class="error" id="errorBox" hidden></p>
+  <p class="notice" id="notice" hidden></p>
+
+  <section class="panel">
+    <h2>标签配置</h2>
+    <div class="chips" id="tagChips"></div>
+    <div class="row">
+      <input id="tagInput" placeholder="输入标签后回车，可用逗号分隔多个，如：搞笑,pvz" autocomplete="off">
+      <button class="ghost" type="button" id="addTagBtn">添加标签</button>
+    </div>
+    <div class="grid">
+      <label class="field">每次条数
+        <input id="countInput" type="number" min="1" max="10" step="1" value="5">
+      </label>
+      <label class="field">停留比例（× 视频时长）
+        <input id="ratioInput" type="number" min="0.05" max="2" step="0.01" value="0.34">
+      </label>
+    </div>
+    <div class="row end">
+      <button type="button" id="saveCfgBtn">保存配置</button>
+      <button class="primary" type="button" id="fetchBtn">刷一批</button>
+    </div>
+    <p class="msg" id="cfgMsg"></p>
+  </section>
+
+  <section class="panel">
+    <h2>这次刷到 <span class="count" id="feedCount"></span></h2>
+    <p class="meta" id="feedMeta"></p>
+    <div class="cards" id="feedList">
+      <p class="empty">点「刷一批」开始。</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>片单池 <span class="count" id="poolCount"></span></h2>
+      <button class="danger" type="button" id="clearPoolBtn">清空</button>
+    </div>
+    <div class="pool" id="poolList">
+      <p class="empty">片单池是空的。</p>
+    </div>
+    <p class="msg" id="poolMsg"></p>
+  </section>
+
+  <section class="panel" id="loginPanel">
+    <div class="panel-head">
+      <h2>扫码登录</h2>
+      <span class="count">B站 / 抖音 / 快手</span>
+    </div>
+    <p class="hint">点「扫码登录」后用手机 App 扫一下，登录成功会自动保存 Cookie，不用再去浏览器里找 Cookie。</p>
+    <div class="login-grid">
+      <div class="login-cell">
+        <div class="lh"><span class="pname">B站</span><span class="state" id="ls-bilibili">未登录</span></div>
+        <div class="qr-wrap" id="lq-bilibili" hidden><span class="qr-ph">点下面的按钮获取二维码</span></div>
+        <div class="row"><button class="primary" type="button" id="lb-bilibili">扫码登录</button><button class="ghost" type="button" data-logout="bilibili">退出登录</button></div>
+        <p class="lmsg" id="lm-bilibili"></p>
+      </div>
+      <div class="login-cell">
+        <div class="lh"><span class="pname">抖音</span><span class="state" id="ls-douyin">未登录</span></div>
+        <div class="qr-wrap" id="lq-douyin" hidden><span class="qr-ph">点下面的按钮获取二维码</span></div>
+        <div class="row"><button class="primary" type="button" id="lb-douyin">扫码登录</button><button class="ghost" type="button" data-logout="douyin">退出登录</button></div>
+        <p class="lmsg" id="lm-douyin"></p>
+      </div>
+      <div class="login-cell">
+        <div class="lh"><span class="pname">快手</span><span class="state" id="ls-kuaishou">未登录</span></div>
+        <div class="qr-wrap" id="lq-kuaishou" hidden><span class="qr-ph">点下面的按钮获取二维码</span></div>
+        <div class="row"><button class="primary" type="button" id="lb-kuaishou">扫码登录</button><button class="ghost" type="button" data-logout="kuaishou">退出登录</button></div>
+        <p class="lmsg" id="lm-kuaishou"></p>
+      </div>
+    </div>
+    <details class="adv" id="advPanel">
+      <summary>高级：手动粘贴 B站 Cookie</summary>
+      <p class="hint">只在扫码不好使时用。填入整条 Cookie（含 SESSDATA 与 bili_jct）才能真点赞；留空保存即清除。</p>
+      <div class="row">
+        <input id="cookieInput" type="password" placeholder="粘贴 Cookie" autocomplete="off">
+        <button type="button" id="saveCookieBtn">保存 Cookie</button>
+        <button class="ghost" type="button" id="clearCookieBtn">清除</button>
+      </div>
+      <p class="msg" id="cookieMsg"></p>
+    </details>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var state = {
+    tags: [],
+    count: 5,
+    ratio: 0.34,
+    cookieSet: false
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  function clearError() {
+    var box = $("errorBox");
+    box.textContent = "";
+    box.hidden = true;
+  }
+
+  function showError(message) {
+    var box = $("errorBox");
+    box.textContent = message;
+    box.hidden = false;
+  }
+
+  function showNotice(message) {
+    var node = $("notice");
+    node.textContent = message || "";
+    node.hidden = !message;
+    if (message) {
+      window.clearTimeout(showNotice.timer);
+      showNotice.timer = window.setTimeout(function () {
+        node.hidden = true;
+        node.textContent = "";
+      }, 6000);
+    }
+  }
+
+  function fmtPlay(value) {
+    var n = Number(value) || 0;
+    if (n >= 100000000) return (n / 100000000).toFixed(1) + " 亿播放";
+    if (n >= 10000) return (n / 10000).toFixed(1) + " 万播放";
+    return n ? n + " 播放" : "";
+  }
+
+  function fmtDuration(value) {
+    var total = Math.max(0, Math.floor(Number(value) || 0));
+    if (!total) return "";
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = total % 60;
+    var mm = String(m).padStart(2, "0");
+    var ss = String(s).padStart(2, "0");
+    return h ? h + ":" + mm + ":" + ss : m + ":" + ss;
+  }
+
+  function fmtDate(value) {
+    var n = Number(value) || 0;
+    if (!n) return "";
+    var d = new Date(n * 1000);
+    if (isNaN(d.getTime())) return "";
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    var dd = String(d.getDate()).padStart(2, "0");
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mi = String(d.getMinutes()).padStart(2, "0");
+    return mm + "-" + dd + " " + hh + ":" + mi;
+  }
+
+  async function api(path, options) {
+    var opts = Object.assign({ cache: "no-store" }, options || {});
+    if (opts.body) {
+      opts.headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+    }
+    var response;
+    try {
+      response = await fetch(path, opts);
+    } catch (err) {
+      throw new Error("连不上微服务：" + (err && err.message ? err.message : "网络错误"));
+    }
+    var data = null;
+    try {
+      data = await response.json();
+    } catch (err) {
+      throw new Error("服务返回了非 JSON 内容（HTTP " + response.status + "）");
+    }
+    if (!data || data.ok !== true) {
+      throw new Error((data && data.error) || ("请求失败（HTTP " + response.status + "）"));
+    }
+    return data.data;
+  }
+
+  function updateCookieState() {
+    var node = $("ls-bilibili");
+    if (!node) return;
+    node.textContent = state.cookieSet ? "已登录" : "未登录";
+    node.className = "state" + (state.cookieSet ? " on" : "");
+  }
+
+  // ---------- 扫码登录（B站 / 抖音 / 快手） ----------
+  var LOGIN_PLATFORMS = ["bilibili", "douyin", "kuaishou"];
+  var LOGIN_NAMES = { bilibili: "B站", douyin: "抖音", kuaishou: "快手" };
+  var login = { timers: {}, sids: {}, cookies: {} };
+
+  function setLoginBadge(platform, on) {
+    var node = $("ls-" + platform);
+    if (!node) return;
+    node.textContent = on ? "已登录" : "未登录";
+    node.className = "state" + (on ? " on" : "");
+  }
+
+  function loginMsg(platform, text, mode) {
+    var node = $("lm-" + platform);
+    node.className = "lmsg" + (mode ? " " + mode : "");
+    node.textContent = text || "";
+  }
+
+  function stopLoginTimers(platform) {
+    var timer = login.timers[platform];
+    if (!timer) return;
+    if (timer.qr) window.clearInterval(timer.qr);
+    if (timer.poll) window.clearInterval(timer.poll);
+    login.timers[platform] = null;
+  }
+
+  function resetLoginButton(platform, text) {
+    var button = $("lb-" + platform);
+    button.disabled = false;
+    button.textContent = text || "扫码登录";
+    button.onclick = function () { startLogin(platform); };
+  }
+
+  async function loadLoginState() {
+    try {
+      var response = await fetch("/video/login/state", { cache: "no-store" });
+      var body = await response.json();
+      var flags = (body && body.ok && body.data && body.data.cookies) || {};
+      LOGIN_PLATFORMS.forEach(function (platform) {
+        login.cookies[platform] = !!flags[platform];
+        setLoginBadge(platform, !!flags[platform]);
+      });
+    } catch (err) { /* 登录状态读不到不影响刷片 */ }
+  }
+
+  async function startLogin(platform) {
+    stopLoginTimers(platform);
+    var button = $("lb-" + platform);
+    var wrap = $("lq-" + platform);
+    button.disabled = true;
+    button.textContent = "生成中…";
+    loginMsg(platform, "正在唤起登录，稍等…", "");
+    try {
+      var response = await fetch("/video/login/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ platform: platform })
+      });
+      var body = await response.json();
+      if (!body || !body.ok) throw new Error((body && body.error) || "启动失败");
+      var sid = body.data.sid;
+      login.sids[platform] = sid;
+
+      wrap.hidden = false;
+      wrap.textContent = "";
+      var img = document.createElement("img");
+      img.alt = LOGIN_NAMES[platform] + "登录二维码";
+      img.style.visibility = "hidden";
+      img.onload = function () { img.style.visibility = "visible"; };
+      img.src = "/video/login/qr?sid=" + encodeURIComponent(sid) + "&t=" + Date.now();
+      wrap.appendChild(img);
+      loginMsg(platform, "打开手机 App 扫码，二维码会自动刷新", "");
+      button.disabled = false;
+      button.textContent = "取消";
+      button.onclick = function () { cancelLogin(platform); };
+
+      var qrTimer = window.setInterval(function () {
+        img.src = "/video/login/qr?sid=" + encodeURIComponent(sid) + "&t=" + Date.now();
+      }, 2500);
+      var pollTimer = window.setInterval(async function () {
+        try {
+          var res = await fetch("/video/login/status?sid=" + encodeURIComponent(sid), { cache: "no-store" });
+          var data = await res.json();
+          if (!data || !data.ok) return;
+          var info = data.data || {};
+          if (info.message) loginMsg(platform, info.message, info.status === "scanned" ? "ok" : "");
+          if (info.status === "ok") {
+            stopLoginTimers(platform);
+            login.cookies[platform] = true;
+            setLoginBadge(platform, true);
+            wrap.hidden = true;
+            resetLoginButton(platform, "重新扫码");
+            loginMsg(platform, info.message || "登录成功", "ok");
+            await loadHealth();
+            await loadPool();
+          } else if (info.status === "expired" || info.status === "error" || info.status === "canceled") {
+            stopLoginTimers(platform);
+            wrap.hidden = true;
+            resetLoginButton(platform, "扫码登录");
+            loginMsg(platform, info.message || "二维码失效了，重新点一次", info.status === "error" ? "bad" : "");
+          }
+        } catch (err) { /* 单次轮询失败忽略，下一轮再来 */ }
+      }, 1500);
+      login.timers[platform] = { qr: qrTimer, poll: pollTimer };
+    } catch (err) {
+      resetLoginButton(platform, "扫码登录");
+      loginMsg(platform, err.message, "bad");
+    }
+  }
+
+  async function cancelLogin(platform) {
+    var sid = login.sids[platform];
+    stopLoginTimers(platform);
+    if (sid) {
+      try {
+        await fetch("/video/login/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sid: sid })
+        });
+      } catch (err) { /* 取消失败也无所谓，会话自己会过期 */ }
+    }
+    $("lq-" + platform).hidden = true;
+    resetLoginButton(platform, "扫码登录");
+    loginMsg(platform, "已取消", "");
+  }
+
+  async function logoutPlatform(platform) {
+    stopLoginTimers(platform);
+    loginMsg(platform, "正在退出…", "");
+    try {
+      var response = await fetch("/video/login/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ platform: platform })
+      });
+      var body = await response.json();
+      if (!body || !body.ok) throw new Error((body && body.error) || "退出失败");
+      login.cookies[platform] = false;
+      setLoginBadge(platform, false);
+      $("lq-" + platform).hidden = true;
+      resetLoginButton(platform, "扫码登录");
+      loginMsg(platform, "已退出，保存的 Cookie 已清除", "");
+      await loadHealth();
+    } catch (err) {
+      loginMsg(platform, err.message, "bad");
+    }
+  }
+
+  function renderTags() {
+    var box = $("tagChips");
+    box.textContent = "";
+    if (!state.tags.length) {
+      var empty = document.createElement("span");
+      empty.className = "empty";
+      empty.textContent = "还没有标签，留空会刷「热门」";
+      box.appendChild(empty);
+      return;
+    }
+    state.tags.forEach(function (tag, index) {
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = tag;
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "chip-x";
+      remove.textContent = "×";
+      remove.title = "删除标签";
+      remove.addEventListener("click", function () {
+        state.tags.splice(index, 1);
+        renderTags();
+      });
+      chip.appendChild(remove);
+      box.appendChild(chip);
+    });
+  }
+
+  function addTagsFromInput() {
+    var raw = $("tagInput").value.trim();
+    if (!raw) return;
+    raw.split(/[,，、;；\s]+/).forEach(function (part) {
+      var tag = part.trim().slice(0, 40);
+      if (tag && state.tags.indexOf(tag) < 0 && state.tags.length < 12) {
+        state.tags.push(tag);
+      }
+    });
+    $("tagInput").value = "";
+    renderTags();
+  }
+
+  async function loadHealth() {
+    try {
+      var response = await fetch("/health", { cache: "no-store" });
+      var data = await response.json();
+      var feed = (data && data.data && data.data.feed) || (data && data.feed) || {};
+      var healthy = !!(data && (data.ok === true || data.service === "video"));
+      $("dot").className = "dot " + (healthy ? "on" : "off");
+      $("statusText").textContent = healthy ? "服务正常" : "服务异常";
+      var bits = [];
+      if (feed && feed.pool !== undefined && feed.pool !== null) {
+        bits.push("片单池 " + feed.pool + " 条");
+      }
+      if (feed && typeof feed.cookie_set === "boolean") {
+        bits.push("Cookie " + (feed.cookie_set ? "已设置" : "未设置"));
+        state.cookieSet = feed.cookie_set;
+        updateCookieState();
+      }
+      $("statusExtra").textContent = bits.join(" · ");
+    } catch (err) {
+      $("dot").className = "dot off";
+      $("statusText").textContent = "服务未响应";
+      $("statusExtra").textContent = err && err.message ? err.message : "";
+    }
+  }
+
+  async function loadConfig() {
+    var cfg = await api("/video/feed/config");
+    state.tags = Array.isArray(cfg.tags) ? cfg.tags.slice() : [];
+    state.count = Number(cfg.count) || 5;
+    state.ratio = Number(cfg.dwell_ratio) || 0.34;
+    state.cookieSet = !!cfg.cookie_set;
+    $("countInput").value = state.count;
+    $("ratioInput").value = state.ratio;
+    updateCookieState();
+    renderTags();
+  }
+
+  async function saveConfig() {
+    clearError();
+    var msg = $("cfgMsg");
+    msg.className = "msg";
+    msg.textContent = "保存中…";
+    var button = $("saveCfgBtn");
+    button.disabled = true;
+    try {
+      var cfg = await api("/video/feed/config", {
+        method: "POST",
+        body: JSON.stringify({
+          tags: state.tags,
+          count: Number($("countInput").value) || 5,
+          dwell_ratio: Number($("ratioInput").value) || 0.34
+        })
+      });
+      state.count = Number(cfg.count) || 5;
+      state.ratio = Number(cfg.dwell_ratio) || 0.34;
+      $("countInput").value = state.count;
+      $("ratioInput").value = state.ratio;
+      msg.className = "msg ok";
+      msg.textContent = "配置已保存";
+      await loadHealth();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = err.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function buildCard(item) {
+    var card = document.createElement("article");
+    card.className = "card";
+
+    var title = document.createElement("h3");
+    var link = document.createElement("a");
+    link.href = item.url || ("https://www.bilibili.com/video/" + item.bvid);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = item.title || item.bvid;
+    title.appendChild(link);
+    card.appendChild(title);
+
+    var metaBits = [];
+    if (item.author) metaBits.push(item.author);
+    var duration = fmtDuration(item.duration);
+    if (duration) metaBits.push("时长 " + duration);
+    var play = fmtPlay(item.play);
+    if (play) metaBits.push(play);
+    if (item.dwell_s) metaBits.push("建议停留 " + item.dwell_s + " 秒");
+    var meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent = metaBits.join(" · ");
+    card.appendChild(meta);
+
+    var foot = document.createElement("div");
+    foot.className = "card-foot";
+    var tag = document.createElement("span");
+    tag.className = "chip small";
+    tag.textContent = item.tag || "未标注";
+    foot.appendChild(tag);
+
+    var like = document.createElement("button");
+    like.type = "button";
+    like.className = "like" + (item.liked ? " on" : "");
+    like.textContent = item.liked ? "已喜欢" : "喜欢";
+    like.disabled = !!item.liked;
+    like.addEventListener("click", function () { likeItem(item, like); });
+    foot.appendChild(like);
+
+    card.appendChild(foot);
+    return card;
+  }
+
+  async function likeItem(item, button) {
+    clearError();
+    button.disabled = true;
+    button.textContent = "处理中…";
+    try {
+      var data = await api("/video/like", {
+        method: "POST",
+        body: JSON.stringify({ bvid: item.bvid, why: "在「刷B站」页面点喜欢" })
+      });
+      var saved = !!(data.real || data.in_pool);
+      item.liked = saved;
+      button.className = "like" + (saved ? " on" : "");
+      button.textContent = data.real ? "已点赞" : (saved ? "已记录" : "未记录");
+      button.disabled = saved;
+      showNotice(data.message || "已记录");
+      await loadPool();
+    } catch (err) {
+      button.disabled = false;
+      button.textContent = item.liked ? "已喜欢" : "喜欢";
+      showError("喜欢失败：" + err.message);
+    }
+  }
+
+  function renderFeed(data) {
+    var list = $("feedList");
+    list.textContent = "";
+    var items = Array.isArray(data.items) ? data.items : [];
+    $("feedCount").textContent = items.length ? items.length + " 条" : "";
+    var source = data.source === "popular" ? "热门兜底" : "标签搜索";
+    var bits = [];
+    if (items.length) {
+      bits.push("来源：" + source);
+      if (data.elapsed_s !== undefined) bits.push("耗时 " + data.elapsed_s + " 秒");
+      if (data.dwell_total_s) bits.push("建议共停留 " + data.dwell_total_s + " 秒");
+    }
+    $("feedMeta").textContent = bits.join(" · ");
+    if (!items.length) {
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "这次没有刷到内容。";
+      list.appendChild(empty);
+      return;
+    }
+    items.forEach(function (item) { list.appendChild(buildCard(item)); });
+  }
+
+  async function fetchBatch() {
+    clearError();
+    showNotice("");
+    var button = $("fetchBtn");
+    button.disabled = true;
+    button.textContent = "刷取中…";
+    $("feedMeta").textContent = "正在向 B 站要片单…";
+    try {
+      var query = new URLSearchParams();
+      if (state.tags.length) query.set("tags", state.tags.join(","));
+      var count = Number($("countInput").value) || state.count;
+      query.set("count", String(count));
+      var data = await api("/video/feed?" + query.toString());
+      renderFeed(data);
+      await loadPool();
+      await loadHealth();
+    } catch (err) {
+      $("feedMeta").textContent = "";
+      showError("刷取失败：" + err.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "刷一批";
+    }
+  }
+
+  function renderPool(items, total) {
+    var list = $("poolList");
+    list.textContent = "";
+    $("poolCount").textContent = total ? "共 " + total + " 条" : "";
+    if (!items.length) {
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "片单池是空的，先刷一批。";
+      list.appendChild(empty);
+      return;
+    }
+    items.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "pool-item";
+
+      var main = document.createElement("div");
+      main.className = "pool-main";
+      var title = document.createElement("a");
+      title.className = "pool-title";
+      title.href = item.url || ("https://www.bilibili.com/video/" + item.bvid);
+      title.target = "_blank";
+      title.rel = "noopener noreferrer";
+      title.textContent = item.title || item.bvid;
+      main.appendChild(title);
+
+      var bits = [];
+      if (item.author) bits.push(item.author);
+      if (item.tag) bits.push(item.tag);
+      var duration = fmtDuration(item.duration);
+      if (duration) bits.push(duration);
+      var play = fmtPlay(item.play);
+      if (play) bits.push(play);
+      var picked = fmtDate(item.picked_at);
+      if (picked) bits.push(picked);
+      var meta = document.createElement("div");
+      meta.className = "pool-meta";
+      meta.textContent = bits.join(" · ");
+      main.appendChild(meta);
+      row.appendChild(main);
+
+      if (item.liked) {
+        var badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = "已喜欢";
+        row.appendChild(badge);
+      }
+      list.appendChild(row);
+    });
+  }
+
+  async function loadPool() {
+    var msg = $("poolMsg");
+    try {
+      var data = await api("/video/pool?limit=60");
+      renderPool(data.items || [], data.total || 0);
+      msg.textContent = "";
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "片单池读取失败：" + err.message;
+    }
+  }
+
+  async function clearPool() {
+    clearError();
+    var button = $("clearPoolBtn");
+    var msg = $("poolMsg");
+    button.disabled = true;
+    msg.className = "msg";
+    msg.textContent = "清空中…";
+    try {
+      await api("/video/pool", {
+        method: "POST",
+        body: JSON.stringify({ action: "clear" })
+      });
+      msg.className = "msg ok";
+      msg.textContent = "片单池已清空";
+      await loadPool();
+      await loadHealth();
+      msg.className = "msg ok";
+      msg.textContent = "片单池已清空";
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "清空失败：" + err.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function saveCookie(value) {
+    clearError();
+    var msg = $("cookieMsg");
+    msg.className = "msg";
+    msg.textContent = "保存中…";
+    try {
+      var cfg = await api("/video/feed/config", {
+        method: "POST",
+        body: JSON.stringify({ cookie: value })
+      });
+      state.cookieSet = !!cfg.cookie_set;
+      updateCookieState();
+      $("cookieInput").value = "";
+      msg.className = "msg ok";
+      msg.textContent = value ? "已保存（不会回显）" : "已清除";
+      await loadHealth();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = err.message;
+    }
+  }
+
+  function bind() {
+    $("addTagBtn").addEventListener("click", addTagsFromInput);
+    $("tagInput").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addTagsFromInput();
+      }
+    });
+    $("saveCfgBtn").addEventListener("click", saveConfig);
+    $("fetchBtn").addEventListener("click", fetchBatch);
+    $("clearPoolBtn").addEventListener("click", clearPool);
+    $("saveCookieBtn").addEventListener("click", function () {
+      saveCookie($("cookieInput").value.trim());
+    });
+    $("clearCookieBtn").addEventListener("click", function () {
+      saveCookie("");
+    });
+    LOGIN_PLATFORMS.forEach(function (platform) {
+      $("lb-" + platform).onclick = function () { startLogin(platform); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-logout]"), function (button) {
+      button.addEventListener("click", function () {
+        logoutPlatform(button.getAttribute("data-logout"));
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", async function () {
+    bind();
+    await loadHealth();
+    await loadLoginState();
+    await loadPool();
+    try {
+      await loadConfig();
+    } catch (err) {
+      showError("配置读取失败：" + err.message);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

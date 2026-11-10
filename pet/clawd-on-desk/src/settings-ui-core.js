@@ -1,0 +1,3336 @@
+"use strict";
+
+(function initSettingsUiCore(root) {
+  const sizeApi = root.ClawdSettingsSizeSlider || {};
+  const {
+    SIZE_UI_MIN,
+    SIZE_UI_MAX,
+    SIZE_TICK_VALUES,
+    SIZE_SLIDER_THUMB_DIAMETER,
+    prefsSizeToUi,
+    clampSizeUi,
+    sizeUiToPct,
+    getSizeSliderAnchorPx,
+    createSizeSliderController,
+  } = sizeApi;
+  if (!createSizeSliderController) {
+    throw new Error("settings-size-slider.js failed to load before settings-ui-core.js");
+  }
+
+  const i18nApi = root.ClawdSettingsI18n || {};
+  const STRINGS = i18nApi.STRINGS;
+  const CONTRIBUTORS = i18nApi.CONTRIBUTORS;
+  const MAINTAINERS = i18nApi.MAINTAINERS;
+  if (!STRINGS || !CONTRIBUTORS || !MAINTAINERS) {
+    throw new Error("settings-i18n.js failed to load before settings-ui-core.js");
+  }
+
+  const animMergeApi = root.ClawdSettingsAnimOverridesMerge || {};
+  const mergePosterCacheIntoAnimationData = animMergeApi.mergePosterCacheIntoAnimationData
+    || ((data) => data);
+  const applyAnimationPosterPayloadToRuntime = animMergeApi.applyAnimationPosterPayload
+    || (() => ({ valid: false, stored: false, applied: false }));
+  const selectPickerApi = root.ClawdLanguagePicker || {};
+
+  const shortcutApi = root.ClawdShortcutActions || {};
+  const SHORTCUT_ACTIONS = shortcutApi.SHORTCUT_ACTIONS || {};
+  const SHORTCUT_ACTION_IDS = shortcutApi.SHORTCUT_ACTION_IDS || Object.keys(SHORTCUT_ACTIONS);
+  const buildAcceleratorFromEvent = shortcutApi.buildAcceleratorFromEvent
+    || (() => ({ action: "reject", reason: "That key combination is not supported." }));
+  const formatAcceleratorLabel = shortcutApi.formatAcceleratorLabel
+    || ((value) => value || "— unassigned —");
+  const formatAcceleratorPartial = shortcutApi.formatAcceleratorPartial
+    || (() => "");
+
+  // startsWith("Mac") not /\bMac\b/ — "MacIntel" has \w after "c", fails \b (regression #135).
+  const IS_MAC = (navigator.platform || "").startsWith("Mac");
+  const IS_WIN = (navigator.platform || "").startsWith("Win");
+  // Renderers have no `process`, so platform-gated shortcut rows resolve their
+  // support from the same navigator probe. Anything we cannot positively
+  // identify as darwin/win32 is treated as unsupported, which is the safe
+  // direction for a gate that must stay closed on Linux.
+  const SHORTCUT_PLATFORM = IS_MAC ? "darwin" : (IS_WIN ? "win32" : "linux");
+  const isShortcutActionSupported = shortcutApi.isShortcutActionSupported
+    || (() => true);
+  const SUPPORTED_SHORTCUT_ACTION_IDS = SHORTCUT_ACTION_IDS.filter((actionId) =>
+    isShortcutActionSupported(actionId, SHORTCUT_PLATFORM));
+  const COLLAPSED_GROUPS_STORAGE_KEY = "clawd.settings.collapsedGroups.v1";
+  const NAVIGATION_STORAGE_KEY = "clawd.settings.navigation.v1";
+  const MAX_PERSISTED_SCROLL_TOP = 10_000_000;
+  // Runtime-only geometry belongs in the snapshot for consistency, but has no
+  // mounted Settings control. Re-rendering for it would destroy focused inputs
+  // and reset the active tab's scroll position after every window move/resize.
+  const RENDERER_INERT_SETTINGS_KEYS = new Set(["settingsWindowBounds", "dashboardWindowBounds"]);
+
+  const state = {
+    snapshot: null,
+    activeTab: "general",
+    transientUiState: {
+      generalSwitches: new Map(),
+      agentSwitches: new Map(),
+      animMapSwitches: new Map(),
+      size: {
+        draftUi: null,
+        dragging: false,
+        pending: false,
+        seq: 0,
+      },
+    },
+    mountedControls: {
+      generalSwitches: new Map(),
+      bubblePolicyControls: new Map(),
+      sessionCleanupControls: new Map(),
+      agentSwitches: new Map(),
+      agentStatusLines: new Map(),
+      agentPermissionModes: new Map(),
+      agentIntegrationActions: new Map(),
+      animMapSwitches: new Map(),
+      animMapReset: null,
+      animOverrideTimingSliders: new Map(),
+      idleVisualPicker: null,
+      size: null,
+      soundVolume: null,
+      textScale: null,
+      roamMovementStyle: null,
+      idleBehavior: null,
+      idleActivityFrequency: null,
+      bubblePlacement: null,
+      quotaAlertThresholds: null,
+      roamArea: null,
+      settingsSelects: new Set(),
+      segmentedRadios: new Set(),
+      formFields: new Set(),
+      disposableScopes: new Map(),
+      quotaRingDisplayMode: null,
+      permissionAutomationMode: null,
+      aboutAutoUpdate: null,
+      aboutUpdateStatus: null,
+    },
+    shortcutRecordingActionId: null,
+    shortcutRecordingError: "",
+    shortcutRecordingPartial: [],
+    nextTransientUiSeq: 1,
+  };
+
+  // Native `disabled` cannot distinguish a business rule from a temporary
+  // pending lock. Keep those axes separate so async actions can recover
+  // without accidentally enabling a button that should remain unavailable.
+  const settingsButtonStates = new WeakMap();
+  let nextSettingsSwitchId = 1;
+
+  const runtime = {
+    agentMetadata: null,
+    agentInstallationHints: null,
+    agentInstallationHintsPending: false,
+    agentInstallationHintsFetched: false,
+    agentInstallationHintsPromise: null,
+    themeList: null,
+    themeListPromise: null,
+    officialThemeList: null,
+    officialThemePromise: null,
+    officialThemeListFetched: false,
+    officialThemeCatalogStatus: null,
+    officialThemeCatalogVersion: null,
+    officialThemeCatalogRetrying: false,
+    officialThemeOperation: null,
+    officialThemePendingThemeId: null,
+    // Bumped every time an operation end is observed, and mirrored onto a list
+    // read that actually replaced the official list. When the two differ, the
+    // cached per-card progress snapshots predate the observed end and must not
+    // be trusted as "an install is still running".
+    officialThemeEndCount: 0,
+    officialThemeListEndCount: 0,
+    // De-dupes the post-operation list refresh so the two back-to-back idle
+    // events share one read and one completion render.
+    officialThemeEndRefresh: null,
+    codexPetsRefreshPending: false,
+    codexPetZipImportPending: false,
+    userThemeZipImportPending: false,
+    codexPetRemovalPendingThemeId: null,
+    animationOverridesData: null,
+    petTintOptions: [],
+    petAccessoryOptions: [],
+    petMouthAccessoryOptions: [],
+    animationOverridesFetchSeq: 0,
+    animationPosterRenderPending: false,
+    animationPosterRenderFlags: null,
+    animationPreviewPosterCache: new Map(),
+    pendingAnimationOverrideEdits: new Map(),
+    nextAnimationOverrideEditSeq: 1,
+    animOverridesSubtab: "map",
+    settingsTabScrollPositions: new Map(),
+    persistedSettingsTab: "general",
+    // null = not chosen yet; the Agents tab resolves it from what is connected.
+    agentsSubtab: null,
+    agentsUnavailableQuery: "",
+    permissionsSubtab: "local",
+    expandedOverrideRowIds: new Set(),
+    assetPicker: {
+      state: null,
+      pollTimer: null,
+    },
+    shortcutFailures: {},
+    shortcutFailureToastShown: false,
+    about: {
+      infoCache: null,
+      clickCount: 0,
+      updateCheckSnapshot: { state: "idle" },
+    },
+  };
+
+  const renderHooks = {
+    sidebar: null,
+    content: null,
+    modal: null,
+  };
+
+  const tabs = {};
+  const toastStack = document.getElementById("toastStack");
+  const core = {
+    state,
+    runtime,
+    renderHooks,
+    tabs,
+  };
+
+  function readSizeUiFromSnapshot() {
+    const value = state.snapshot && state.snapshot.size;
+    if (typeof value === "string" && value.startsWith("P:")) {
+      const parsed = parseFloat(value.slice(2));
+      if (Number.isFinite(parsed) && parsed > 0) return clampSizeUi(prefsSizeToUi(parsed));
+    }
+    return clampSizeUi(prefsSizeToUi(10));
+  }
+
+  function readGeneralSwitchRaw(key) {
+    return !!(state.snapshot && state.snapshot[key]);
+  }
+
+  function readGeneralSwitchVisual(key, invert = false) {
+    const rawValue = readGeneralSwitchRaw(key);
+    return invert ? !rawValue : rawValue;
+  }
+
+  function agentSwitchStateId(agentId, flag) {
+    return `${agentId}:${flag}`;
+  }
+
+  function readAgentFlagValue(agentId, flag) {
+    const entry = state.snapshot && state.snapshot.agents && state.snapshot.agents[agentId];
+    return entry ? entry[flag] !== false : true;
+  }
+
+  function readAgentIntegrationInstalled(agentId) {
+    const entry = state.snapshot && state.snapshot.agents && state.snapshot.agents[agentId];
+    // Normalized v11 snapshots carry the explicit flag. The true fallback is
+    // only for old/mocked snapshots that predate on-demand installation.
+    return entry ? entry.integrationInstalled === true : true;
+  }
+
+  function readAgentPermissionMode(agentId) {
+    const entry = state.snapshot && state.snapshot.agents && state.snapshot.agents[agentId];
+    if (agentId === "codex" && entry && entry.permissionMode === "intercept") return "intercept";
+    return "auto";
+  }
+
+  function readAgentCustomPermissionUrl(agentId) {
+    const entry = state.snapshot && state.snapshot.agents && state.snapshot.agents[agentId];
+    return entry && typeof entry.customPermissionUrl === "string" ? entry.customPermissionUrl : "";
+  }
+
+  function readAgentCustomDiscoveryPaths(agentId) {
+    if (agentId === "custom") {
+      const value = state.snapshot && state.snapshot.customToolDiscoveryPaths;
+      return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+    }
+    const entry = state.snapshot && state.snapshot.agents && state.snapshot.agents[agentId];
+    const value = entry && entry.customDiscoveryPaths;
+    return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+  }
+
+  function readCustomToolDetectionResults() {
+    const hints = runtime.agentInstallationHints;
+    const value = hints && hints.customTools;
+    return Array.isArray(value) ? value.filter((item) => item && typeof item.path === "string") : [];
+  }
+
+  function readCustomAgentDetectionResults() {
+    const hints = runtime.agentInstallationHints;
+    const value = hints && hints.customAgents;
+    return Array.isArray(value) ? value.filter((item) => item && typeof item.agentId === "string") : [];
+  }
+
+  function readCustomApplications() {
+    const value = state.snapshot && state.snapshot.customApplications;
+    return Array.isArray(value) ? value.filter((item) => item && typeof item.id === "string") : [];
+  }
+
+  function getShortcutValue(actionId) {
+    const shortcuts = state.snapshot && state.snapshot.shortcuts;
+    if (!shortcuts || typeof shortcuts !== "object") return null;
+    return shortcuts[actionId] ?? null;
+  }
+
+  function getLang() {
+    return (state.snapshot && state.snapshot.lang) || "en";
+  }
+
+  function readThemeOverrideMap(themeId) {
+    const all = state.snapshot && state.snapshot.themeOverrides;
+    const map = all && all[themeId];
+    if (!map || typeof map !== "object") return null;
+    const keys = [
+      ...(map.states ? Object.keys(map.states) : []),
+      ...(map.tiers && map.tiers.workingTiers ? Object.keys(map.tiers.workingTiers) : []),
+      ...(map.tiers && map.tiers.jugglingTiers ? Object.keys(map.tiers.jugglingTiers) : []),
+      ...(map.timings && map.timings.autoReturn ? Object.keys(map.timings.autoReturn) : []),
+    ];
+    return keys.length > 0 ? map : null;
+  }
+
+  function hasAnyThemeOverride(themeId) {
+    const all = state.snapshot && state.snapshot.themeOverrides;
+    const map = all && all[themeId];
+    if (!map || typeof map !== "object") return false;
+    const hitboxKeys = [];
+    if (map.hitbox && typeof map.hitbox === "object") {
+      for (const group of Object.values(map.hitbox)) {
+        if (group && typeof group === "object") hitboxKeys.push(...Object.keys(group));
+      }
+    }
+    const keys = [
+      ...(map.states ? Object.keys(map.states) : []),
+      ...(map.tiers && map.tiers.workingTiers ? Object.keys(map.tiers.workingTiers) : []),
+      ...(map.tiers && map.tiers.jugglingTiers ? Object.keys(map.tiers.jugglingTiers) : []),
+      ...(map.timings && map.timings.autoReturn ? Object.keys(map.timings.autoReturn) : []),
+      ...(map.idleAnimations ? Object.keys(map.idleAnimations) : []),
+      ...(map.reactions ? Object.keys(map.reactions) : []),
+      ...hitboxKeys,
+      ...(map.sounds ? Object.keys(map.sounds) : []),
+    ];
+    return keys.length > 0;
+  }
+
+  function t(key) {
+    const dict = STRINGS[getLang()] || STRINGS.en || {};
+    return dict[key] || (STRINGS.en && STRINGS.en[key]) || key;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
+  }
+
+  function showToast(message, { error = false, ttl = 3500 } = {}) {
+    if (!toastStack) return;
+    const node = document.createElement("div");
+    node.className = "toast" + (error ? " error" : "");
+    node.textContent = message;
+    toastStack.appendChild(node);
+    node.offsetHeight;
+    node.classList.add("visible");
+    setTimeout(() => {
+      node.classList.remove("visible");
+      setTimeout(() => node.remove(), 240);
+    }, ttl);
+  }
+
+  function buildSwitch(config = {}) {
+    const element = config.element || document.createElement("button");
+    const visualElement = config.visualElement || element;
+    const isButton = String(element.tagName || "").toLowerCase() === "button";
+    if (isButton) element.type = "button";
+    element.setAttribute("role", "switch");
+    visualElement.classList.add("switch");
+    for (const name of String(config.className || "").split(/\s+/).filter(Boolean)) {
+      visualElement.classList.add(name);
+    }
+
+    let checked = config.checked === true;
+    let disabled = config.disabled === true;
+    let pending = config.pending === true;
+    let disposed = false;
+    let onToggle = typeof config.onToggle === "function" ? config.onToggle : null;
+    const enabledTabIndex = Number.isInteger(config.tabIndex) ? config.tabIndex : 0;
+    const stopPropagation = config.stopPropagation === true;
+
+    function syncAccessibleName(patch) {
+      if (Object.prototype.hasOwnProperty.call(patch, "ariaLabel")) {
+        const value = patch.ariaLabel == null ? "" : String(patch.ariaLabel);
+        if (value) element.setAttribute("aria-label", value);
+        else element.removeAttribute("aria-label");
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "ariaLabelledBy")) {
+        const value = patch.ariaLabelledBy == null ? "" : String(patch.ariaLabelledBy);
+        if (value) element.setAttribute("aria-labelledby", value);
+        else element.removeAttribute("aria-labelledby");
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "ariaDescribedBy")) {
+        const value = patch.ariaDescribedBy == null ? "" : String(patch.ariaDescribedBy);
+        if (value) element.setAttribute("aria-describedby", value);
+        else element.removeAttribute("aria-describedby");
+      }
+    }
+
+    function syncState() {
+      visualElement.classList.toggle("on", checked);
+      visualElement.classList.toggle("pending", pending);
+      visualElement.classList.toggle("disabled", disabled);
+      element.setAttribute("aria-checked", checked ? "true" : "false");
+      element.setAttribute("aria-disabled", disabled ? "true" : "false");
+      element.setAttribute("aria-busy", pending ? "true" : "false");
+      element.tabIndex = disabled ? -1 : enabledTabIndex;
+      element.setAttribute("tabindex", String(element.tabIndex));
+      if (isButton) element.disabled = disabled;
+    }
+
+    function requestToggle(event) {
+      if (stopPropagation && event && typeof event.stopPropagation === "function") {
+        event.stopPropagation();
+      }
+      if (disposed || disabled || pending || typeof onToggle !== "function") return;
+      onToggle({ checked, nextChecked: !checked, event, control });
+    }
+
+    function onClick(event) {
+      requestToggle(event);
+    }
+
+    function onKeyDown(event) {
+      if (!event || (event.key !== " " && event.key !== "Enter")) return;
+      if (typeof event.preventDefault === "function") event.preventDefault();
+      requestToggle(event);
+    }
+
+    const control = {
+      element,
+      visualElement,
+      getChecked: () => checked,
+      setState(patch = {}) {
+        if (disposed) return control;
+        if (Object.prototype.hasOwnProperty.call(patch, "checked")) checked = patch.checked === true;
+        if (Object.prototype.hasOwnProperty.call(patch, "disabled")) disabled = patch.disabled === true;
+        if (Object.prototype.hasOwnProperty.call(patch, "pending")) pending = patch.pending === true;
+        syncAccessibleName(patch);
+        syncState();
+        return control;
+      },
+      setOnToggle(handler) {
+        onToggle = typeof handler === "function" ? handler : null;
+        return control;
+      },
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        onToggle = null;
+        element.removeEventListener("click", onClick);
+        element.removeEventListener("keydown", onKeyDown);
+      },
+    };
+
+    syncAccessibleName(config);
+    if (!element.getAttribute("aria-label") && !element.getAttribute("aria-labelledby")) {
+      throw new TypeError("buildSwitch requires ariaLabel or ariaLabelledBy");
+    }
+    syncState();
+    element.addEventListener("click", onClick);
+    element.addEventListener("keydown", onKeyDown);
+    return registerMountedDisposable(control);
+  }
+
+  function attachOptimisticSwitch(control, {
+    getCommittedVisual,
+    getTransientState,
+    setTransientState,
+    clearTransientState,
+    invoke,
+  }) {
+    control.setOnToggle(() => {
+      const currentVisual = getCommittedVisual();
+      const nextVisual = !currentVisual;
+      const seq = state.nextTransientUiSeq++;
+      setTransientState({ visualOn: nextVisual, pending: true, seq });
+      control.setState({ checked: nextVisual, pending: true });
+      Promise.resolve()
+        .then(invoke)
+        .then((result) => {
+          const current = getTransientState();
+          if (!current || current.seq !== seq) return;
+          if (!result || result.status !== "ok" || result.noop) {
+            clearTransientState(seq);
+            control.setState({ checked: getCommittedVisual(), pending: false });
+            if (result && (result.noop || result.cancelled)) return;
+            const msg = (result && result.message) || "unknown error";
+            showToast(t("toastSaveFailed") + msg, { error: true });
+            return;
+          }
+          clearTransientState(seq);
+          control.setState({ checked: nextVisual, pending: false });
+        })
+        .catch((err) => {
+          const current = getTransientState();
+          if (!current || current.seq !== seq) return;
+          clearTransientState(seq);
+          control.setState({ checked: getCommittedVisual(), pending: false });
+          showToast(t("toastSaveFailed") + (err && err.message), { error: true });
+        });
+    });
+    return control;
+  }
+
+  function buildSection(title, rows) {
+    const section = document.createElement("section");
+    section.className = "section";
+    if (title) {
+      const heading = document.createElement("h2");
+      heading.className = "section-title";
+      heading.textContent = title;
+      section.appendChild(heading);
+    }
+    const wrap = document.createElement("div");
+    wrap.className = "section-rows";
+    for (const row of rows) wrap.appendChild(row);
+    section.appendChild(wrap);
+    return section;
+  }
+
+  function resolveButtonLabel(config = {}) {
+    if (Object.prototype.hasOwnProperty.call(config, "label")) {
+      return config.label == null ? "" : String(config.label);
+    }
+    return config.labelKey ? t(String(config.labelKey)) : "";
+  }
+
+  function isDomNode(value) {
+    if (!value || typeof value !== "object") return false;
+    const NodeCtor = typeof globalThis !== "undefined" ? globalThis.Node : null;
+    if (typeof NodeCtor === "function") return value instanceof NodeCtor;
+    return typeof value.tagName === "string" && typeof value.appendChild === "function";
+  }
+
+  function applyButtonState(button, buttonState) {
+    buttonState.labelElement.textContent = buttonState.label;
+    button.disabled = buttonState.disabled || buttonState.pending;
+    button.classList.toggle("pending", buttonState.pending);
+    button.setAttribute("aria-busy", buttonState.pending ? "true" : "false");
+    if (typeof buttonState.ariaPressed === "boolean") {
+      button.setAttribute("aria-pressed", buttonState.ariaPressed ? "true" : "false");
+    } else {
+      button.removeAttribute("aria-pressed");
+    }
+  }
+
+  // Shared Settings button primitive. Feature tabs keep ownership of commands,
+  // confirmation, persistence and rollback while this layer owns structure and
+  // presentation state. Updating the label never replaces an optional icon.
+  function setButtonState(button, patch = {}) {
+    if (!button || typeof button !== "object") return button;
+    const current = settingsButtonStates.get(button);
+    if (!current) {
+      throw new TypeError("setButtonState requires a button built by buildButton");
+    }
+    const next = { ...current };
+    if (
+      Object.prototype.hasOwnProperty.call(patch, "label")
+      || Object.prototype.hasOwnProperty.call(patch, "labelKey")
+    ) {
+      next.label = resolveButtonLabel(patch);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "disabled")) {
+      next.disabled = patch.disabled === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "pending")) {
+      next.pending = patch.pending === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "ariaPressed")) {
+      next.ariaPressed = typeof patch.ariaPressed === "boolean" ? patch.ariaPressed : null;
+    }
+    settingsButtonStates.set(button, next);
+    applyButtonState(button, next);
+    return button;
+  }
+
+  function buildButton(config = {}) {
+    const button = document.createElement("button");
+    const tone = ["neutral", "accent", "danger", "quiet"].includes(config.tone)
+      ? config.tone
+      : "neutral";
+    const size = ["compact", "regular", "large"].includes(config.size)
+      ? config.size
+      : "regular";
+    button.type = config.type || "button";
+    button.className = [
+      "soft-btn",
+      "settings-button",
+      `settings-button-${size}`,
+      tone === "neutral" ? "" : tone,
+      config.className || "",
+    ].filter(Boolean).join(" ");
+
+    if (config.icon != null) {
+      if (!isDomNode(config.icon)) {
+        throw new TypeError("buildButton icon must be a DOM Node");
+      }
+      const iconElement = document.createElement("span");
+      iconElement.className = "settings-button-icon";
+      iconElement.setAttribute("aria-hidden", "true");
+      iconElement.appendChild(config.icon);
+      button.appendChild(iconElement);
+    }
+    const labelElement = document.createElement("span");
+    labelElement.className = "settings-button-label";
+    button.appendChild(labelElement);
+    const buttonState = {
+      labelElement,
+      label: resolveButtonLabel(config),
+      disabled: config.disabled === true,
+      pending: config.pending === true,
+      ariaPressed: typeof config.ariaPressed === "boolean" ? config.ariaPressed : null,
+    };
+    settingsButtonStates.set(button, buttonState);
+    if (config.ariaLabel) button.setAttribute("aria-label", String(config.ariaLabel));
+    if (config.title) button.title = String(config.title);
+    if (typeof config.onClick === "function") button.addEventListener("click", config.onClick);
+    applyButtonState(button, buttonState);
+    return button;
+  }
+
+  let nextSettingsDomId = 1;
+  function createSettingsDomId(suffix) {
+    const id = nextSettingsDomId++;
+    return `settings-${suffix}-${id}`;
+  }
+
+  function resolveCanonicalOrAlias(config, canonicalKey, aliasKey) {
+    if (Object.prototype.hasOwnProperty.call(config, canonicalKey)) {
+      return config[canonicalKey];
+    }
+    if (Object.prototype.hasOwnProperty.call(config, aliasKey)) {
+      return config[aliasKey];
+    }
+    return undefined;
+  }
+
+  // Shared layout primitive for ordinary Settings rows. It deliberately owns
+  // only structure and accessible relationships; feature tabs still own the
+  // contents placed into the text and control slots.
+  // ── Shared hover tooltip ───────────────────────────────────────────────────
+  // Native `title` tooltips are painted by the OS and clash with the rounded
+  // Settings surface, so disclosure hints use one shared in-page tooltip that
+  // settings.css styles. The node is created lazily on first hover and never
+  // takes pointer events, so it cannot swallow the mouseleave that hides it.
+  let settingsTooltip = null;
+  let settingsTooltipAnchor = null;
+  let settingsTooltipListenersBound = false;
+
+  function ensureSettingsTooltip() {
+    if (settingsTooltip) return settingsTooltip;
+    if (typeof document === "undefined" || typeof document.createElement !== "function") return null;
+    const host = document.body || document.documentElement;
+    if (!host || typeof host.appendChild !== "function") return null;
+    const tooltip = document.createElement("div");
+    tooltip.className = "settings-tooltip";
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.setAttribute("aria-hidden", "true");
+    host.appendChild(tooltip);
+    settingsTooltip = tooltip;
+    return tooltip;
+  }
+
+  function settingsViewportSize() {
+    const view = typeof window === "undefined" ? null : window;
+    const root = document && document.documentElement ? document.documentElement : null;
+    const width = (view && Number(view.innerWidth)) || (root && Number(root.clientWidth)) || 0;
+    const height = (view && Number(view.innerHeight)) || (root && Number(root.clientHeight)) || 0;
+    return { width, height };
+  }
+
+  // Settings text zoom is a root CSS zoom (src/text-scale.js), not a zoom
+  // factor. Two consequences matter here: getBoundingClientRect and innerWidth
+  // report post-zoom (visual) pixels, while offsetWidth/offsetHeight and the
+  // left/top a fixed child renders at are unzoomed CSS pixels. Mixing the two
+  // spaces puts the hint far from its icon at any scale but 100%.
+  function settingsTextZoom() {
+    const asZoom = (value) => {
+      const numeric = Number.parseFloat(value);
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+    };
+    const root = document && document.documentElement ? document.documentElement : null;
+    if (root && typeof getComputedStyle === "function") {
+      const style = getComputedStyle(root);
+      if (style) {
+        const zoom = asZoom(style.zoom);
+        if (zoom) return zoom;
+        const custom = asZoom(style.getPropertyValue && style.getPropertyValue("--clawd-text-zoom"));
+        if (custom) return custom;
+      }
+    }
+    return 1;
+  }
+
+  function positionSettingsTooltip() {
+    const tooltip = settingsTooltip;
+    const anchor = settingsTooltipAnchor;
+    if (!tooltip || !anchor || typeof anchor.getBoundingClientRect !== "function") return false;
+    const rect = anchor.getBoundingClientRect();
+    if (!rect || !Number.isFinite(rect.top)) return false;
+    const zoom = settingsTextZoom();
+    tooltip.style.left = "0px";
+    tooltip.style.top = "0px";
+    const width = (Number(tooltip.offsetWidth) || 0) * zoom;
+    const height = (Number(tooltip.offsetHeight) || 0) * zoom;
+    const viewport = settingsViewportSize();
+    if (!width || !height || !viewport.width || !viewport.height) return false;
+    const edge = 8 * zoom;
+    const gap = 8 * zoom;
+    let left = rect.left + rect.width / 2 - width / 2;
+    left = Math.max(edge, Math.min(left, viewport.width - width - edge));
+    let top = rect.top - height - gap;
+    if (top < edge) top = rect.bottom + gap;
+    if (top + height > viewport.height - edge) {
+      top = Math.max(edge, viewport.height - height - edge);
+    }
+    tooltip.style.left = `${left / zoom}px`;
+    tooltip.style.top = `${top / zoom}px`;
+    return true;
+  }
+
+  function hideSettingsTooltip() {
+    settingsTooltipAnchor = null;
+    if (!settingsTooltip) return;
+    settingsTooltip.classList.remove("visible");
+    settingsTooltip.setAttribute("aria-hidden", "true");
+  }
+
+  function bindSettingsTooltipDismiss() {
+    if (settingsTooltipListenersBound) return;
+    settingsTooltipListenersBound = true;
+    const view = typeof window === "undefined" ? null : window;
+    if (view && typeof view.addEventListener === "function") {
+      // Capture covers the settings scroller and any nested scroller: a hint
+      // anchored in the old viewport is stale as soon as anything scrolls.
+      view.addEventListener("scroll", hideSettingsTooltip, true);
+      view.addEventListener("resize", hideSettingsTooltip, true);
+      view.addEventListener("blur", hideSettingsTooltip);
+    }
+    if (document && typeof document.addEventListener === "function") {
+      document.addEventListener("keydown", (event) => {
+        if (event && event.key === "Escape") hideSettingsTooltip();
+      }, true);
+    }
+  }
+
+  function showSettingsTooltip(anchor, text) {
+    const content = text == null ? "" : String(text).trim();
+    if (!anchor || !content) return;
+    const tooltip = ensureSettingsTooltip();
+    if (!tooltip) return;
+    settingsTooltipAnchor = anchor;
+    tooltip.textContent = content;
+    tooltip.classList.add("visible");
+    tooltip.setAttribute("aria-hidden", "false");
+    bindSettingsTooltipDismiss();
+    positionSettingsTooltip();
+  }
+
+  function populateDescriptionDisclosureIcon(toggle) {
+    toggle.textContent = "i";
+    const createSvgElement = typeof document.createElementNS === "function"
+      ? (tagName) => document.createElementNS("http://www.w3.org/2000/svg", tagName)
+      : (tagName) => document.createElement(tagName);
+    const svg = createSvgElement("svg");
+    svg.setAttribute("viewBox", "0 0 14 14");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const ring = createSvgElement("circle");
+    ring.setAttribute("cx", "7");
+    ring.setAttribute("cy", "7");
+    ring.setAttribute("r", "6");
+    const dot = createSvgElement("circle");
+    dot.setAttribute("class", "row-desc-toggle-dot");
+    dot.setAttribute("cx", "7");
+    dot.setAttribute("cy", "4.35");
+    dot.setAttribute("r", "0.85");
+    const stem = createSvgElement("path");
+    stem.setAttribute("d", "M7 6.55v3.3");
+    svg.appendChild(ring);
+    svg.appendChild(dot);
+    svg.appendChild(stem);
+    toggle.appendChild(svg);
+  }
+
+  // Folds a row's description behind a small (i) toggle. `includeExtra` also
+  // collapses .row-desc-extra notes under the same toggle (off by default, so
+  // existing callers keep their always-visible extra line).
+  function attachDescriptionDisclosure(row, { includeExtra = false } = {}) {
+    const text = row.querySelector(".row-text");
+    if (!text) return row;
+    const label = text.querySelector(".row-label");
+    if (!label) return row;
+    let desc = null;
+    for (const candidate of text.querySelectorAll(".row-desc")) {
+      if (!candidate.classList.contains("row-desc-extra")) {
+        desc = candidate;
+        break;
+      }
+    }
+    if (!desc) return row;
+    if (!desc.id) desc.id = createSettingsDomId("row-desc");
+    desc.classList.add("row-desc-collapsed");
+    const extras = includeExtra
+      ? Array.from(text.querySelectorAll(".row-desc-extra")).filter((candidate) => candidate !== desc)
+      : [];
+    for (const extra of extras) {
+      if (!extra.id) extra.id = createSettingsDomId("row-desc");
+      extra.classList.add("row-desc-collapsed");
+    }
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "row-desc-toggle";
+    populateDescriptionDisclosureIcon(toggle);
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", [desc.id, ...extras.map((extra) => extra.id)].join(" "));
+    toggle.setAttribute("aria-label", t("rowDescToggle"));
+    toggle.setAttribute("aria-describedby", desc.id);
+    // The hint only adds information while the description is folded away;
+    // once it is expanded the same text is already on screen.
+    const showHint = () => {
+      if (!desc.classList.contains("row-desc-collapsed")) return;
+      showSettingsTooltip(toggle, desc.textContent);
+    };
+    toggle.addEventListener("mouseenter", showHint);
+    toggle.addEventListener("focus", showHint);
+    toggle.addEventListener("mouseleave", hideSettingsTooltip);
+    toggle.addEventListener("blur", hideSettingsTooltip);
+    toggle.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      hideSettingsTooltip();
+      const collapsed = desc.classList.toggle("row-desc-collapsed");
+      for (const extra of extras) extra.classList.toggle("row-desc-collapsed", collapsed);
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    label.appendChild(toggle);
+    return row;
+  }
+
+  // Small dot + one-line status used by card headers. It deliberately owns no
+  // probing and no mounted slot: channel cards fully repaint when status changes.
+  function buildStatusLine({ tone = "off", text = "" } = {}) {
+    const element = document.createElement("div");
+    element.className = "settings-status";
+    const dot = document.createElement("span");
+    dot.className = "settings-status-dot";
+    const textElement = document.createElement("span");
+    textElement.className = "settings-status-text";
+    textElement.textContent = text == null ? "" : String(text);
+    element.appendChild(dot);
+    element.appendChild(textElement);
+    const tones = new Set(["ok", "warn", "off", "bad"]);
+    let currentTone = tones.has(tone) ? tone : "off";
+    function applyTone(nextTone) {
+      element.classList.remove("ok", "warn", "off", "bad");
+      element.classList.add(nextTone);
+    }
+    applyTone(currentTone);
+    const control = {
+      element,
+      setStatus({ tone: nextTone = currentTone, text: nextText = "" } = {}) {
+        currentTone = tones.has(nextTone) ? nextTone : "off";
+        applyTone(currentTone);
+        textElement.textContent = nextText == null ? "" : String(nextText);
+        return control;
+      },
+    };
+    return control;
+  }
+
+  // One labelled column inside a card body. Empty groups are dropped so no
+  // header renders without rows.
+  function buildDetailGroup(label, rows) {
+    if (!rows || rows.length === 0) return null;
+    const group = document.createElement("div");
+    group.className = "settings-detail-group";
+    const labelElement = document.createElement("div");
+    labelElement.className = "settings-detail-group-label";
+    labelElement.textContent = label == null ? "" : String(label);
+    const body = document.createElement("div");
+    body.className = "settings-detail-group-rows";
+    for (const row of rows) body.appendChild(row);
+    group.appendChild(labelElement);
+    group.appendChild(body);
+    return group;
+  }
+
+  function buildSettingRow(config = {}) {
+    const element = document.createElement("div");
+    element.className = ["row", config.className || ""].filter(Boolean).join(" ");
+
+    const textElement = document.createElement("div");
+    textElement.className = "row-text";
+    const labelElement = document.createElement("span");
+    labelElement.className = "row-label";
+    labelElement.id = createSettingsDomId("row-label");
+    labelElement.textContent = config.label != null
+      ? String(config.label)
+      : (config.labelKey ? t(config.labelKey) : "");
+    textElement.appendChild(labelElement);
+
+    let descriptionElement = null;
+    const description = config.description != null
+      ? String(config.description)
+      : (config.descriptionKey ? t(config.descriptionKey) : "");
+    if (description) {
+      descriptionElement = document.createElement("span");
+      descriptionElement.className = "row-desc";
+      descriptionElement.id = createSettingsDomId("row-description");
+      descriptionElement.textContent = description;
+      textElement.appendChild(descriptionElement);
+    }
+
+    const controlElement = document.createElement("div");
+    controlElement.className = ["row-control", config.controlClassName || ""]
+      .filter(Boolean).join(" ");
+    element.appendChild(textElement);
+    element.appendChild(controlElement);
+    return { element, textElement, labelElement, descriptionElement, controlElement };
+  }
+
+  function buildFormField(config = {}) {
+    const supportedTypes = new Set(["text", "password", "number", "search"]);
+    const type = config.type || "text";
+    if (!supportedTypes.has(type)) throw new Error(`Unsupported Settings form field type: ${type}`);
+    const ariaLabel = config.ariaLabel != null ? String(config.ariaLabel) : "";
+    const ariaLabelledBy = resolveCanonicalOrAlias(config, "ariaLabelledBy", "labelledBy");
+    if (!ariaLabel && !ariaLabelledBy) {
+      throw new Error("Settings form fields require ariaLabel or ariaLabelledBy");
+    }
+    const ariaDescribedBy = resolveCanonicalOrAlias(config, "ariaDescribedBy", "describedBy");
+
+    const element = document.createElement("input");
+    const size = config.size === "compact" ? "compact" : "regular";
+    element.type = type;
+    element.className = [
+      "settings-form-field",
+      "settings-text-input",
+      `settings-text-input-${size}`,
+      config.className || "",
+    ].filter(Boolean).join(" ");
+    if (config.placeholder != null) element.placeholder = String(config.placeholder);
+    if (config.autocomplete != null) element.autocomplete = String(config.autocomplete);
+    if (config.spellcheck != null) element.spellcheck = config.spellcheck === true;
+    if (config.inputMode != null) element.inputMode = String(config.inputMode);
+    if (config.maxLength != null) element.maxLength = Number(config.maxLength);
+    if (config.pattern != null) element.pattern = String(config.pattern);
+    for (const key of ["min", "max", "step"]) {
+      if (config[key] != null) element[key] = String(config[key]);
+    }
+
+    const validationElement = document.createElement("span");
+    validationElement.id = createSettingsDomId("field-validation");
+    validationElement.className = "settings-form-field-validation";
+    validationElement.hidden = true;
+    document.body.appendChild(validationElement);
+
+    let disposed = false;
+    const listeners = [];
+    const fieldState = {
+      disabled: false,
+      pending: false,
+      invalid: false,
+      ariaLabel,
+      ariaLabelledBy: ariaLabelledBy ? String(ariaLabelledBy) : "",
+      ariaDescribedBy: ariaDescribedBy == null ? "" : String(ariaDescribedBy),
+      validationMessage: "",
+    };
+
+    function addListener(typeName, listener) {
+      if (typeof listener !== "function") return;
+      element.addEventListener(typeName, listener);
+      listeners.push([typeName, listener]);
+    }
+
+    function syncAccessibleDescription() {
+      const ids = String(fieldState.ariaDescribedBy || "").split(/\s+/).filter(Boolean);
+      if (fieldState.validationMessage) ids.push(validationElement.id);
+      const describedBy = [...new Set(ids)].join(" ");
+      if (describedBy) element.setAttribute("aria-describedby", describedBy);
+      else element.removeAttribute("aria-describedby");
+    }
+
+    const control = {
+      element,
+      validationElement,
+      getValue() {
+        return element.value;
+      },
+      setState(patch = {}) {
+        if (disposed) return control;
+        if (Object.prototype.hasOwnProperty.call(patch, "value")) {
+          const nextValue = patch.value == null ? "" : String(patch.value);
+          if (element.value !== nextValue) element.value = nextValue;
+        }
+        for (const key of ["disabled", "pending", "invalid"]) {
+          if (Object.prototype.hasOwnProperty.call(patch, key)) fieldState[key] = patch[key] === true;
+        }
+        for (const key of ["ariaLabel", "ariaLabelledBy", "ariaDescribedBy", "validationMessage"]) {
+          if (Object.prototype.hasOwnProperty.call(patch, key)) {
+            fieldState[key] = patch[key] == null ? "" : String(patch[key]);
+          }
+        }
+        element.disabled = fieldState.disabled;
+        element.classList.toggle("disabled", fieldState.disabled);
+        element.classList.toggle("pending", fieldState.pending);
+        element.classList.toggle("invalid", fieldState.invalid);
+        element.setAttribute("aria-disabled", fieldState.disabled ? "true" : "false");
+        element.setAttribute("aria-busy", fieldState.pending ? "true" : "false");
+        element.setAttribute("aria-invalid", fieldState.invalid ? "true" : "false");
+        if (fieldState.ariaLabel) element.setAttribute("aria-label", fieldState.ariaLabel);
+        else element.removeAttribute("aria-label");
+        if (fieldState.ariaLabelledBy) element.setAttribute("aria-labelledby", fieldState.ariaLabelledBy);
+        else element.removeAttribute("aria-labelledby");
+        validationElement.textContent = fieldState.validationMessage;
+        validationElement.hidden = !fieldState.validationMessage;
+        syncAccessibleDescription();
+        return control;
+      },
+      focus() {
+        if (!disposed) element.focus();
+      },
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        for (const [typeName, listener] of listeners) element.removeEventListener(typeName, listener);
+        listeners.length = 0;
+        validationElement.remove();
+        state.mountedControls.formFields.delete(control);
+      },
+    };
+
+    const callbackFor = (name) => (event) => {
+      if (!disposed && typeof config[name] === "function") {
+        config[name]({ value: element.value, event, control });
+      }
+    };
+    addListener("input", callbackFor("onInput"));
+    addListener("change", callbackFor("onChange"));
+    addListener("focus", callbackFor("onFocus"));
+    addListener("blur", callbackFor("onBlur"));
+    addListener("click", (event) => {
+      if (config.stopPropagation === true) event.stopPropagation();
+    });
+    addListener("keydown", (event) => {
+      if (config.stopPropagation === true) event.stopPropagation();
+      if (typeof config.onKeyDown === "function") {
+        config.onKeyDown({ value: element.value, event, control });
+      }
+    });
+
+    element._settingsFormFieldControl = control;
+    control.setState({
+      value: config.value,
+      disabled: config.disabled,
+      pending: config.pending,
+      invalid: config.invalid,
+      ariaLabel,
+      ariaLabelledBy,
+      ariaDescribedBy,
+      validationMessage: config.validationMessage,
+    });
+    state.mountedControls.formFields.add(control);
+    return control;
+  }
+
+  function setTextInputState(input, nextState = {}) {
+    if (!input) return input;
+    const previous = input._settingsTextInputState || {
+      disabled: false,
+      pending: false,
+      invalid: false,
+      lockWhilePending: true,
+    };
+    const state = { ...previous };
+    for (const key of ["disabled", "pending", "invalid"]) {
+      if (Object.prototype.hasOwnProperty.call(nextState, key)) state[key] = nextState[key] === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(nextState, "lockWhilePending")) {
+      state.lockWhilePending = nextState.lockWhilePending !== false;
+    }
+    input._settingsTextInputState = state;
+    const control = input._settingsFormFieldControl;
+    if (control && typeof control.setState === "function") {
+      const patch = {
+        disabled: state.disabled || (state.pending && state.lockWhilePending),
+        pending: state.pending,
+        invalid: state.invalid,
+      };
+      if (Object.prototype.hasOwnProperty.call(nextState, "describedBy")) {
+        patch.ariaDescribedBy = nextState.describedBy;
+      }
+      control.setState(patch);
+    }
+    return input;
+  }
+
+  function buildTextInput(config = {}) {
+    const control = buildFormField({
+      ...config,
+      onInput: config.onInput
+        ? ({ event }) => config.onInput(event)
+        : null,
+      onChange: config.onChange
+        ? ({ event }) => config.onChange(event)
+        : null,
+      onFocus: config.onFocus
+        ? ({ event }) => config.onFocus(event)
+        : null,
+      onBlur: config.onBlur
+        ? ({ event }) => config.onBlur(event)
+        : null,
+      onKeyDown: ({ event }) => {
+        if (typeof config.onKeyDown === "function") config.onKeyDown(event);
+        if (
+          event.key !== "Enter"
+          || typeof config.onEnter !== "function"
+          || event.isComposing === true
+          || event.keyCode === 229
+        ) return;
+        event.preventDefault();
+        config.onEnter(event, control.element);
+      },
+    });
+    const input = control.element;
+    const textState = {
+      disabled: config.disabled,
+      pending: config.pending,
+      invalid: config.invalid,
+      lockWhilePending: config.lockWhilePending,
+    };
+    if (Object.prototype.hasOwnProperty.call(config, "ariaDescribedBy")) {
+      textState.describedBy = config.ariaDescribedBy;
+    } else if (Object.prototype.hasOwnProperty.call(config, "describedBy")) {
+      textState.describedBy = config.describedBy;
+    }
+    setTextInputState(input, textState);
+    return input;
+  }
+
+  function buildSettingsSelect(config = {}) {
+    const factory = selectPickerApi.createSettingsSelect || selectPickerApi.createLanguagePicker;
+    if (typeof factory !== "function") {
+      throw new Error("language-picker.js failed to load before settings-ui-core.js");
+    }
+    const className = ["settings-select", config.className || ""].filter(Boolean).join(" ");
+    const control = factory({
+      ...config,
+      className,
+      lockWhilePending: config.lockWhilePending !== false,
+    });
+    state.mountedControls.settingsSelects.add(control);
+    return control;
+  }
+
+  // Selection controls own semantics and input; pages own rendering and commands.
+  function buildTabs(config = {}) {
+    if (!config.id || (!config.ariaLabel && !config.labelledBy)) {
+      throw new TypeError("Tabs require a stable id and accessible name");
+    }
+    const options = config.options || [];
+    const values = options.map((option) => String(option.value));
+    if (new Set(values).size !== values.length) throw new TypeError("Duplicate tab value");
+    let value = values.includes(String(config.value)) ? String(config.value) : (values[0] || "");
+    let focused = value;
+    let disabled = config.disabled === true;
+    let disposed = false;
+    const vertical = config.orientation === "vertical";
+    const element = document.createElement("div");
+    element.className = config.className || "segmented settings-tabs";
+    element.setAttribute("role", "tablist");
+    element.setAttribute("aria-orientation", vertical ? "vertical" : "horizontal");
+    if (config.labelledBy) element.setAttribute("aria-labelledby", config.labelledBy);
+    else element.setAttribute("aria-label", config.ariaLabel);
+    const panels = new Map();
+    const buttons = options.map((option, index) => {
+      const key = values[index];
+      const id = `${config.id}-${encodeURIComponent(key)}`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = config.buttonClassName || "";
+      button.id = `${id}-tab`;
+      button.dataset.value = key;
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-controls", `${id}-panel`);
+      button.setAttribute("data-settings-focus-key", `${id}-tab`);
+      button.setAttribute("data-settings-choice-group", config.id);
+      button.textContent = option.label;
+      if (typeof config.renderLabel === "function") config.renderLabel(button, option);
+      const panel = config.panels?.get(key) || document.createElement("div");
+      panel.id = `${id}-panel`;
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", button.id);
+      panel.tabIndex = 0;
+      panels.set(key, panel);
+      element.appendChild(button);
+      return button;
+    });
+    const available = () => buttons.filter((button, index) => !disabled && !options[index].disabled);
+    function sync() {
+      const enabled = available();
+      if (!enabled.some((button) => button.dataset.value === focused)) {
+        focused = (enabled.find((button) => button.dataset.value === value) || enabled[0])?.dataset.value || "";
+      }
+      buttons.forEach((button, index) => {
+        const selected = button.dataset.value === value;
+        button.disabled = disabled || options[index].disabled === true;
+        button.classList.toggle("disabled", button.disabled);
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-selected", String(selected));
+        button.tabIndex = !button.disabled && button.dataset.value === focused ? 0 : -1;
+        panels.get(button.dataset.value).hidden = !selected;
+      });
+    }
+    function focus(next = value) {
+      if (disposed) return;
+      const button = available().find((item) => item.dataset.value === String(next)) || available()[0];
+      if (!button) return;
+      focused = button.dataset.value;
+      sync();
+      button.focus({ preventScroll: true });
+    }
+    function activate(button) {
+      if (disposed || button.disabled || button.dataset.value === value) return;
+      const previous = value;
+      if (typeof config.onBeforeChange === "function") config.onBeforeChange(button.dataset.value, previous);
+      value = button.dataset.value;
+      focused = value;
+      sync();
+      if (typeof config.onChange === "function" && config.onChange(value) === false && !disposed) {
+        value = previous;
+        sync();
+      }
+    }
+    function onClick(event) {
+      if (config.stopPropagation === true) event.stopPropagation();
+      if (disposed || event.currentTarget.disabled) return;
+      focus(event.currentTarget.dataset.value);
+      activate(event.currentTarget);
+    }
+    function onFocus(event) {
+      focused = event.currentTarget.dataset.value;
+      sync();
+    }
+    function onBlur(event) {
+      if (buttons.includes(event.relatedTarget)) return;
+      focused = value;
+      sync();
+    }
+    function onKeyDown(event) {
+      if (disposed || event.currentTarget.disabled) return;
+      const enabled = available();
+      const index = enabled.indexOf(event.currentTarget);
+      let target;
+      if (event.key === (vertical ? "ArrowDown" : "ArrowRight")) target = enabled[(index + 1) % enabled.length];
+      else if (event.key === (vertical ? "ArrowUp" : "ArrowLeft")) target = enabled[(index - 1 + enabled.length) % enabled.length];
+      else if (event.key === "Home") target = enabled[0];
+      else if (event.key === "End") target = enabled[enabled.length - 1];
+      else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (!event.repeat) activate(event.currentTarget);
+        return;
+      } else return;
+      event.preventDefault();
+      if (target) focus(target.dataset.value);
+    }
+    const listeners = { click: onClick, keydown: onKeyDown, focus: onFocus, blur: onBlur };
+    for (const button of buttons) {
+      for (const [event, listener] of Object.entries(listeners)) button.addEventListener(event, listener);
+    }
+    sync();
+    return {
+      element, panels,
+      getValue: () => value,
+      setValue(next) {
+        if (disposed || !values.includes(String(next))) return false;
+        value = String(next);
+        if (!buttons.includes(document.activeElement)) focused = value;
+        sync();
+        return true;
+      },
+      setDisabled(next) { if (!disposed) { disabled = next === true; sync(); } },
+      focus,
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        for (const button of buttons) {
+          for (const [event, listener] of Object.entries(listeners)) button.removeEventListener(event, listener);
+        }
+      },
+    };
+  }
+
+  function buildSegmentedRadio(config = {}) {
+    const options = Array.isArray(config.options)
+      ? config.options.filter((option) => option && option.value != null)
+      : [];
+    const values = options.map((option) => String(option.value));
+    let currentValue = values.includes(String(config.value))
+      ? String(config.value)
+      : (values[0] || "");
+    let disabled = config.disabled === true;
+    let pending = config.pending === true;
+    let inFlight = false;
+    let operation = 0;
+    let version = 0;
+    let disposed = false;
+
+    const element = document.createElement("div");
+    element.className = ["segmented", "settings-segmented-radio", config.className || ""]
+      .filter(Boolean)
+      .join(" ");
+    element.setAttribute("role", "radiogroup");
+    if (config.labelledBy) element.setAttribute("aria-labelledby", config.labelledBy);
+    else if (config.ariaLabel) element.setAttribute("aria-label", config.ariaLabel);
+    else throw new TypeError("Segmented radio requires an accessible name");
+
+    const buttons = options.map((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("role", "radio");
+      button.dataset.value = String(option.value);
+      if (config.id) {
+        button.setAttribute("data-settings-focus-key", `${config.id}-${encodeURIComponent(option.value)}`);
+        button.setAttribute("data-settings-choice-group", config.id);
+      }
+      if (option.dataset) Object.assign(button.dataset, option.dataset);
+
+      const label = document.createElement("span");
+      label.className = "settings-segmented-radio-label";
+      label.textContent = option.label == null ? String(option.value) : String(option.label);
+      button.appendChild(label);
+
+      if (option.description) {
+        const description = document.createElement("span");
+        description.className = "settings-segmented-radio-description";
+        description.textContent = String(option.description);
+        button.appendChild(description);
+      }
+      element.appendChild(button);
+      return button;
+    });
+
+    function syncVisualState() {
+      const busy = pending || inFlight;
+      element.classList.toggle("pending", busy);
+      element.classList.toggle("disabled", disabled);
+      element.setAttribute("aria-busy", busy ? "true" : "false");
+      const entry = buttons.find((button, index) => button.dataset.value === currentValue && !options[index].disabled)
+        || buttons.find((button, index) => !options[index].disabled);
+      for (const [index, button] of buttons.entries()) {
+        const selected = button.dataset.value === currentValue;
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-checked", selected ? "true" : "false");
+        button.tabIndex = !disabled && button === entry ? 0 : -1;
+        // Pending blocks activation without dropping keyboard focus.
+        button.disabled = disabled || options[index].disabled === true;
+        button.setAttribute("aria-disabled", String(button.disabled || busy));
+      }
+      if (typeof config.onValueSync === "function") config.onValueSync(currentValue, element);
+    }
+
+    function selectValue(nextValue) {
+      const next = String(nextValue);
+      if (disposed || disabled || pending || inFlight || !values.includes(next)
+        || options[values.indexOf(next)].disabled) return false;
+      if (next === currentValue) return true;
+      const previous = currentValue;
+      const request = ++operation;
+      const revision = version;
+      const focusTarget = buttons.includes(document.activeElement) ? document.activeElement : null;
+      currentValue = next;
+      inFlight = true;
+      syncVisualState();
+      function finish(accepted) {
+        if (disposed || request !== operation) return accepted;
+        if (!accepted && version === revision) currentValue = previous;
+        inFlight = false;
+        syncVisualState();
+        if (focusTarget && focusTarget.isConnected !== false && typeof focusTarget.focus === "function") {
+          const active = document.activeElement;
+          if (!active || active === document.body || active === focusTarget || active.isConnected === false) {
+            try { focusTarget.focus({ preventScroll: true }); } catch (_) { focusTarget.focus(); }
+          }
+        }
+        return accepted;
+      }
+      try {
+        const result = typeof config.onChange === "function" ? config.onChange(next) : true;
+        if (result && typeof result.then === "function") {
+          return Promise.resolve(result).then((value) => finish(value !== false), () => finish(false));
+        }
+        return finish(result !== false);
+      } catch (_) {
+        return finish(false);
+      }
+    }
+
+    function onClick(event) {
+      // Opt-in only: a document-level click listener (e.g. the dropdown
+      // picker's outside-click close) must still see ordinary choice clicks.
+      if (config.stopPropagation === true) event.stopPropagation();
+      const button = event && event.currentTarget;
+      if (button) void selectValue(button.dataset.value);
+    }
+
+    function onKeyDown(event) {
+      if (disposed || disabled || pending || inFlight || event.currentTarget.disabled) {
+        // Suppress Space's deferred native click even if the save finishes
+        // between keydown and keyup.
+        if (event.key === " " || event.key === "Enter") event.preventDefault();
+        return;
+      }
+      const enabled = buttons.filter((button) => !button.disabled);
+      if (!enabled.length) return;
+      const currentIndex = Math.max(0, enabled.indexOf(event.currentTarget));
+      let nextIndex = currentIndex;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        nextIndex = (currentIndex + 1) % enabled.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextIndex = (currentIndex - 1 + enabled.length) % enabled.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = enabled.length - 1;
+      } else if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      const target = enabled[nextIndex];
+      if (target && typeof target.focus === "function") target.focus();
+      void selectValue(target.dataset.value);
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", onClick);
+      button.addEventListener("keydown", onKeyDown);
+    }
+    syncVisualState();
+
+    const control = {
+      element,
+      getValue: () => currentValue,
+      setValue(value) {
+        const next = String(value);
+        if (disposed || !values.includes(next)) return false;
+        version++;
+        currentValue = next;
+        syncVisualState();
+        return true;
+      },
+      setDisabled(value) {
+        if (disposed) return;
+        disabled = value === true;
+        syncVisualState();
+      },
+      setPending(value) {
+        if (disposed) return;
+        pending = value === true;
+        syncVisualState();
+      },
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        operation++;
+        state.mountedControls.segmentedRadios.delete(control);
+        for (const button of buttons) {
+          button.removeEventListener("click", onClick);
+          button.removeEventListener("keydown", onKeyDown);
+        }
+      },
+    };
+    state.mountedControls.segmentedRadios.add(control);
+    return control;
+  }
+
+  function readCollapsedGroupState() {
+    try {
+      const raw = localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY);
+      const parsed = JSON.parse(raw || "{}");
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeCollapsedGroupState(value) {
+    try {
+      localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(value || {}));
+    } catch (_) {}
+  }
+
+  function createDisclosureChevron(className) {
+    const chevron = document.createElement("span");
+    chevron.className = className;
+    chevron.setAttribute("aria-hidden", "true");
+
+    const createSvgElement = typeof document.createElementNS === "function"
+      ? (tagName) => document.createElementNS("http://www.w3.org/2000/svg", tagName)
+      : (tagName) => document.createElement(tagName);
+    const svg = createSvgElement("svg");
+    svg.setAttribute("viewBox", "0 0 20 20");
+    svg.setAttribute("focusable", "false");
+    const path = createSvgElement("path");
+    path.setAttribute("d", "M8 5l5 5-5 5");
+    svg.appendChild(path);
+    chevron.appendChild(svg);
+    return chevron;
+  }
+
+  let settingsDisclosureId = 0;
+
+  function prefersReducedMotion() {
+    return typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function scheduleSettingsTimeout(callback, delay) {
+    if (typeof setTimeout === "function") return setTimeout(callback, delay);
+    requestAnimationFrame(callback);
+    return null;
+  }
+
+  function cancelSettingsTimeout(timer) {
+    if (timer !== null && typeof clearTimeout === "function") clearTimeout(timer);
+  }
+
+  function getMountedDisposableScope(scope = "content") {
+    const scopes = state.mountedControls.disposableScopes;
+    if (!scopes.has(scope)) scopes.set(scope, new Set());
+    return scopes.get(scope);
+  }
+
+  function registerMountedDisposable(disposable, { scope = "content" } = {}) {
+    if (!disposable || typeof disposable.dispose !== "function") return disposable;
+    getMountedDisposableScope(scope).add(disposable);
+    return disposable;
+  }
+
+  function disposeMountedDisposable(disposable, { scope = null } = {}) {
+    if (!disposable || typeof disposable.dispose !== "function") return;
+    const scopes = state.mountedControls.disposableScopes;
+    if (scope !== null) {
+      const controls = scopes.get(scope);
+      if (controls) {
+        controls.delete(disposable);
+        if (controls.size === 0) scopes.delete(scope);
+      }
+    } else {
+      for (const [scopeName, controls] of scopes) {
+        controls.delete(disposable);
+        if (controls.size === 0) scopes.delete(scopeName);
+      }
+    }
+    disposable.dispose();
+  }
+
+  function disposeMountedDisposables(scope = null) {
+    const scopes = state.mountedControls.disposableScopes;
+    const scopeNames = scope === null ? Array.from(scopes.keys()) : [scope];
+    for (const scopeName of scopeNames) {
+      const controls = scopes.get(scopeName);
+      if (!controls) continue;
+      scopes.delete(scopeName);
+      for (const disposable of Array.from(controls)) disposable.dispose();
+    }
+  }
+
+  function attachSettingsDisclosure({
+    root: disclosureRoot,
+    trigger,
+    body,
+    expanded = false,
+    animate = true,
+    onExpandedChange = null,
+    preserveStateChange = null,
+    syncTrigger = null,
+  } = {}) {
+    if (!disclosureRoot || !trigger || !body) {
+      throw new TypeError("attachSettingsDisclosure requires root, trigger, and body");
+    }
+    const bodyInner = body.querySelector(".settings-disclosure-body-inner");
+    if (!bodyInner) throw new TypeError("Settings disclosure body requires an inner wrapper");
+
+    let isExpanded = !!expanded;
+    let transitionTimer = null;
+    let transitionState = null;
+    let disposed = false;
+    disclosureRoot.classList.add("settings-disclosure");
+    trigger.classList.add("settings-disclosure-trigger");
+    body.classList.add("settings-disclosure-body");
+
+    const triggerTag = String(trigger.tagName || "").toUpperCase();
+    if (triggerTag !== "BUTTON") {
+      if (!trigger.getAttribute("role")) trigger.setAttribute("role", "button");
+      if (!trigger.getAttribute("tabindex")) trigger.setAttribute("tabindex", "0");
+    }
+    if (!body.getAttribute("id")) {
+      settingsDisclosureId += 1;
+      body.setAttribute("id", `settings-disclosure-body-${settingsDisclosureId}`);
+    }
+    trigger.setAttribute("aria-controls", body.getAttribute("id"));
+
+    function finishTransition() {
+      cancelSettingsTimeout(transitionTimer);
+      transitionTimer = null;
+      transitionState = null;
+      disclosureRoot.classList.remove("expanding", "collapsing");
+      setBodyInteractivity(isExpanded);
+    }
+
+    function setBodyInteractivity(nextExpanded, isTransitioning = false) {
+      body.setAttribute("aria-hidden", nextExpanded ? "false" : "true");
+      const bodyInert = !nextExpanded || isTransitioning;
+      if ("inert" in body) {
+        body.inert = bodyInert;
+      } else if (bodyInert) {
+        body.setAttribute("inert", "");
+      } else {
+        body.removeAttribute("inert");
+      }
+    }
+
+    function syncState({ isTransitioning = false } = {}) {
+      trigger.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+      disclosureRoot.classList.toggle("expanded", isExpanded);
+      disclosureRoot.classList.toggle("collapsed", !isExpanded);
+      setBodyInteractivity(isExpanded, isTransitioning);
+      if (typeof syncTrigger === "function") syncTrigger(isExpanded);
+    }
+
+    function suppressTransitionOnce() {
+      disclosureRoot.classList.add("settings-disclosure-no-motion");
+      requestAnimationFrame(() => {
+        if (!disposed) disclosureRoot.classList.remove("settings-disclosure-no-motion");
+      });
+    }
+
+    function setExpanded(nextExpanded, options = {}) {
+      if (disposed) return false;
+      const normalized = !!nextExpanded;
+      if (normalized === isExpanded) return false;
+      const animateRequested = options.animate === undefined ? animate : options.animate !== false;
+      const apply = () => {
+        finishTransition();
+        isExpanded = normalized;
+        const reducedMotion = prefersReducedMotion();
+        const shouldAnimate = animateRequested && !reducedMotion;
+        syncState({ isTransitioning: shouldAnimate });
+        if (!shouldAnimate) {
+          if (!reducedMotion) suppressTransitionOnce();
+          return;
+        }
+        transitionState = isExpanded ? "expanding" : "collapsing";
+        disclosureRoot.classList.add(transitionState);
+        transitionTimer = scheduleSettingsTimeout(finishTransition, 300);
+      };
+      if (typeof preserveStateChange === "function") preserveStateChange(apply);
+      else apply();
+      if (typeof onExpandedChange === "function") {
+        onExpandedChange(isExpanded, { persist: options.persist !== false });
+      }
+      return true;
+    }
+
+    function toggle(options = {}) {
+      return setExpanded(!isExpanded, options);
+    }
+
+    function onClick() {
+      toggle();
+    }
+
+    function onKeyDown(ev) {
+      if (ev.target !== trigger || (ev.key !== " " && ev.key !== "Enter")) return;
+      ev.preventDefault();
+      toggle();
+    }
+
+    function onBodyTransitionFinished(ev) {
+      if (ev.target !== body || ev.propertyName !== "grid-template-rows") return;
+      finishTransition();
+    }
+
+    trigger.addEventListener("click", onClick);
+    if (triggerTag !== "BUTTON") trigger.addEventListener("keydown", onKeyDown);
+    // A reversed transition emits a stale transitioncancel after the new
+    // generation starts. Only its transitionend or watchdog may release inert.
+    body.addEventListener("transitionend", onBodyTransitionFinished);
+    syncState();
+
+    return {
+      get expanded() { return isExpanded; },
+      get transitioning() { return transitionState; },
+      setExpanded,
+      expand: (options = {}) => setExpanded(true, options),
+      collapse: (options = {}) => setExpanded(false, options),
+      toggle,
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        finishTransition();
+        disclosureRoot.classList.remove("settings-disclosure-no-motion");
+        trigger.removeEventListener("click", onClick);
+        if (triggerTag !== "BUTTON") trigger.removeEventListener("keydown", onKeyDown);
+        body.removeEventListener("transitionend", onBodyTransitionFinished);
+      },
+    };
+  }
+
+  function buildCollapsibleGroup({
+    id,
+    title = "",
+    desc = "",
+    summary = null,
+    headerContent = null,
+    headerAction = null,
+    disclosureLabel = "",
+    children = [],
+    defaultCollapsed = false,
+    className = "",
+    animateExpansion = true,
+  }) {
+    const storedState = readCollapsedGroupState();
+    let collapsed = Object.prototype.hasOwnProperty.call(storedState, id)
+      ? storedState[id] === true
+      : !!defaultCollapsed;
+
+    const group = document.createElement("div");
+    group.className = `row collapsible-group${className ? ` ${className}` : ""}`;
+    group.dataset.groupId = id;
+
+    const header = document.createElement("div");
+    header.className = "collapsible-group-header";
+    const disclosure = headerAction ? document.createElement("div") : header;
+    if (headerAction) {
+      header.classList.add("collapsible-group-header-with-action");
+      disclosure.className = "collapsible-group-disclosure";
+      header.appendChild(disclosure);
+    }
+    disclosure.setAttribute("role", "button");
+    disclosure.setAttribute("tabindex", "0");
+
+    const chevron = createDisclosureChevron("collapsible-group-chevron");
+    disclosure.appendChild(chevron);
+
+    if (headerContent) {
+      const headerWrap = document.createElement("div");
+      headerWrap.className = "collapsible-group-header-content";
+      headerWrap.appendChild(headerContent);
+      disclosure.appendChild(headerWrap);
+    } else {
+      const text = document.createElement("div");
+      text.className = "collapsible-group-text";
+      const label = document.createElement("span");
+      label.className = "row-label";
+      label.textContent = title;
+      text.appendChild(label);
+      if (desc) {
+        const description = document.createElement("span");
+        description.className = "row-desc";
+        description.textContent = desc;
+        text.appendChild(description);
+      }
+      disclosure.appendChild(text);
+    }
+
+    if (summary) {
+      const summaryWrap = document.createElement("div");
+      summaryWrap.className = "collapsibleSummary collapsible-group-summary";
+      if (typeof summary === "string") summaryWrap.textContent = summary;
+      else summaryWrap.appendChild(summary);
+      disclosure.appendChild(summaryWrap);
+    }
+
+    if (headerAction) {
+      const actionWrap = document.createElement("div");
+      actionWrap.className = "collapsible-group-header-action";
+      actionWrap.appendChild(headerAction);
+      header.appendChild(actionWrap);
+    }
+
+    const body = document.createElement("div");
+    body.className = "collapsible-group-body";
+    const bodyInner = document.createElement("div");
+    bodyInner.className = "collapsible-group-body-inner";
+    for (const child of children) bodyInner.appendChild(child);
+    body.appendChild(bodyInner);
+
+    const contentAnimationTimers = new Map();
+    function refreshCollapsibleHeight() {
+      // Compatibility shim: the grid-based body follows its natural height.
+    }
+
+    function mutateCollapsibleBody(mutate) {
+      if (typeof mutate !== "function") return;
+      // Callers return the newly inserted or revealed elements so existing
+      // controls do not replay their entrance animation on every async update.
+      const result = mutate();
+      if (!controller.expanded || controller.transitioning === "collapsing" || prefersReducedMotion()) return;
+      const targets = Array.isArray(result) ? result : [result];
+      for (const target of targets) {
+        if (!target || !target.classList) continue;
+        if (contentAnimationTimers.has(target)) {
+          cancelSettingsTimeout(contentAnimationTimers.get(target));
+          contentAnimationTimers.delete(target);
+        }
+        target.classList.remove("collapsible-content-entering");
+        void target.offsetWidth;
+        target.classList.add("collapsible-content-entering");
+        const timer = scheduleSettingsTimeout(() => {
+          contentAnimationTimers.delete(target);
+          target.classList.remove("collapsible-content-entering");
+        }, 240);
+        if (timer !== null) contentAnimationTimers.set(target, timer);
+      }
+    }
+    function preserveScrollAnchor(invoke) {
+      const scroller = document.getElementById("content");
+      if (!scroller || !document.body.contains(header)) {
+        invoke();
+        return;
+      }
+      const beforeTop = header.getBoundingClientRect().top;
+      const beforeScrollTop = scroller.scrollTop;
+      invoke();
+      requestAnimationFrame(() => {
+        if (!document.body.contains(header)) return;
+        const afterTop = header.getBoundingClientRect().top;
+        const delta = afterTop - beforeTop;
+        if (delta !== 0) scroller.scrollTop = beforeScrollTop + delta;
+      });
+    }
+
+    group.appendChild(header);
+    group.appendChild(body);
+    body.classList.add("settings-disclosure-body");
+    bodyInner.classList.add("settings-disclosure-body-inner");
+    const controller = attachSettingsDisclosure({
+      root: group,
+      trigger: disclosure,
+      body,
+      expanded: !collapsed,
+      animate: animateExpansion,
+      preserveStateChange: preserveScrollAnchor,
+      syncTrigger(isExpanded) {
+        const actionLabel = isExpanded ? t("collapsibleCollapse") : t("collapsibleExpand");
+        disclosure.setAttribute("aria-label", disclosureLabel ? `${actionLabel}: ${disclosureLabel}` : actionLabel);
+      },
+      onExpandedChange(isExpanded, { persist }) {
+        collapsed = !isExpanded;
+        if (!persist) return;
+        const nextState = readCollapsedGroupState();
+        nextState[id] = collapsed;
+        writeCollapsedGroupState(nextState);
+      },
+    });
+    const trackedDisclosure = {
+      dispose() {
+        controller.dispose();
+        for (const [target, timer] of contentAnimationTimers) {
+          cancelSettingsTimeout(timer);
+          target.classList.remove("collapsible-content-entering");
+        }
+        contentAnimationTimers.clear();
+      },
+    };
+    registerMountedDisposable(trackedDisclosure);
+    group.expand = ({
+      persist = true,
+      animate = animateExpansion,
+    } = {}) => {
+      controller.expand({ persist, animate });
+    };
+    group.refreshCollapsibleHeight = refreshCollapsibleHeight;
+    group.mutateCollapsibleBody = mutateCollapsibleBody;
+    group.disposeCollapsible = () => {
+      disposeMountedDisposable(trackedDisclosure);
+    };
+    return group;
+  }
+
+  function attachActivation(el, invoke) {
+    const run = () => {
+      if (el.classList.contains("pending")) return;
+      el.classList.add("pending");
+      Promise.resolve()
+        .then(invoke)
+        .then((result) => {
+          el.classList.remove("pending");
+          if (!result || result.status !== "ok") {
+            const msg = (result && result.message) || "unknown error";
+            showToast(t("toastSaveFailed") + msg, { error: true });
+          }
+        })
+        .catch((err) => {
+          el.classList.remove("pending");
+          showToast(t("toastSaveFailed") + (err && err.message), { error: true });
+        });
+    };
+    el.addEventListener("click", run);
+    el.addEventListener("keydown", (ev) => {
+      if (ev.key === " " || ev.key === "Enter") {
+        ev.preventDefault();
+        run();
+      }
+    });
+  }
+
+  function buildSwitchRow({
+    key,
+    labelKey,
+    descKey,
+    invert = false,
+    disabled = false,
+    descExtraKey = null,
+    onToggle = null,
+    actionButton = null,
+    danger = false,
+  }) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML =
+      `<div class="row-text">` +
+        `<span class="row-label"></span>` +
+        `<span class="row-desc"></span>` +
+      `</div>` +
+      `<div class="row-control"></div>`;
+    const labelEl = row.querySelector(".row-label");
+    labelEl.textContent = t(labelKey);
+    const controlId = nextSettingsSwitchId++;
+    labelEl.id = `settings-switch-${controlId}-label`;
+    if (danger) labelEl.classList.add("row-label-danger");
+    const text = row.querySelector(".row-text");
+    const desc = row.querySelector(".row-desc");
+    if (descKey) {
+      desc.textContent = t(descKey);
+      desc.id = `settings-switch-${controlId}-description`;
+    }
+    else desc.remove();
+    let extraElement = null;
+    if (descExtraKey) {
+      const extra = document.createElement("span");
+      extra.className = "row-desc row-desc-extra";
+      extra.textContent = t(descExtraKey);
+      text.appendChild(extra);
+      extraElement = extra;
+    }
+    const rowControl = row.querySelector(".row-control");
+    const override = state.transientUiState.generalSwitches.get(key);
+    const visualOn = override ? override.visualOn : readGeneralSwitchVisual(key, invert);
+    const switchControl = buildSwitch({
+      checked: visualOn,
+      pending: override ? override.pending : false,
+      disabled,
+      ariaLabelledBy: labelEl.id,
+      ariaDescribedBy: descKey ? desc.id : null,
+    });
+    rowControl.appendChild(switchControl.element);
+    state.mountedControls.generalSwitches.set(key, {
+      control: switchControl,
+      element: switchControl.element,
+      invert,
+      row,
+      text,
+      extraElement,
+    });
+    if (actionButton) {
+      const btn = buildButton({ labelKey: actionButton.labelKey, tone: "accent" });
+      rowControl.insertBefore(btn, switchControl.element);
+      attachActivation(btn, actionButton.invoke);
+    }
+    attachOptimisticSwitch(switchControl, {
+      getCommittedVisual: () => readGeneralSwitchVisual(key, invert),
+      getTransientState: () => state.transientUiState.generalSwitches.get(key) || null,
+      setTransientState: (value) => state.transientUiState.generalSwitches.set(key, value),
+      clearTransientState: (seq) => {
+        const current = state.transientUiState.generalSwitches.get(key);
+        if (!current || (seq !== undefined && current.seq !== seq)) return;
+        state.transientUiState.generalSwitches.delete(key);
+      },
+      invoke: () => {
+        const currentRaw = readGeneralSwitchRaw(key);
+        const currentVisual = invert ? !currentRaw : currentRaw;
+        const nextVisual = !currentVisual;
+        const nextRaw = invert ? !nextVisual : nextVisual;
+        if (typeof onToggle === "function") {
+          return onToggle({ currentRaw, currentVisual, nextRaw });
+        }
+        return window.settingsAPI.update(key, nextRaw);
+      },
+    });
+    return row;
+  }
+
+  function buildShortcutButton(label, onClick, { disabled = false, accent = false } = {}) {
+    return buildButton({
+      label,
+      disabled,
+      tone: accent ? "accent" : "neutral",
+      onClick: disabled ? null : onClick,
+    });
+  }
+
+  // Generic number-input row used by the Session cleanup group. Mirrors the
+  // bubble-policy seconds-input shape but without a toggle axis: label + desc
+  // + numeric input + localized unit suffix. Debounces commits so typing
+  // doesn't fire a write on every keystroke; reverts on rejection.
+  //
+  // `toDisplay(ms)` maps the stored ms value -> the integer shown in the
+  // input. `fromDisplay(display)` maps the user's input back to ms. The
+  // helper does not enforce the cross-field invariant; that's the
+  // controller's job (`settings-actions.js`).
+  const NUMBER_INPUT_COMMIT_DELAY_MS = 600;
+  function buildNumberInputRow({
+    key,
+    labelKey,
+    descKey,
+    unitKey,
+    toDisplay,
+    fromDisplay,
+    min,
+    max,
+    zeroLabelKey = null,
+    debounceMs = NUMBER_INPUT_COMMIT_DELAY_MS,
+  }) {
+    const rowParts = buildSettingRow({
+      labelKey,
+      descriptionKey: descKey,
+      className: "session-cleanup-row",
+      controlClassName: "session-cleanup-control",
+    });
+    const row = rowParts.element;
+    const control = rowParts.controlElement;
+    const input = buildTextInput({
+      type: "text",
+      size: "compact",
+      className: "bubble-policy-seconds session-cleanup-input",
+      inputMode: "numeric",
+      maxLength: String(max).length + 1,
+      labelledBy: rowParts.labelElement.id,
+      describedBy: rowParts.descriptionElement ? rowParts.descriptionElement.id : null,
+      onEnter: () => {
+        clearCommitTimer();
+        commitFromInput();
+        input.blur();
+      },
+    });
+    control.appendChild(input);
+    const unit = document.createElement("span");
+    unit.className = "bubble-policy-unit session-cleanup-unit";
+    if (unitKey) {
+      unit.textContent = t(unitKey);
+      control.appendChild(unit);
+    }
+
+    function currentStored() {
+      const stored = state.snapshot && state.snapshot[key];
+      return Number.isFinite(stored) ? stored : 0;
+    }
+    function renderValue() {
+      const stored = currentStored();
+      const display = toDisplay(stored);
+      if (stored === 0 && zeroLabelKey) {
+        input.value = t(zeroLabelKey);
+      } else {
+        input.value = String(display);
+      }
+    }
+    renderValue();
+
+    let commitTimer = null;
+    let inFlightDisplay = null;
+    let commitSeq = 0;
+    function clearCommitTimer() {
+      if (commitTimer) {
+        clearTimeout(commitTimer);
+        commitTimer = null;
+      }
+    }
+    function syncFromSnapshot() {
+      if (document.activeElement === input) return;
+      renderValue();
+    }
+    function revert() {
+      renderValue();
+    }
+    function commit(nextStored) {
+      const seq = ++commitSeq;
+      inFlightDisplay = nextStored;
+      return window.settingsAPI.update(key, nextStored).then((result) => {
+        if (seq !== commitSeq) return false;
+        inFlightDisplay = null;
+        if (!result || result.status !== "ok") {
+          const msg = (result && result.message) || "unknown error";
+          showToast(t("toastSaveFailed") + msg, { error: true });
+          revert();
+          return false;
+        }
+        return true;
+      }).catch((err) => {
+        if (seq !== commitSeq) return false;
+        inFlightDisplay = null;
+        showToast(t("toastSaveFailed") + (err && err.message), { error: true });
+        revert();
+        return false;
+      });
+    }
+    function parseInput() {
+      const raw = input.value.trim();
+      if (raw === "" || (zeroLabelKey && raw === t(zeroLabelKey))) {
+        // Treat the localized "Disabled" label as the literal zero.
+        return zeroLabelKey ? 0 : null;
+      }
+      if (!/^[0-9]+(?:\.[0-9]+)?$/.test(raw)) return null;
+      const display = Number(raw);
+      if (!Number.isFinite(display) || display < min || display > max) return null;
+      return display;
+    }
+    function commitFromInput() {
+      const display = parseInput();
+      if (display == null) {
+        showToast(t("toastSaveFailed") + `${min}-${max}`, { error: true });
+        revert();
+        return;
+      }
+      const nextStored = display === 0 ? 0 : fromDisplay(display);
+      if (nextStored === currentStored() || nextStored === inFlightDisplay) {
+        // No change — just re-render so the input matches the stored value.
+        renderValue();
+        return;
+      }
+      void commit(nextStored);
+    }
+    function scheduleCommit() {
+      clearCommitTimer();
+      commitTimer = setTimeout(() => {
+        commitTimer = null;
+        commitFromInput();
+      }, debounceMs);
+    }
+
+    input.addEventListener("focus", () => {
+      // Strip the zero-label so the user types numerics, not localized text.
+      const stored = currentStored();
+      if (stored === 0 && zeroLabelKey) input.value = "0";
+    });
+    input.addEventListener("input", () => {
+      scheduleCommit();
+    });
+    input.addEventListener("blur", () => {
+      clearCommitTimer();
+      commitFromInput();
+    });
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        clearCommitTimer();
+        revert();
+        input.blur();
+      }
+    });
+
+    const handle = { row, input, syncFromSnapshot };
+    state.mountedControls.sessionCleanupControls.set(key, handle);
+    return handle;
+  }
+
+  function openExternalSafe(url) {
+    if (!url) return;
+    if (!window.settingsAPI || typeof window.settingsAPI.openExternal !== "function") return;
+    window.settingsAPI.openExternal(url).then((result) => {
+      if (result && result.status === "error") {
+        showToast(t("aboutOpenExternalFailed"), { error: true });
+      }
+    }).catch(() => {
+      showToast(t("aboutOpenExternalFailed"), { error: true });
+    });
+  }
+
+  function clearMountedControls() {
+    if (state.mountedControls.idleVisualPicker && typeof state.mountedControls.idleVisualPicker.dispose === "function") {
+      state.mountedControls.idleVisualPicker.dispose();
+    }
+    if (state.mountedControls.size && typeof state.mountedControls.size.dispose === "function") {
+      Promise.resolve(state.mountedControls.size.dispose()).catch(() => {});
+    }
+    if (state.mountedControls.soundVolume && typeof state.mountedControls.soundVolume.dispose === "function") {
+      state.mountedControls.soundVolume.dispose();
+    }
+    // Rolls back a transient text-scale preview that a full re-render would
+    // otherwise strand in the main process (the row's blur never fires when
+    // its subtree is dropped wholesale).
+    if (state.mountedControls.textScale && typeof state.mountedControls.textScale.dispose === "function") {
+      state.mountedControls.textScale.dispose();
+    }
+    for (const control of state.mountedControls.settingsSelects) {
+      if (control && typeof control.dispose === "function") control.dispose();
+    }
+    state.mountedControls.settingsSelects.clear();
+    for (const control of state.mountedControls.segmentedRadios) {
+      if (control && typeof control.dispose === "function") control.dispose();
+    }
+    state.mountedControls.segmentedRadios.clear();
+    for (const control of [...state.mountedControls.formFields]) {
+      if (control && typeof control.dispose === "function") control.dispose();
+    }
+    state.mountedControls.formFields.clear();
+    disposeMountedDisposables();
+    state.mountedControls.generalSwitches.clear();
+    state.mountedControls.bubblePolicyControls.clear();
+    state.mountedControls.sessionCleanupControls.clear();
+    state.mountedControls.agentSwitches.clear();
+    state.mountedControls.agentStatusLines.clear();
+    state.mountedControls.agentPermissionModes.clear();
+    state.mountedControls.agentIntegrationActions.clear();
+    state.mountedControls.animMapSwitches.clear();
+    state.mountedControls.animMapReset = null;
+    state.mountedControls.animOverrideTimingSliders.clear();
+    state.mountedControls.idleVisualPicker = null;
+    state.mountedControls.size = null;
+    state.mountedControls.soundVolume = null;
+    state.mountedControls.textScale = null;
+    state.mountedControls.roamMovementStyle = null;
+    state.mountedControls.idleBehavior = null;
+    state.mountedControls.idleActivityFrequency = null;
+    state.mountedControls.bubblePlacement = null;
+    state.mountedControls.quotaRingDisplayMode = null;
+    state.mountedControls.quotaAlertThresholds = null;
+    state.mountedControls.permissionAutomationMode = null;
+    state.mountedControls.roamArea = null;
+    state.mountedControls.aboutAutoUpdate = null;
+    state.mountedControls.aboutUpdateStatus = null;
+    state.mountedControls.aboutUpdateErrorDisclosure = null;
+  }
+
+  function syncMountedSizeControl({ fromBroadcast = false } = {}) {
+    const control = state.mountedControls.size;
+    if (!control || !document.body.contains(control.row)) return false;
+    control.syncFromSnapshot({ fromBroadcast });
+    return true;
+  }
+
+  function installRenderHooks(hooks) {
+    if (!hooks || typeof hooks !== "object") return;
+    if (Object.prototype.hasOwnProperty.call(hooks, "sidebar")) {
+      renderHooks.sidebar = hooks.sidebar;
+    }
+    if (Object.prototype.hasOwnProperty.call(hooks, "content")) {
+      renderHooks.content = hooks.content;
+    }
+    if (Object.prototype.hasOwnProperty.call(hooks, "modal")) {
+      renderHooks.modal = hooks.modal;
+    }
+  }
+
+  function getActiveSettingsFocusState() {
+    const active = document.activeElement;
+    if (!active || active === document.body || typeof active.getAttribute !== "function") {
+      return { focusKey: "", fallbackKey: "" };
+    }
+    const focusKey = String(active.getAttribute("data-settings-focus-key") || "").trim();
+    return {
+      focusKey,
+      group: active.getAttribute("data-settings-choice-group") || "",
+      fallbackKey: focusKey
+        ? String(active.getAttribute("data-settings-focus-fallback-key") || "").trim()
+        : "",
+    };
+  }
+
+  function findSettingsFocusTarget(rootNode, focusKey) {
+    if (!rootNode || !focusKey) return null;
+    const stack = Array.isArray(rootNode.children) ? [...rootNode.children] : Array.from(rootNode.children || []);
+    while (stack.length > 0) {
+      const element = stack.shift();
+      if (element && typeof element.getAttribute === "function"
+        && element.getAttribute("data-settings-focus-key") === focusKey) return element;
+      if (element && element.children) stack.push(...Array.from(element.children));
+    }
+    return null;
+  }
+
+  function focusSettingsTarget(rootNode, focusKey, { onlyIfFocusLost = false } = {}) {
+    const target = findSettingsFocusTarget(rootNode, focusKey);
+    if (!target || target.disabled === true || typeof target.focus !== "function") return;
+    if (onlyIfFocusLost) {
+      const active = document.activeElement;
+      if (active && active !== document.body && active.isConnected !== false) return;
+    }
+    try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
+  }
+
+  // Page chrome belongs to the page; only the active body belongs to this host.
+  // Callers keep business state and async request fencing in their own modules.
+  function createSubpageHost({ disposeBody = () => {} } = {}) {
+    let mountedPanel = null;
+    let disposed = false;
+    let revision = 0;
+    return {
+      render(panel, renderBody, { scrollTop } = {}) {
+        if (disposed || !panel) return false;
+        hideSettingsTooltip();
+        const currentRevision = ++revision;
+        const focusState = getActiveSettingsFocusState();
+        const scroller = document.getElementById("content");
+        const savedScroll = scrollTop ?? scroller?.scrollTop;
+        if (mountedPanel) {
+          disposeBody();
+          mountedPanel.innerHTML = "";
+        }
+        mountedPanel = panel;
+        panel.innerHTML = "";
+        renderBody(panel);
+        if (focusState.focusKey) {
+          const exact = findSettingsFocusTarget(panel, focusState.focusKey);
+          const key = exact && !exact.disabled
+            ? focusState.focusKey : focusState.fallbackKey;
+          focusSettingsTarget(scroller || panel, key, { onlyIfFocusLost: true });
+        }
+        if (scroller && Number.isFinite(savedScroll)) {
+          scroller.scrollTop = savedScroll;
+          const appliedScroll = scroller.scrollTop;
+          requestAnimationFrame(() => {
+            if (disposed || revision !== currentRevision || !panel.isConnected
+              || document.getElementById("content") !== scroller) return;
+            // Do not undo scrolling that happened after this replacement.
+            if (scroller.scrollTop === appliedScroll) scroller.scrollTop = savedScroll;
+          });
+        }
+        return true;
+      },
+      dispose() {
+        disposed = true;
+        revision += 1;
+        mountedPanel = null;
+      },
+    };
+  }
+
+  function requestRender({
+    sidebar = false,
+    content = false,
+    modal = false,
+    preserveScroll = false,
+  } = {}) {
+    // Any repaint can remove the element a hint is anchored to, and a removed
+    // node never fires mouseleave, so dismiss the hint first.
+    hideSettingsTooltip();
+    const focusState = getActiveSettingsFocusState();
+    if (sidebar && typeof renderHooks.sidebar === "function") renderHooks.sidebar();
+    if (content && typeof renderHooks.content === "function") {
+      const contentRoot = document.getElementById("content");
+      const scrollTop = preserveScroll && contentRoot
+        ? normalizePersistedScrollTop(Number(contentRoot.scrollTop))
+        : null;
+      const scrollTabId = state.activeTab;
+      renderHooks.content();
+      if (scrollTop !== null
+        && document.getElementById("content") === contentRoot
+        && state.activeTab === scrollTabId) {
+        contentRoot.scrollTop = scrollTop;
+        requestAnimationFrame(() => {
+          if (document.getElementById("content") !== contentRoot) return;
+          if (state.activeTab !== scrollTabId) return;
+          contentRoot.scrollTop = scrollTop;
+        });
+      }
+    }
+    if (modal && typeof renderHooks.modal === "function") renderHooks.modal();
+    if ((sidebar || content) && focusState.focusKey) {
+      const roots = [document.getElementById("sidebar"), document.getElementById("content")].filter(Boolean);
+      for (const rootNode of roots) {
+        const exact = findSettingsFocusTarget(rootNode, focusState.focusKey);
+        if (exact && !exact.disabled) {
+          focusSettingsTarget(rootNode, focusState.focusKey, { onlyIfFocusLost: true });
+          return;
+        }
+      }
+      for (const rootNode of roots) {
+        const candidates = [];
+        const visit = (node) => {
+          if (node.getAttribute?.("data-settings-choice-group") === focusState.group && !node.disabled) candidates.push(node);
+          for (const child of node.children || []) visit(child);
+        };
+        if (focusState.group) visit(rootNode);
+        const target = candidates.find((node) => node.getAttribute("aria-selected") === "true"
+          || node.getAttribute("aria-checked") === "true") || candidates[0];
+        const key = target?.getAttribute("data-settings-focus-key") || focusState.fallbackKey;
+        if (key) focusSettingsTarget(rootNode, key, { onlyIfFocusLost: true });
+      }
+    }
+  }
+
+  function normalizePersistedScrollTop(value) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
+    return Math.min(value, MAX_PERSISTED_SCROLL_TOP);
+  }
+
+  function captureActiveTabScrollPosition() {
+    const content = document.getElementById("content");
+    if (!content || !tabs[state.activeTab]) return;
+    const scrollTop = normalizePersistedScrollTop(Number(content.scrollTop));
+    if (scrollTop !== null) runtime.settingsTabScrollPositions.set(state.activeTab, scrollTop);
+  }
+
+  function writeNavigationState() {
+    const scrollPositions = {};
+    for (const [tabId, value] of runtime.settingsTabScrollPositions) {
+      const scrollTop = normalizePersistedScrollTop(value);
+      if (tabs[tabId] && scrollTop !== null) scrollPositions[tabId] = scrollTop;
+    }
+    try {
+      localStorage.setItem(NAVIGATION_STORAGE_KEY, JSON.stringify({
+        activeTab: tabs[runtime.persistedSettingsTab]
+          ? runtime.persistedSettingsTab
+          : (tabs[state.activeTab] ? state.activeTab : "general"),
+        scrollPositions,
+      }));
+    } catch (_) {}
+  }
+
+  function persistNavigationState() {
+    captureActiveTabScrollPosition();
+    writeNavigationState();
+  }
+
+  function restoreNavigationState() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(NAVIGATION_STORAGE_KEY) || "null");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+      // Compatibility for the pre-merge sidebar id; remove in the next major.
+      if (parsed.activeTab === "telegram-approval") {
+        state.activeTab = "permissions";
+        runtime.persistedSettingsTab = "permissions";
+        runtime.permissionsSubtab = "channels";
+      } else if (typeof parsed.activeTab === "string" && tabs[parsed.activeTab]) {
+        state.activeTab = parsed.activeTab;
+        runtime.persistedSettingsTab = parsed.activeTab;
+      }
+      const scrollPositions = parsed.scrollPositions;
+      if (scrollPositions && typeof scrollPositions === "object" && !Array.isArray(scrollPositions)) {
+        for (const [tabId, value] of Object.entries(scrollPositions)) {
+          const scrollTop = normalizePersistedScrollTop(value);
+          if (tabs[tabId] && scrollTop !== null) {
+            runtime.settingsTabScrollPositions.set(tabId, scrollTop);
+          }
+        }
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function restoreActiveTabScrollPosition() {
+    const content = document.getElementById("content");
+    if (!content) return;
+    const tabId = state.activeTab;
+    const targetScrollTop = runtime.settingsTabScrollPositions.get(tabId) || 0;
+    content.scrollTop = targetScrollTop;
+    requestAnimationFrame(() => {
+      if (state.activeTab !== tabId) return;
+      if (document.getElementById("content") !== content) return;
+      content.scrollTop = targetScrollTop;
+    });
+  }
+
+  function selectTab(nextTab, options = {}) {
+    if (!tabs[nextTab]) return false;
+    const prevTabId = state.activeTab;
+    const shouldPersist = options.persist !== false;
+    if (prevTabId === nextTab) {
+      if (shouldPersist) {
+        runtime.persistedSettingsTab = nextTab;
+        writeNavigationState();
+      }
+      return false;
+    }
+    captureActiveTabScrollPosition();
+    const content = document.getElementById("content");
+    const prevTab = tabs[prevTabId];
+    if (prevTab && typeof prevTab.onExit === "function") {
+      prevTab.onExit(core);
+    }
+    state.activeTab = nextTab;
+    if (shouldPersist) runtime.persistedSettingsTab = nextTab;
+    writeNavigationState();
+    requestRender({ sidebar: true, content: true, modal: true });
+    if (!content) return true;
+
+    const targetScrollTop = runtime.settingsTabScrollPositions.get(nextTab) || 0;
+    content.scrollTop = targetScrollTop;
+    requestAnimationFrame(() => {
+      if (state.activeTab !== nextTab) return;
+      if (document.getElementById("content") !== content) return;
+      content.scrollTop = targetScrollTop;
+    });
+    return true;
+  }
+
+  function applyBootstrap(snapshotValue) {
+    state.snapshot = snapshotValue || {};
+    requestRender({ sidebar: true, content: true, modal: true });
+    restoreActiveTabScrollPosition();
+  }
+
+  function applyAgentMetadata(list) {
+    runtime.agentMetadata = Array.isArray(list) ? list : [];
+    if (state.activeTab === "agents" || state.activeTab === "recap") {
+      requestRender({
+        content: true,
+        preserveScroll: state.activeTab === "recap",
+      });
+    }
+  }
+
+  function normalizeAgentInstallationHints(result) {
+    const source = result && typeof result === "object" ? result : {};
+    const normalized = {
+      checkedAt: Number.isFinite(source.checkedAt) ? source.checkedAt : null,
+      agents: Array.isArray(source.agents) ? source.agents : [],
+      customAgents: Array.isArray(source.customAgents) ? source.customAgents : [],
+      customTools: Array.isArray(source.customTools) ? source.customTools : [],
+      skippedAgentIds: Array.isArray(source.skippedAgentIds) ? source.skippedAgentIds : [],
+      wslAgents: Array.isArray(source.wslAgents) ? source.wslAgents : [],
+      wslDistros: Array.isArray(source.wslDistros) ? source.wslDistros : [],
+      wslPending: source.wslPending === true,
+      wslSupported: source.wslSupported === true,
+    };
+    if (typeof source.error === "string" && source.error) normalized.error = source.error;
+    return normalized;
+  }
+
+  function emptyAgentInstallationHints(error) {
+    const result = {
+      checkedAt: null,
+      agents: [],
+      customAgents: [],
+      customTools: [],
+      skippedAgentIds: [],
+      wslAgents: [],
+      wslDistros: [],
+      wslPending: false,
+      wslSupported: false,
+    };
+    if (error) result.error = error;
+    return result;
+  }
+
+  function fetchAgentInstallationHints({ force = false, refreshWsl = false } = {}) {
+    if (runtime.agentInstallationHintsPending) {
+      const inFlight = runtime.agentInstallationHintsPromise || Promise.resolve(runtime.agentInstallationHints);
+      // A manual WSL rescan must not be swallowed by a passive fetch that
+      // happens to be in flight (e.g. the tab's mount-time poll while
+      // wslPending) — chain one real rescan after it settles.
+      if (refreshWsl && !runtime.agentInstallationHintsWslRefreshQueued) {
+        runtime.agentInstallationHintsWslRefreshQueued = true;
+        return inFlight.then(() => {
+          runtime.agentInstallationHintsWslRefreshQueued = false;
+          return fetchAgentInstallationHints({ refreshWsl: true });
+        });
+      }
+      return inFlight;
+    }
+    // refreshWsl always re-fetches; plain force only if not already done
+    if (!force && !refreshWsl && runtime.agentInstallationHintsFetched) {
+      return Promise.resolve(runtime.agentInstallationHints);
+    }
+    if (!window.settingsAPI || typeof window.settingsAPI.detectAgentInstallations !== "function") {
+      runtime.agentInstallationHints = emptyAgentInstallationHints();
+      runtime.agentInstallationHintsFetched = true;
+      return Promise.resolve(runtime.agentInstallationHints);
+    }
+
+    // refreshWsl triggers a backend WSL re-scan; force just bypasses the
+    // frontend cache. The backend only inspects refreshWsl — passing force
+    // in the IPC payload would be dead weight.
+    const opts = refreshWsl ? { refreshWsl: true } : undefined;
+    runtime.agentInstallationHintsPending = true;
+    runtime.agentInstallationHintsPromise = window.settingsAPI.detectAgentInstallations(opts)
+      .then((result) => {
+        runtime.agentInstallationHints = normalizeAgentInstallationHints(result);
+        return runtime.agentInstallationHints;
+      })
+      .catch((err) => {
+        console.warn("settings: detectAgentInstallations failed", err);
+        runtime.agentInstallationHints = emptyAgentInstallationHints(
+          err && err.message ? err.message : String(err)
+        );
+        return runtime.agentInstallationHints;
+      })
+      .finally(() => {
+        runtime.agentInstallationHintsPending = false;
+        runtime.agentInstallationHintsFetched = true;
+        runtime.agentInstallationHintsPromise = null;
+        if (state.activeTab === "agents") requestRender({ content: true });
+        // wslPending means no WSL scan has ever completed. Startup does not
+        // pre-scan (running a command in each distro boots every stopped VM),
+        // so the first Agents-tab visit kicks off the real scan here. No loop:
+        // the scan marks the cache detected on success AND failure, so
+        // wslPending is false on the next fetch either way.
+        if (
+          !refreshWsl &&
+          runtime.agentInstallationHints &&
+          runtime.agentInstallationHints.wslPending &&
+          runtime.agentInstallationHints.wslSupported
+        ) {
+          if (state.activeTab === "agents") {
+            fetchAgentInstallationHints({ refreshWsl: true });
+          } else {
+            // User left the tab before this fetch resolved. Re-arm the
+            // fetched flag so the next Agents-tab visit takes the full
+            // fetch path again and reaches this trigger — otherwise the
+            // flag short-circuits every later plain fetch and the auto
+            // scan is permanently lost for this settings session.
+            runtime.agentInstallationHintsFetched = false;
+          }
+        }
+      });
+    return runtime.agentInstallationHintsPromise;
+  }
+
+  function fetchThemes() {
+    if (runtime.themeListPromise) return runtime.themeListPromise;
+    // Official metadata is network-backed. Start it beside the local scan, but
+    // never join it to the promise that gates the Theme tab's first paint.
+    void fetchOfficialThemes()
+      .then(() => {
+        // If the official list wins the race, the local-list completion owns
+        // the first paint. Rendering while themeList is still null would
+        // re-enter fetchThemes from renderThemeTab and can starve the pending
+        // listThemes IPC reply with an all-microtask render/fetch loop.
+        if (state.activeTab === "theme" && runtime.themeList !== null) {
+          requestRender({ content: true, preserveScroll: true });
+        }
+      })
+      .catch(() => {});
+    if (!window.settingsAPI || typeof window.settingsAPI.listThemes !== "function") {
+      runtime.themeList = [];
+      return Promise.resolve([]);
+    }
+    const previousThemeList = Array.isArray(runtime.themeList) ? runtime.themeList : [];
+    const themeListPromise = window.settingsAPI.listThemes().then((list) => {
+      const nextThemeList = Array.isArray(list) ? list : [];
+      // Built-in themes make an empty successful list impossible in a healthy
+      // install. Main also returns [] when enumeration throws, so preserve an
+      // already-rendered list instead of blanking the entire Theme tab.
+      if (nextThemeList.length === 0 && previousThemeList.length > 0) {
+        return previousThemeList;
+      }
+      runtime.themeList = nextThemeList;
+      return runtime.themeList;
+    }).catch((err) => {
+      console.warn("settings: listThemes failed", err);
+      runtime.themeList = previousThemeList;
+      return previousThemeList;
+    });
+    runtime.themeListPromise = themeListPromise;
+    void themeListPromise.finally(() => {
+      if (runtime.themeListPromise === themeListPromise) runtime.themeListPromise = null;
+    });
+    return themeListPromise;
+  }
+
+  // The official catalog is fetched independently from the local theme list.
+  // A failed list keeps whatever was rendered before, exactly like listThemes.
+  function fetchOfficialThemes() {
+    if (runtime.officialThemePromise) return runtime.officialThemePromise;
+    if (!window.settingsAPI || typeof window.settingsAPI.listOfficialThemes !== "function") {
+      runtime.officialThemeList = Array.isArray(runtime.officialThemeList) ? runtime.officialThemeList : [];
+      runtime.officialThemeListFetched = true;
+      return Promise.resolve(runtime.officialThemeList);
+    }
+    const previous = Array.isArray(runtime.officialThemeList) ? runtime.officialThemeList : [];
+    const endCountAtRequest = runtime.officialThemeEndCount;
+    const officialThemePromise = window.settingsAPI.listOfficialThemes().then((result) => {
+      const themes = result && Array.isArray(result.themes) ? result.themes : [];
+      const keepPrevious = themes.length === 0 && previous.length > 0 && !(result && result.status === "ok");
+      runtime.officialThemeList = keepPrevious ? previous : themes;
+      runtime.officialThemeCatalogStatus = (result && result.catalogStatus) || "offline";
+      runtime.officialThemeCatalogVersion = result ? result.catalogVersion : null;
+      runtime.officialThemeListFetched = true;
+      // Only a real replacement proves the returned snapshots are newer than the
+      // operation end observed while this read was in flight. Keeping the old
+      // list (or catching below) leaves the cached snapshots untrusted.
+      if (!keepPrevious) runtime.officialThemeListEndCount = endCountAtRequest;
+      return runtime.officialThemeList;
+    }).catch((err) => {
+      console.warn("settings: listOfficialThemes failed", err);
+      runtime.officialThemeList = previous;
+      runtime.officialThemeCatalogStatus = "offline";
+      runtime.officialThemeListFetched = true;
+      return previous;
+    });
+    runtime.officialThemePromise = officialThemePromise;
+    void officialThemePromise.finally(() => {
+      if (runtime.officialThemePromise === officialThemePromise) runtime.officialThemePromise = null;
+    });
+    return officialThemePromise;
+  }
+
+  function emptyAnimationOverridesData() {
+    return { theme: null, assets: [], sections: [], cards: [], sounds: [] };
+  }
+
+  function fetchAnimationOverridesData() {
+    const seq = runtime.animationOverridesFetchSeq + 1;
+    runtime.animationOverridesFetchSeq = seq;
+    if (!window.settingsAPI || typeof window.settingsAPI.getAnimationOverridesData !== "function") {
+      runtime.animationOverridesData = emptyAnimationOverridesData();
+      return Promise.resolve(runtime.animationOverridesData);
+    }
+    return window.settingsAPI.getAnimationOverridesData().then((data) => {
+      if (seq !== runtime.animationOverridesFetchSeq) return runtime.animationOverridesData;
+      runtime.animationOverridesData = mergePosterCacheIntoAnimationData(
+        data || emptyAnimationOverridesData(),
+        runtime.animationPreviewPosterCache
+      );
+      return runtime.animationOverridesData;
+    }).catch((err) => {
+      if (seq !== runtime.animationOverridesFetchSeq) return runtime.animationOverridesData;
+      console.warn("settings: getAnimationOverridesData failed", err);
+      if (!runtime.animationOverridesData) runtime.animationOverridesData = emptyAnimationOverridesData();
+      return runtime.animationOverridesData;
+    });
+  }
+
+  function requestAnimationPosterRender({ content = false, modal = false } = {}) {
+    if (!content && !modal) return;
+    runtime.animationPosterRenderFlags = {
+      content: !!(content || (runtime.animationPosterRenderFlags && runtime.animationPosterRenderFlags.content)),
+      modal: !!(modal || (runtime.animationPosterRenderFlags && runtime.animationPosterRenderFlags.modal)),
+    };
+    if (runtime.animationPosterRenderPending) return;
+    runtime.animationPosterRenderPending = true;
+    requestAnimationFrame(() => {
+      const flags = runtime.animationPosterRenderFlags || {};
+      runtime.animationPosterRenderPending = false;
+      runtime.animationPosterRenderFlags = null;
+      requestRender({ content: !!flags.content, modal: !!flags.modal });
+    });
+  }
+
+  function applyAnimationPreviewPoster(payload) {
+    const result = applyAnimationPosterPayloadToRuntime(runtime, payload, {
+      warn: (message, value) => console.warn(message, value),
+    });
+    if (!result || !result.valid || !result.applied) return;
+    requestAnimationPosterRender({
+      content: state.activeTab === "animOverrides" && runtime.animOverridesSubtab === "animations",
+      modal: !!runtime.assetPicker.state,
+    });
+  }
+
+  function stopAssetPickerPolling() {
+    if (runtime.assetPicker.pollTimer) {
+      clearInterval(runtime.assetPicker.pollTimer);
+      runtime.assetPicker.pollTimer = null;
+    }
+  }
+
+  function closeAssetPicker() {
+    runtime.assetPicker.state = null;
+    stopAssetPickerPolling();
+    requestRender({ modal: true });
+  }
+
+  function normalizeAssetPickerSelection() {
+    if (!runtime.assetPicker.state || !runtime.animationOverridesData) return;
+    const assets = Array.isArray(runtime.animationOverridesData.assets) ? runtime.animationOverridesData.assets : [];
+    if (!assets.length) {
+      runtime.assetPicker.state.selectedFile = null;
+      return;
+    }
+    const stillExists = assets.some((asset) => asset.name === runtime.assetPicker.state.selectedFile);
+    if (!stillExists) runtime.assetPicker.state.selectedFile = assets[0].name;
+  }
+
+  function translateShortcutError(message) {
+    if (!message) return "";
+    const conflictMatch = /^conflict: already bound to (.+)$/.exec(message);
+    if (conflictMatch) {
+      const meta = SHORTCUT_ACTIONS[conflictMatch[1]];
+      const other = meta ? t(meta.labelKey) : conflictMatch[1];
+      return t("shortcutErrorConflict").replace("{other}", other);
+    }
+    if (message === "reserved accelerator") return t("shortcutErrorReserved");
+    if (message === "invalid accelerator format") return t("shortcutErrorInvalid");
+    if (message === "must include modifier") return t("shortcutErrorNeedsModifier");
+    if (message.includes("unregister of old accelerator failed")) return t("shortcutErrorSystemConflict");
+    if (message.includes("system conflict")) return t("shortcutErrorSystemConflict");
+    return message;
+  }
+
+  function finishShortcutRecording() {
+    if (!state.shortcutRecordingActionId) return Promise.resolve();
+    state.shortcutRecordingActionId = null;
+    state.shortcutRecordingError = "";
+    state.shortcutRecordingPartial = [];
+    if (state.activeTab === "shortcuts") requestRender({ content: true });
+    if (!window.settingsAPI || typeof window.settingsAPI.exitShortcutRecording !== "function") {
+      return Promise.resolve();
+    }
+    return window.settingsAPI.exitShortcutRecording().catch(() => {});
+  }
+
+  function enterShortcutRecording(actionId) {
+    if (!window.settingsAPI || typeof window.settingsAPI.enterShortcutRecording !== "function") {
+      showToast(t("toastSaveFailed") + "settings API unavailable", { error: true });
+      return;
+    }
+    state.shortcutRecordingError = "";
+    state.shortcutRecordingPartial = [];
+    window.settingsAPI.enterShortcutRecording(actionId).then((result) => {
+      if (!result || result.status !== "ok") {
+        showToast(t("toastSaveFailed") + ((result && result.message) || "unknown error"), { error: true });
+        return;
+      }
+      state.shortcutRecordingActionId = actionId;
+      state.shortcutRecordingError = "";
+      state.shortcutRecordingPartial = [];
+      if (state.activeTab === "shortcuts") requestRender({ content: true });
+    }).catch((err) => {
+      showToast(t("toastSaveFailed") + (err && err.message), { error: true });
+    });
+  }
+
+  function handleShortcutRecordKey(payload) {
+    if (!state.shortcutRecordingActionId) return;
+    const built = buildAcceleratorFromEvent(payload, { isMac: IS_MAC });
+    if (!built) return;
+    if (built.action === "pending") {
+      const nextPartial = Array.isArray(built.modifiers) ? built.modifiers : [];
+      const changed = nextPartial.length !== state.shortcutRecordingPartial.length
+        || nextPartial.some((m, i) => m !== state.shortcutRecordingPartial[i]);
+      if (changed) {
+        state.shortcutRecordingPartial = nextPartial;
+        if (state.activeTab === "shortcuts") requestRender({ content: true });
+      }
+      return;
+    }
+    if (built.action === "cancel") {
+      finishShortcutRecording();
+      return;
+    }
+    if (built.action === "reject") {
+      state.shortcutRecordingError = translateShortcutError(built.reason);
+      state.shortcutRecordingPartial = [];
+      if (state.activeTab === "shortcuts") requestRender({ content: true });
+      return;
+    }
+    const targetActionId = state.shortcutRecordingActionId;
+    const prevValue = getShortcutValue(targetActionId);
+    window.settingsAPI.command("registerShortcut", {
+      actionId: targetActionId,
+      accelerator: built.accelerator,
+    }).then((result) => {
+      if (result && result.status === "ok") {
+        finishShortcutRecording();
+        if (prevValue !== built.accelerator) {
+          showToast(t("shortcutToastSaved"));
+        }
+        return;
+      }
+      state.shortcutRecordingError = translateShortcutError(result && result.message);
+      if (state.activeTab === "shortcuts") requestRender({ content: true });
+    }).catch((err) => {
+      state.shortcutRecordingError = (err && err.message) || "";
+      if (state.activeTab === "shortcuts") requestRender({ content: true });
+    });
+  }
+
+  function applyShortcutFailures(failures) {
+    runtime.shortcutFailures = failures || {};
+    if (!runtime.shortcutFailureToastShown && Object.keys(runtime.shortcutFailures).length > 0) {
+      runtime.shortcutFailureToastShown = true;
+      showToast(t("shortcutErrorRegistrationFailed"), { error: true });
+    }
+    if (state.activeTab === "shortcuts") requestRender({ content: true });
+  }
+
+  // A cached per-card progress snapshot can only be read as "still installing"
+  // until an operation end has been observed. A list read that replaced the
+  // official list after that end proves the snapshot is fresh (or gone); a read
+  // that merely kept the old list, or failed, does not.
+  function officialProgressSnapshotsTrusted() {
+    return runtime.officialThemeEndCount === runtime.officialThemeListEndCount;
+  }
+
+  // Post-operation refresh. The list read that is already in flight may have
+  // started before the operation ended, so it can still return a live-download
+  // snapshot; wait for the in-flight local/official reads to settle, then issue
+  // a genuinely new read. The read itself and its single completion render are
+  // shared by the duplicate idle the main process broadcasts.
+  function refreshThemesAfterOfficialOperation() {
+    if (runtime.officialThemeEndRefresh) return runtime.officialThemeEndRefresh;
+    const inFlight = [runtime.themeListPromise, runtime.officialThemePromise].filter(Boolean);
+    const refresh = Promise.allSettled(inFlight)
+      .then(() => {
+        // fetchThemes() resolves on the local scan, but the terminal state lives
+        // in the official catalog read it kicks off beside it. Wait for both so
+        // the completion render sees the post-operation list.
+        const local = fetchThemes();
+        const official = runtime.officialThemePromise;
+        const pending = official ? [local, official] : [local];
+        return Promise.allSettled(pending);
+      })
+      .then(() => {
+        // Clear before the completion render so buttons settle on the fresh
+        // list instead of still reading this refresh as an in-flight install.
+        if (runtime.officialThemeEndRefresh === refresh) runtime.officialThemeEndRefresh = null;
+        if (state.activeTab === "theme") requestRender({ content: true, preserveScroll: true });
+      })
+      .finally(() => {
+        if (runtime.officialThemeEndRefresh === refresh) runtime.officialThemeEndRefresh = null;
+      });
+    runtime.officialThemeEndRefresh = refresh;
+    return refresh;
+  }
+
+  // main owns the single official-theme operation; the renderer only mirrors
+  // its phase so a Settings reload can never restart or lose a live download.
+  function applyOfficialThemeProgress(progress) {
+    if (!progress || typeof progress !== "object") return;
+    const previousOperation = runtime.officialThemeOperation;
+    runtime.officialThemeOperation = progress.phase && progress.phase !== "idle" ? progress : null;
+    // A Settings reload mid-download loses the install promise that would
+    // otherwise refresh the list in its .finally, so the card can stay parked on
+    // a stale per-card progress snapshot after the operation ends. Observing the
+    // end marks cached snapshots untrusted and, when no in-page install owns the
+    // refresh, schedules one. The two back-to-back idle events share that
+    // refresh, and the second one no longer looks like another end.
+    const hasSnapshot = Array.isArray(runtime.officialThemeList)
+      && runtime.officialThemeList.some((theme) => theme && theme.officialThemeProgress);
+    const operationEnded = runtime.officialThemeOperation === null
+      && (
+        previousOperation !== null
+        || (officialProgressSnapshotsTrusted() && hasSnapshot)
+        // A Settings page that opened after the last progress event has no
+        // mirror and no snapshot yet, but an official read still in flight may
+        // carry a pre-idle snapshot. Treat the idle as an observed end so that
+        // read's stale snapshot is invalidated and a fresh read is scheduled.
+        // An in-flight end refresh already owns that fresh read, so its own
+        // read must not count as another end.
+        || (runtime.officialThemePromise && !runtime.officialThemeEndRefresh)
+      );
+    if (operationEnded) {
+      runtime.officialThemeEndCount += 1;
+      if (!runtime.officialThemePendingThemeId) refreshThemesAfterOfficialOperation();
+    }
+    if (state.activeTab !== "theme") return;
+    // Progress events arrive many times per download. A full content render
+    // would tear down and rebuild every theme card each time, which drops the
+    // CSS hover highlight on whatever card the cursor is over (and the
+    // scroll-into-place flicker that comes with it). Let the tab update just
+    // its progress rows when it can; fall back to the full render otherwise.
+    const activeTab = tabs[state.activeTab];
+    if (activeTab
+      && typeof activeTab.patchOfficialThemeProgress === "function"
+      && activeTab.patchOfficialThemeProgress()) {
+      return;
+    }
+    requestRender({ content: true, preserveScroll: true });
+  }
+
+  function clearTransientStateForChanges(changes) {
+    if (!changes || typeof changes !== "object") return;
+    for (const key of Object.keys(changes)) {
+      state.transientUiState.generalSwitches.delete(key);
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "agents")) {
+      state.transientUiState.agentSwitches.clear();
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "themeOverrides")) {
+      state.transientUiState.animMapSwitches.clear();
+    }
+  }
+
+  function applyChanges(payload) {
+    const previousSnapshot = state.snapshot;
+    if (payload && payload.snapshot) {
+      state.snapshot = payload.snapshot;
+    } else if (payload && payload.changes && state.snapshot) {
+      state.snapshot = { ...state.snapshot, ...payload.changes };
+    }
+    if (!state.snapshot) return;
+
+    const changes = payload && payload.changes;
+    const changeKeys = changes && typeof changes === "object" ? Object.keys(changes) : [];
+    if (
+      changeKeys.length > 0
+      && changeKeys.every((key) => RENDERER_INERT_SETTINGS_KEYS.has(key))
+    ) {
+      return;
+    }
+    clearTransientStateForChanges(changes);
+    const needsAnimOverridesRefresh = !!(changes && (
+      "theme" in changes || "themeVariant" in changes || "themeOverrides" in changes
+    ));
+    if (changes && (
+      Object.prototype.hasOwnProperty.call(changes, "theme")
+      || Object.prototype.hasOwnProperty.call(changes, "themeVariant")
+    )) {
+      if (runtime.pendingAnimationOverrideEdits && typeof runtime.pendingAnimationOverrideEdits.clear === "function") {
+        runtime.pendingAnimationOverrideEdits.clear();
+      }
+      if (runtime.pendingWideHitboxOverrideEdits && typeof runtime.pendingWideHitboxOverrideEdits.clear === "function") {
+        runtime.pendingWideHitboxOverrideEdits.clear();
+      }
+      if (runtime.pendingAnimationOverrideResets && typeof runtime.pendingAnimationOverrideResets.clear === "function") {
+        runtime.pendingAnimationOverrideResets.clear();
+      }
+      if (state.mountedControls.animOverrideTimingSliders
+        && typeof state.mountedControls.animOverrideTimingSliders.clear === "function") {
+        state.mountedControls.animOverrideTimingSliders.clear();
+      }
+      if (state.mountedControls.animOverrideWideHitboxToggles
+        && typeof state.mountedControls.animOverrideWideHitboxToggles.clear === "function") {
+        state.mountedControls.animOverrideWideHitboxToggles.clear();
+      }
+      if (state.mountedControls.animOverrideStatusControls
+        && typeof state.mountedControls.animOverrideStatusControls.clear === "function") {
+        disposeMountedDisposables("animation-overrides");
+        state.mountedControls.animOverrideStatusControls.clear();
+      }
+    }
+    const shouldPreserveAnimOverridesData = !!(
+      needsAnimOverridesRefresh
+      && (state.activeTab === "animOverrides" || runtime.assetPicker.state)
+    );
+    if (needsAnimOverridesRefresh && !shouldPreserveAnimOverridesData) {
+      runtime.animationOverridesData = null;
+    }
+
+    const activeTab = tabs[state.activeTab];
+    if (activeTab && typeof activeTab.patchInPlace === "function"
+      && activeTab.patchInPlace(changes, { previousSnapshot, snapshot: state.snapshot })) {
+      return;
+    }
+
+    if (changes && "themeOverrides" in changes) {
+      if (state.activeTab === "theme") {
+        fetchThemes().then(() => {
+          requestRender({
+            sidebar: true,
+            content: true,
+            preserveScroll: state.activeTab === "recap",
+          });
+        });
+        return;
+      }
+      if (state.activeTab === "animOverrides" || runtime.assetPicker.state) {
+        Promise.all([fetchAnimationOverridesData(), fetchThemes()]).then(() => {
+          normalizeAssetPickerSelection();
+          requestRender({
+            sidebar: true,
+            content: true,
+            modal: true,
+            preserveScroll: state.activeTab === "recap",
+          });
+        });
+        return;
+      }
+      // Any other tab that surfaces theme-derived content: full re-render.
+      requestRender({
+        sidebar: true,
+        content: true,
+        preserveScroll: state.activeTab === "recap",
+      });
+      return;
+    }
+
+    if (needsAnimOverridesRefresh && (state.activeTab === "animOverrides" || runtime.assetPicker.state)) {
+      fetchAnimationOverridesData().then(() => {
+        normalizeAssetPickerSelection();
+        requestRender({
+          sidebar: true,
+          content: true,
+          modal: true,
+          preserveScroll: state.activeTab === "recap",
+        });
+      });
+      return;
+    }
+
+    if (changes && "theme" in changes && runtime.themeList) {
+      runtime.themeList = runtime.themeList.map((theme) => ({
+        ...theme,
+        active: theme.id === changes.theme,
+      }));
+    }
+
+    requestRender({
+      sidebar: true,
+      content: true,
+      preserveScroll: state.activeTab === "recap",
+    });
+  }
+
+  core.readers = {
+    readSizeUiFromSnapshot,
+    readGeneralSwitchRaw,
+    readGeneralSwitchVisual,
+    agentSwitchStateId,
+    readAgentFlagValue,
+    readAgentIntegrationInstalled,
+    readAgentPermissionMode,
+    readAgentCustomPermissionUrl,
+    readAgentCustomDiscoveryPaths,
+    readCustomToolDetectionResults,
+    readCustomAgentDetectionResults,
+    readCustomApplications,
+    getShortcutValue,
+    getLang,
+    readThemeOverrideMap,
+    hasAnyThemeOverride,
+  };
+
+  let settingsDialogSequence = 0;
+  let dismissActiveSettingsDialog = null;
+
+  function showSettingsDialog({
+    title,
+    detail,
+    actions,
+    iconText = "",
+    className = "",
+    checkboxLabel = "",
+    checkboxChecked = false,
+    returnDetails = false,
+    dismissOnBackdrop = true,
+    dismissOnEscape = true,
+  }) {
+    const rootNode = document.getElementById("modalRoot");
+    if (!rootNode) return Promise.resolve(null);
+    if (typeof dismissActiveSettingsDialog === "function") dismissActiveSettingsDialog();
+    return new Promise((resolve) => {
+      let settled = false;
+      const previousFocus = document.activeElement;
+      const dialogId = `settings-dialog-${++settingsDialogSequence}`;
+      const overlay = document.createElement("div");
+      overlay.className = "modal-backdrop settings-dialog-backdrop settings-confirm-backdrop";
+
+      const modal = document.createElement("div");
+      modal.className = ["settings-dialog", "settings-confirm-modal", className].filter(Boolean).join(" ");
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+
+      let icon = null;
+      if (iconText) {
+        icon = document.createElement("div");
+        icon.className = "settings-confirm-icon";
+        icon.setAttribute("aria-hidden", "true");
+        if (String(iconText) === "!") {
+          const createSvgElement = (tagName) => (
+            typeof document.createElementNS === "function"
+              ? document.createElementNS("http://www.w3.org/2000/svg", tagName)
+              : document.createElement(tagName)
+          );
+          const svg = createSvgElement("svg");
+          svg.setAttribute("viewBox", "0 0 20 20");
+          svg.setAttribute("focusable", "false");
+          const path = createSvgElement("path");
+          path.setAttribute("d", "M10 4.2v7.4m0 3.1v.1");
+          svg.appendChild(path);
+          icon.appendChild(svg);
+        } else {
+          icon.textContent = String(iconText);
+        }
+      }
+
+      const titleNode = document.createElement("h2");
+      titleNode.id = `${dialogId}-title`;
+      titleNode.textContent = title || "";
+      modal.setAttribute("aria-labelledby", titleNode.id);
+
+      const detailNode = document.createElement("p");
+      detailNode.id = `${dialogId}-detail`;
+      detailNode.textContent = detail || "";
+      modal.setAttribute("aria-describedby", detailNode.id);
+
+      let checkboxInput = null;
+      let checkboxRow = null;
+      if (checkboxLabel) {
+        checkboxRow = document.createElement("label");
+        checkboxRow.className = "settings-confirm-checkbox";
+        checkboxInput = document.createElement("input");
+        checkboxInput.type = "checkbox";
+        checkboxInput.checked = checkboxChecked === true;
+        const checkboxText = document.createElement("span");
+        checkboxText.textContent = checkboxLabel;
+        checkboxRow.appendChild(checkboxInput);
+        checkboxRow.appendChild(checkboxText);
+      }
+
+      const actionsNode = document.createElement("div");
+      actionsNode.className = "settings-confirm-actions";
+
+      function close(actionId) {
+        if (settled) return;
+        settled = true;
+        if (dismissActiveSettingsDialog === close) dismissActiveSettingsDialog = null;
+        document.removeEventListener("keydown", onKeyDown, true);
+        rootNode.innerHTML = "";
+        if (previousFocus
+            && previousFocus.isConnected !== false
+            && typeof previousFocus.focus === "function") previousFocus.focus();
+        resolve(returnDetails
+          ? {
+            actionId,
+            checkboxChecked: !!(checkboxInput && checkboxInput.checked),
+          }
+          : actionId);
+      }
+
+      function onKeyDown(ev) {
+        if (ev.key === "Escape" && dismissOnEscape) {
+          ev.preventDefault();
+          close(null);
+          return;
+        }
+        if (ev.key !== "Tab") return;
+        const focusable = [checkboxInput, ...buttons.map((entry) => entry.button)]
+          .filter((element) => element && element.disabled !== true);
+        if (focusable.length === 0) return;
+        const currentIndex = focusable.indexOf(document.activeElement);
+        const nextIndex = ev.shiftKey
+          ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+          : (currentIndex < 0 || currentIndex === focusable.length - 1 ? 0 : currentIndex + 1);
+        ev.preventDefault();
+        focusable[nextIndex].focus();
+      }
+
+      overlay.addEventListener("click", (ev) => {
+        if (dismissOnBackdrop && ev.target === overlay) close(null);
+      });
+      const buttons = (Array.isArray(actions) ? actions : []).map((action) => {
+        const tone = action && typeof action.tone === "string" ? action.tone : "neutral";
+        const button = buildButton({
+          label: action && action.label ? action.label : "",
+          tone,
+          size: "large",
+          className: tone === "danger" ? "settings-confirm-danger" : "",
+          onClick: () => close(action && action.id ? action.id : null),
+        });
+        actionsNode.appendChild(button);
+        return { action, button };
+      });
+      dismissActiveSettingsDialog = close;
+      document.addEventListener("keydown", onKeyDown, true);
+      if (icon) modal.appendChild(icon);
+      modal.appendChild(titleNode);
+      modal.appendChild(detailNode);
+      if (checkboxRow) modal.appendChild(checkboxRow);
+      modal.appendChild(actionsNode);
+      overlay.appendChild(modal);
+      rootNode.innerHTML = "";
+      rootNode.appendChild(overlay);
+      const focusTarget =
+        buttons.find((action) => action.action && action.action.defaultFocus)
+        || buttons[buttons.length - 1]
+        || null;
+      if (focusTarget) focusTarget.button.focus();
+    });
+  }
+
+  function showSettingsConfirmModal(options = {}) {
+    return showSettingsDialog({ ...options, iconText: "!" });
+  }
+
+  core.helpers = {
+    t,
+    buildButton,
+    buildSettingRow,
+    attachDescriptionDisclosure,
+    buildStatusLine,
+    buildDetailGroup,
+    buildFormField,
+    buildTextInput,
+    setTextInputState,
+    setButtonState,
+    showSettingsDialog,
+    showSettingsConfirmModal,
+    escapeHtml,
+    buildSwitch,
+    attachOptimisticSwitch,
+    buildSwitchRow,
+    buildSection,
+    buildSettingsSelect,
+    buildSegmentedRadio,
+    buildTabs,
+    createSubpageHost,
+    buildCollapsibleGroup,
+    attachSettingsDisclosure,
+    registerMountedDisposable,
+    disposeMountedDisposable,
+    createDisclosureChevron,
+    attachActivation,
+    buildShortcutButton,
+    buildNumberInputRow,
+    openExternalSafe,
+    SIZE_UI_MIN,
+    SIZE_UI_MAX,
+    SIZE_TICK_VALUES,
+    SIZE_SLIDER_THUMB_DIAMETER,
+    sizeUiToPct,
+    getSizeSliderAnchorPx,
+    createSizeSliderController,
+  };
+
+  core.i18n = {
+    STRINGS,
+    MAINTAINERS,
+    CONTRIBUTORS,
+    IS_MAC,
+    IS_WIN,
+    SHORTCUT_ACTIONS,
+    SHORTCUT_ACTION_IDS,
+    SUPPORTED_SHORTCUT_ACTION_IDS,
+    SHORTCUT_PLATFORM,
+    buildAcceleratorFromEvent,
+    formatAcceleratorLabel,
+    formatAcceleratorPartial,
+  };
+
+  core.ops = {
+    installRenderHooks,
+    focusSettingsTarget,
+    requestRender,
+    selectTab,
+    persistNavigationState,
+    restoreNavigationState,
+    applyBootstrap,
+    applyAgentMetadata,
+    applyChanges,
+    clearMountedControls,
+    syncMountedSizeControl,
+    showToast,
+    enterShortcutRecording,
+    finishShortcutRecording,
+    handleShortcutRecordKey,
+    applyShortcutFailures,
+    applyOfficialThemeProgress,
+    officialProgressSnapshotsTrusted,
+    refreshThemesAfterOfficialOperation,
+    fetchAgentInstallationHints,
+    fetchThemes,
+    fetchOfficialThemes,
+    fetchAnimationOverridesData,
+    applyAnimationPreviewPoster,
+    stopAssetPickerPolling,
+    closeAssetPicker,
+    normalizeAssetPickerSelection,
+    translateShortcutError,
+  };
+
+  root.ClawdSettingsCore = core;
+})(globalThis);

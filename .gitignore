@@ -1,0 +1,103 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+bwe_env/
+
+# Node
+node_modules/
+dist/
+build/
+out/
+npm-debug.log*
+
+# 运行数据 / 日志
+data/
+logs/
+*.log
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pkl
+*.npy
+*.wav
+*.mp3
+wechatauto_logs/
+
+# 配置与密钥
+.env
+.env.*
+!.env.example
+config.local.json
+*.secret.json
+cookies.json
+*.pem
+*.key
+
+# 模型与素材（统一归 audio/）
+models/
+audio/
+!audio/cosyvoice_ref/**/*.wav
+# 旧平铺路径：本地用目录联接指向 audio/cosyvoice_ref，不入库
+cosyvoice_ref/
+cosyvoice_ref.legacy-empty/
+*.onnx
+*.safetensors
+*.vrm
+*.glb
+*.fbx
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 素材/配置入库例外（部署结构照搬，克隆后按原路径覆盖即可）
+!astrbot-win/AstrBot-4.29.3/data/
+astrbot-win/AstrBot-4.29.3/data/*
+!astrbot-win/AstrBot-4.29.3/data/stickers/
+!astrbot-win/AstrBot-4.29.3/data/config/
+!astrbot-win/AstrBot-4.29.3/data/local_tools/
+!astrbot-win/AstrBot-4.29.3/data/t2i_templates/
+
+# 表情包运行时目录：插件自动生成的预览缓存、审核暂存、删除回收站，不入库
+astrbot-win/AstrBot-4.29.3/data/stickers/_gif_preview/
+astrbot-win/AstrBot-4.29.3/data/stickers/_static_archive/
+astrbot-win/AstrBot-4.29.3/data/stickers/fav/_review/
+astrbot-win/AstrBot-4.29.3/data/stickers/*.bak*
+astrbot-win/AstrBot-4.29.3/data/stickers/*.broken
+
+# 桌宠前端产物已预构建入库（index.html 直接引用 dist/dafeiyu.iife.js，仓库未提供构建脚本）
+!pet/dafeiyu-web/dist/
+!pet/dafeiyu-web/dist/**
+
+# 运行时二进制，不入库（桌宠安装包 dsh-pet-0.4.1.tgz 例外：已入库，clone 即可装）
+stack/napcat/
+napcat-win/
+pet/Clawd-on-Desk-Setup-*.exe
+bots/pet-images/
+
+# ---- 个人身份数据（真实 QQ / 微信 ID 只留本地，不入库） ----
+astrbot_plugins/function/astrbot_plugin_zz_prompt_dump/dump/
+astrbot-win/AstrBot-4.29.3/data/local_tools/access.json
+# local_exec 的截屏/临时文件会落在这里，画面属于本机隐私
+astrbot-win/AstrBot-4.29.3/data/local_tools/workspace/
+astrbot-win/AstrBot-4.29.3/data/stickers/_src_data.json
+astrbot-win/AstrBot-4.29.3/data/stickers/pool/_manifest.txt
+astrbot-win/AstrBot-4.29.3/data/stickers/tools_build_source_page.py
+
+# ---- 敏感内容（私密等亲密向人设、记忆备份）只留本地，不入库 ----
+backups/
+services/hub/seeds/personas.local.json
+
+# 迁移日志含本机绝对路径，只留本地
+config/migrate-journal.json
+
+# 本机自建域名的对外链接（暴露个人隧道端点），只留本地
+astrbot-win/AstrBot-4.29.3/data/config/astrbot_plugin_web_lookup_config.json

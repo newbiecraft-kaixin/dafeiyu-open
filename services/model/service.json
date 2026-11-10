@@ -1,0 +1,22 @@
+{
+  "name": "model",
+  "kind": "capability",
+  "layer": "中枢层",
+  "port": 23406,
+  "ui": "http://127.0.0.1:23406/status",
+  "responsibility": "身份 → provider / model / key 的独立调度层：本地、远程与 DSH harness 统一入口",
+  "depends": ["infra"],
+  "entry": "service.py",
+  "endpoints": [
+    "POST /complete",
+    "POST /route",
+    "GET /providers",
+    "GET /status"
+  ],
+  "files": {
+    "providers": "providers.json",
+    "dotenv": ["..\\..\\.env", "..\\brain\\.env"]
+  },
+  "backends": ["openai-compatible", "dsh-headless"],
+  "status": "active"
+}

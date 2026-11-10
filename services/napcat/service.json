@@ -1,0 +1,22 @@
+{
+  "name": "napcat",
+  "kind": "adapter",
+  "layer": "软件层",
+  "port": 3000,
+  "optional": true,
+  "status": "active",
+  "probe": "port",
+  "responsibility": "QQ 协议端：OneBot HTTP 3000 / WebSocket 6199 直连 AstrBot，收发事件",
+  "ui": "http://127.0.0.1:6099/webui",
+  "links": {
+    "WebUI": "http://127.0.0.1:6099/webui",
+    "OneBot HTTP": "http://127.0.0.1:3000"
+  },
+  "entry": "napcat-win/index.js",
+  "runtime": {
+    "cwd": "napcat-win",
+    "entry": "napcat-win/index.js",
+    "python": "napcat-win/node.exe",
+    "args": ["-q", "1000000000"]
+  }
+}

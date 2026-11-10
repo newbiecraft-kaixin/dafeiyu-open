@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>大肥鱼 3D 桌宠</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage"></div>
+
+  <div id="bubble" class="hidden">
+    <div id="bubbleMeta"></div>
+    <div id="bubbleText"></div>
+    <div id="bubbleBar"></div>
+  </div>
+
+  <div id="zzz" class="hidden">
+    <span>z</span><span>Z</span><span>z</span>
+  </div>
+
+  <div id="hint" class="hidden">戳戳我 · 拖动 · 右键菜单</div>
+
+  <div id="menu" class="hidden">
+    <button data-act="poke">戳一下</button>
+    <button data-act="reset">回到右下角</button>
+    <button data-act="test">测试气泡</button>
+    <button data-act="quit">退出桌宠</button>
+  </div>
+
+  <script src="../build/renderer.bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "recharge",
+  "license": "Apache-2.0",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 25565,
+  "probe": "port",
+  "optional": true,
+  "responsibility": "赞助/充值页（可选）：档位列表、现场生成微信收款码；同进程的 /bili 是刷视频对外页（web_lookup 生成的 bili_feed.html）。樱花隧道把 25565 映射到公网域名",
+  "domain": "web",
+  "runtime": {
+    "entry": "recharge_page/serve.py",
+    "cwd": "recharge_page"
+  },
+  "endpoints": [
+    "GET /",
+    "GET /{SLUG}/pay?amount=",
+    "GET /{SLUG}/qr?amount=",
+    "GET /bili"
+  ],
+  "status": "active"
+}

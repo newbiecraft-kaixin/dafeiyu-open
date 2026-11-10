@@ -1,0 +1,8 @@
+name: astrbot_plugin_subtitle_stt
+display_name: "本地字幕 STT Provider 插件级注册"
+desc: "在插件里注册 subtitle_stt provider，AstrBot 升级无需再给 core 打补丁。"
+version: v1.0.0
+author: newbiecraft-kaixin
+repo: https://github.com/newbiecraft-kaixin/dafeiyu-open
+support_platforms:
+  - aiocqhttp

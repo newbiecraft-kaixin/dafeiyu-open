@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>小忆语音 · 投票</title>
+<style>
+  :root{--bg:#0d0f16;--panel:#151823;--panel2:#1b1f2c;
+        --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.16);
+        --fg:#e9ecf5;--muted:#a7b0c6;--dim:#7d879e;
+        --accent:#7c8cf8;--accent2:#46d39a;--good:#46d39a;--warn:#f5b544;--bad:#f2637e;--rose:#f2637e}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;padding-bottom:16px}
+  header{position:sticky;top:0;z-index:9;background:var(--panel);
+         border-bottom:1px solid var(--line);padding:14px 14px 10px}
+  h1{margin:0 0 5px;font-size:17px;font-weight:600;letter-spacing:.5px}
+  h1 i{color:var(--accent);font-style:normal}
+  .hint{color:var(--muted);font-size:11.5px;line-height:1.55}
+  .bar{display:flex;gap:7px;overflow-x:auto;margin-top:10px;padding-bottom:2px;scrollbar-width:none}
+  .bar::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;border:1px solid var(--line2);background:transparent;color:var(--muted);
+        border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#0d0f16;font-weight:600}
+  .tools{display:flex;gap:7px;align-items:center;margin-top:8px}
+  select{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:8px;
+         padding:6px 8px;font-size:12.5px;outline:none}
+  /* 原生下拉列表：深底浅字，避免白底白字看不清 */
+  select{color-scheme:dark}
+  select option,select optgroup{background-color:#1b1f2c;color:#e9ecf5}
+  select option:checked,select option:hover{background-color:#2a3048;color:#fff}
+  .switch{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-left:auto}
+  .switch input{accent-color:var(--accent);width:15px;height:15px}
+  main{padding:6px 10px 20px}
+  .row{display:grid;grid-template-columns:38px 1fr auto;gap:9px;align-items:center;
+       padding:10px 8px;border-bottom:1px solid var(--line)}
+  .row.playing{background:var(--panel2);border-left:2px solid var(--accent);border-radius:0;padding-left:6px}
+  .play{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:transparent;
+        color:var(--fg);font-size:13px;display:flex;align-items:center;justify-content:center}
+  .mid{min-width:0}
+  .nm{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;color:var(--fg)}
+  .row.voted .nm{color:var(--muted)}
+  .meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .tag{font-size:10.5px;padding:2px 7px;border-radius:8px;background:transparent;color:var(--muted);
+       border:1px solid var(--line2)}
+  .tag.good{color:#0d0f16;background:var(--good);border-color:var(--good);font-weight:600}
+  .tag.warn{color:#0d0f16;background:var(--warn);border-color:var(--warn);font-weight:600}
+  .tag.bad{color:#0d0f16;background:var(--bad);border-color:var(--bad);font-weight:600}
+  .prog{height:2px;background:var(--panel2);border-radius:2px;margin-top:6px;overflow:hidden}
+  .prog i{display:block;height:100%;width:0;background:var(--accent)}
+  .vote{min-width:52px;display:flex;flex-direction:column;align-items:center;gap:2px;
+        border:1px solid var(--line2);background:transparent;color:var(--muted);border-radius:8px;
+        padding:7px 9px;font-size:11px;cursor:pointer}
+  .vote b{font-size:15px;color:var(--fg)}
+  .vote.on{border-color:var(--rose);background:transparent;color:var(--rose)}
+  .vote.on b{color:var(--rose)}
+  .empty{color:var(--muted);text-align:center;padding:36px 0}
+  footer{color:var(--muted);font-size:11.5px;text-align:center;padding:14px 16px 4px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);color:var(--fg);
+         border:1px solid var(--line2);padding:9px 16px;border-radius:8px;font-size:12.5px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>小忆语音 · <i>投票</i></h1>
+  <div class="hint">听完点 ❤ —— 觉得像小忆、干净、没杂音的留下来。每条一票，可以取消，不用注册。</div>
+  <div class="bar">
+    <button class="chip on" data-g="all">全部</button>
+    <button class="chip" data-g="dataset">训练集现有</button>
+    <button class="chip" data-g="tts">合成样例</button>
+    <button class="chip" data-g="ref">原声参考</button>
+  </div>
+  <div class="tools">
+    <select id="sort">
+      <option value="votes">按票数</option>
+      <option value="cos">按相似度</option>
+      <option value="dur">按时长</option>
+      <option value="name">按文件名</option>
+    </select>
+    <span id="stat" style="font-size:11.5px;color:var(--muted)"></span>
+    <label class="switch"><input type="checkbox" id="onlyNew">只看未投</label>
+  </div>
+  <div class="tools">
+    <button class="chip" id="clearMine">清空我的投票</button>
+    <button class="chip" id="clearAll" hidden>清空全部（管理员）</button>
+  </div>
+</header>
+<main id="list"><div class="empty">加载中…</div></main>
+<footer id="foot"></footer>
+<div class="toast" id="toast"></div>
+<audio id="au" preload="none" playsinline></audio>
+<script>
+const GROUPS = {dataset:'训练集', tts:'合成样例', ref:'原声参考'};
+const KEY = 'vote_mine_v1';
+let DATA = [], counts = {}, mine = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+let g = 'all', sort = 'votes', onlyNew = false, cur = null;
+const listEl = document.getElementById('list'), au = document.getElementById('au');
+
+function fmt(s){ return s >= 60 ? Math.floor(s/60)+'m'+(s%60).toFixed(0)+'s' : s.toFixed(1)+'s'; }
+function cosTag(c){
+  if (c >= .85) return '<span class="tag good">像 '+c.toFixed(2)+'</span>';
+  if (c >= .6)  return '<span class="tag warn">疑 '+c.toFixed(2)+'</span>';
+  return '<span class="tag bad">不像 '+c.toFixed(2)+'</span>';
+}
+function toast(t){
+  const el = document.getElementById('toast'); el.textContent = t; el.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>el.classList.remove('show'), 1600);
+}
+function view(){
+  let arr = DATA.filter(d => g==='all' || d.group===g);
+  if (onlyNew) arr = arr.filter(d => !mine.has(d.id));
+  const cmp = {votes:(a,b)=>(counts[b.id]||0)-(counts[a.id]||0) || b.cos-a.cos,
+               cos:(a,b)=>b.cos-a.cos, dur:(a,b)=>b.dur-a.dur,
+               name:(a,b)=>a.orig.localeCompare(b.orig)}[sort];
+  return arr.sort(cmp);
+}
+function render(){
+  const arr = view();
+  listEl.innerHTML = arr.length ? arr.map(d=>`
+    <div class="row ${mine.has(d.id)?'voted':''}" data-id="${d.id}">
+      <button class="play" data-play="${d.id}">▶</button>
+      <div class="mid">
+        <div class="nm">${d.orig}</div>
+        <div class="meta">
+          <span class="tag">${GROUPS[d.group]}</span>
+          <span class="tag">${fmt(d.dur)}</span>
+          ${cosTag(d.cos)}
+        </div>
+        <div class="prog"><i data-pg="${d.id}"></i></div>
+      </div>
+      <button class="vote ${mine.has(d.id)?'on':''}" data-vote="${d.id}">
+        <b>${mine.has(d.id)?'❤':'♡'}</b><span>${counts[d.id]||0}</span>
+      </button>
+    </div>`).join('') : '<div class="empty">这里还是空的</div>';
+  document.getElementById('stat').textContent = `显示 ${arr.length} 条`;
+  document.getElementById('foot').textContent =
+    `共 ${DATA.length} 条候选 · 你投了 ${mine.size} 条 · 感谢帮忙把关`;
+  document.querySelectorAll('.chip').forEach(c=> c.classList.toggle('on', c.dataset.g===g));
+  localStorage.setItem(KEY, JSON.stringify([...mine]));
+}
+async function loadResults(){
+  try{
+    const r = await fetch('/vote/api/results', {cache:'no-store'});
+    counts = (await r.json()).counts || {};
+  }catch(e){ counts = {}; }
+  render();
+}
+listEl.addEventListener('click', async e=>{
+  const p = e.target.closest('[data-play]');
+  if (p){
+    const id = p.dataset.play;
+    if (cur === id && !au.paused){ au.pause(); return; }
+    cur = id; au.src = '/vote/audio/' + id + '.mp3';
+    au.play().catch(()=> toast('这条音频没加载出来，刷新页面再点一次'))
+    listEl.querySelectorAll('.row').forEach(r=>{
+      const on = r.dataset.id === id;
+      r.classList.toggle('playing', on);
+      const b = r.querySelector('.play'); if (b) b.textContent = on ? '❚❚' : '▶';
+    });
+    return;
+  }
+  const v = e.target.closest('[data-vote]');
+  if (!v) return;
+  const id = v.dataset.vote;
+  const on = !mine.has(id);
+  if (on) mine.add(id); else mine.delete(id);
+  counts[id] = Math.max(0, (counts[id]||0) + (on ? 1 : -1));
+  render();
+  try{
+    const r = await fetch('/vote/api/vote', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id, on})});
+    const j = await r.json();
+    if (j.ok && j.counts) { counts = j.counts; render(); }
+  }catch(err){ toast('网络不稳，稍后再点一次'); }
+});
+au.addEventListener('play', ()=>{
+  const r = listEl.querySelector(`.row[data-id="${cur}"]`);
+  if (r){ r.classList.add('playing'); const b = r.querySelector('.play'); if (b) b.textContent='❚❚'; }
+});
+au.addEventListener('pause', ()=>{
+  const r = listEl.querySelector(`.row[data-id="${cur}"]`);
+  if (r){ r.classList.remove('playing'); const b = r.querySelector('.play'); if (b) b.textContent='▶'; }
+});
+au.addEventListener('timeupdate', ()=>{
+  const bar = listEl.querySelector(`i[data-pg="${cur}"]`);
+  if (bar && au.duration) bar.style.width = (au.currentTime/au.duration*100)+'%';
+});
+au.addEventListener('error', ()=> toast('这条音频加载失败，换一条试试'));
+au.volume = 1;
+document.querySelectorAll('.chip[data-g]').forEach(c=> c.onclick = ()=>{ g = c.dataset.g; render(); });
+document.getElementById('sort').onchange = e=>{ sort = e.target.value; render(); };
+document.getElementById('onlyNew').onchange = e=>{ onlyNew = e.target.checked; render(); };
+
+const ADMIN = new URLSearchParams(location.search).get('admin') || '';
+if (ADMIN) document.getElementById('clearAll').hidden = false;
+async function clearVotes(scope){
+  if (!confirm(scope === 'all' ? '确定清空所有人的投票？' : '清空你在这台设备上投的票？')) return;
+  try{
+    const r = await fetch('/vote/api/clear', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({scope, admin: ADMIN})});
+    const j = await r.json();
+    if (!j.ok){ toast(scope === 'all' ? '口令不对，清空失败' : '清空失败'); return; }
+    if (scope === 'mine'){ mine.clear(); localStorage.removeItem(KEY); }
+    counts = j.counts || {}; render(); toast('已清空');
+  }catch(e){ toast('网络不稳，稍后再试'); }
+}
+document.getElementById('clearMine').onclick = ()=> clearVotes('mine');
+document.getElementById('clearAll').onclick = ()=> clearVotes('all');
+
+(async function init(){
+  try{
+    DATA = await (await fetch('/vote/data.json', {cache:'no-store'})).json();
+  }catch(e){ listEl.innerHTML = '<div class="empty">候选数据加载失败</div>'; return; }
+  await loadResults();
+})();
+</script>
+</body>
+</html>

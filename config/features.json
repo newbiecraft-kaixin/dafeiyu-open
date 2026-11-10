@@ -1,0 +1,9 @@
+{
+  "core": true,
+  "astrbot": true,
+  "plugins": true,
+  "napcat": true,
+  "wechat": true,
+  "voice": true,
+  "pet": true
+}
