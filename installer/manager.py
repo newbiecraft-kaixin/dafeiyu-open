@@ -55,7 +55,18 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 REPO_SLUG = "newbiecraft-kaixin/dafeiyu-open"
 REPO_BRANCH = "main"
 REPO_ZIP = f"https://codeload.github.com/{REPO_SLUG}/zip/refs/heads/{REPO_BRANCH}"
-SETUP_PS1 = ROOT / "tools" / "windows" / "setup.ps1"
+
+
+def _find_script(name: str) -> Path:
+    """安装脚本可能在 installer/（新布局），也可能在旧布局 tools/windows/。"""
+    for folder in (ROOT / "installer", HERE, ROOT / "tools" / "windows"):
+        candidate = folder / name
+        if candidate.is_file():
+            return candidate
+    return ROOT / "installer" / name
+
+
+SETUP_PS1 = _find_script("setup.ps1")
 FEATURES_FILE = ROOT / "config" / "features.json"
 
 # 可选能力：一键部署只安装这里启用的项，编号对应 setup.ps1 的菜单
@@ -82,7 +93,7 @@ CORE_STEPS = "1,2,3,4,5,8"
 ALL_STEPS = "1,2,3,4,5,6,7,8"
 # 核心部署不启动的外围能力（语音、音频、视频、字幕、RAG、微信桥）
 CORE_SKIP_SERVICES = {"voice", "audio", "video", "subtitle", "rag", "io-wechat", "wechat"}
-UNINSTALL_PS1 = ROOT / "tools" / "windows" / "uninstall.ps1"
+UNINSTALL_PS1 = _find_script("uninstall.ps1")
 
 # Python 属于前置依赖：默认用启动面板的解释器（即 Python 默认环境），
 # 旧 deployment 里的 venv 只在显式指定时兜底，不再优先。
@@ -658,10 +669,312 @@ def sync_repo(log, dest: Path | None = None, source: str | Path | None = None) -
                     pass
 
 
+# ---------------------------------------------------------------- 自动更新 / 补丁
+
+GIT = shutil.which("git") or ""
+# 记录上次部署的远端提交，避免非 git 部署每次重复下载整包
+STATE_FILE = LOG_DIR / "deploy-state.json"
+
+
+def _git(args: list[str], timeout: float = 60) -> subprocess.CompletedProcess | None:
+    if not GIT:
+        return None
+    try:
+        return subprocess.run(
+            [GIT, *args], cwd=str(ROOT), stdin=subprocess.DEVNULL,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=timeout, creationflags=CREATE_NO_WINDOW,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _git_text(args: list[str], timeout: float = 60) -> str:
+    done = _git(args, timeout)
+    if done is None or done.returncode != 0:
+        return ""
+    return (done.stdout or "").strip()
+
+
+def remote_commit() -> str:
+    """远端最新提交：git 仓库问 origin，非 git 部署问 GitHub API。"""
+    if (ROOT / ".git").is_dir() and GIT:
+        text = _git_text(["ls-remote", "origin", f"refs/heads/{REPO_BRANCH}"], timeout=45)
+        if text:
+            return text.split()[0]
+    try:
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{REPO_SLUG}/commits/{REPO_BRANCH}",
+            headers={"User-Agent": "dafeiyu-manager", "Accept": "application/vnd.github+json"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8", "replace"))
+        return str(data.get("sha") or "")
+    except Exception:  # noqa: BLE001 - 查不到远端时按「可能有更新」处理
+        return ""
+
+
+def _read_state() -> dict:
+    try:
+        data = json.loads(STATE_FILE.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_state(data: dict) -> None:
+    try:
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    except OSError:
+        pass
+
+
+def update_repo(log) -> tuple[bool, set[str]]:
+    """自动更新部署目录：git 仓库快进拉取，其它情况下载 GitHub 最新代码包。
+
+    返回 (是否有代码变更, 变更文件相对路径集合)，供部署后挑服务重启。
+    """
+    if (ROOT / ".git").is_dir() and GIT:
+        before = _git_text(["rev-parse", "HEAD"])
+        remote = remote_commit()
+        if not remote:
+            log("查不到远端版本（网络不可用），跳过代码更新，继续用本地版本", "err")
+            return False, set()
+        if before and remote == before:
+            log(f"代码已是最新：{before[:7]}", "ok")
+            return False, set()
+        log(f"发现新版本 {remote[:7]}（本地 {before[:7] or '未知'}），开始拉取 …", "ok")
+        fetched = _git(["fetch", "origin", REPO_BRANCH], timeout=180)
+        if fetched is None or fetched.returncode != 0:
+            log("拉取远端失败，跳过代码更新（补丁与启动照常）", "err")
+            return False, set()
+        changed: set[str] = set()
+        if before:
+            changed = {
+                line.strip()
+                for line in _git_text(
+                    ["diff", "--name-only", f"{before}..origin/{REPO_BRANCH}"], timeout=60
+                ).splitlines()
+                if line.strip()
+            }
+        pulled = _git(["pull", "--ff-only", "origin", REPO_BRANCH], timeout=240)
+        if pulled is None or pulled.returncode != 0:
+            detail = ""
+            if pulled is not None:
+                lines = (pulled.stderr or pulled.stdout or "").strip().splitlines()
+                detail = lines[-1] if lines else ""
+            log("本地有改动，无法快进更新：" + (detail or "git pull 失败"), "err")
+            log("保留本地版本继续部署（补丁和依赖仍会更新）", "dim")
+            return False, set()
+        log(f"代码已更新到 {remote[:7]}，共 {len(changed)} 个文件", "ok")
+        if any(rel.startswith("installer/") for rel in changed):
+            log("提示：管理面板自身的更新需关闭并重开面板后生效", "dim")
+        return True, changed
+
+    # 非 git 部署：比对上次记录，避免每次重复下载几十 MB
+    head = remote_commit()
+    state = _read_state()
+    if head and state.get("remote") == head:
+        log(f"代码已是最新：{head[:7]}", "ok")
+        return False, set()
+    log("不是 git 工作目录：下载 GitHub 最新代码包", "dim")
+    log(sync_repo(log, source=REPO_ZIP), "ok")
+    if head:
+        state["remote"] = head
+        state["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        _write_state(state)
+    return True, set()
+
+
+def _package_version(folder: Path) -> str:
+    try:
+        data = json.loads((folder / "package.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str(data.get("version") or "").strip() if isinstance(data, dict) else ""
+
+
+def _pet_source_version() -> str:
+    """桌宠源码包版本取自 pet/dsh-pet/dsh-pet-<版本>.tgz。"""
+    for path in sorted((ROOT / "pet" / "dsh-pet").glob("dsh-pet-*.tgz")):
+        match = re.match(r"dsh-pet-(.+)\.tgz$", path.name)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def apply_patches(log) -> tuple[int, int]:
+    """把仓库维护的补丁覆盖到已装组件，返回 (桌宠补丁数, 插件补丁数)。"""
+    pet_files = 0
+    pet_pkg = Path.home() / ".dsh" / "profiles" / "web" / "node_modules" / "dsh-pet"
+    pet_patches = ROOT / "pet" / "dsh-pet" / "patches"
+    if pet_pkg.is_dir() and pet_patches.is_dir():
+        for source in pet_patches.rglob("*"):
+            if not source.is_file():
+                continue
+            target = pet_pkg / source.relative_to(pet_patches)
+            if not target.parent.is_dir():
+                continue
+            shutil.copy2(source, target)
+            pet_files += 1
+        if pet_files:
+            log(f"桌宠补丁：已替换 {pet_files} 个文件", "ok")
+        else:
+            log("桌宠补丁：无需替换", "dim")
+
+    plugin_files = 0
+    plugin_patches = ROOT / "tools" / "patches"
+    if plugin_patches.is_dir():
+        for install in astrbot_installs():
+            plugins = install["path"] / "data" / "plugins"
+            if not plugins.is_dir():
+                continue
+            for source in plugin_patches.rglob("*"):
+                if not source.is_file():
+                    continue
+                rel = source.relative_to(plugin_patches)
+                if len(rel.parts) < 2:
+                    continue
+                target = plugins / rel
+                if not target.parent.is_dir():
+                    continue
+                shutil.copy2(source, target)
+                plugin_files += 1
+        if plugin_files:
+            log(f"插件补丁：已替换 {plugin_files} 个文件", "ok")
+    return pet_files, plugin_files
+
+
+def affected_services(changed: set[str]) -> set[str]:
+    """按变更文件推断需要重启的服务；共享层改动视为全部服务都要重启。"""
+    if not changed:
+        return set()
+    names: set[str] = set()
+    all_names = {m.get("name") for m in load_services() if m.get("name")}
+    for rel in changed:
+        parts = Path(rel).parts
+        if not parts:
+            continue
+        top = parts[0]
+        if top == "services" and len(parts) > 1:
+            names.add(parts[1])
+        elif top in {"shared", "installer"}:
+            names |= all_names
+        elif top in {"astrbot_plugins", "astrbot-win"}:
+            names.add("astrbot")
+        elif top in {"pet", "dsh"}:
+            names.add("dsh")
+    return names
+
+
+# 这些大组件本机装过就复用，避免一键部署重复下载几个 GB
+REUSE_ITEMS = [
+    ("astrbot-win", "AstrBot"),
+    ("napcat-win", "NapCat"),
+    (Path("audio") / "CosyVoice", "CosyVoice 源码"),
+    (Path("audio") / "cosyvoice_models", "CosyVoice 模型"),
+    (Path("audio") / "seedvc_env", "语音运行环境"),
+    ("bwe_env", "Python 运行环境"),
+    (Path("dsh") / "node_modules", "桌宠宿主 dsh 依赖"),
+    (Path("services") / "audio", "音频/字幕能力"),
+]
+
+
+def _is_deployment(path: Path) -> bool:
+    return (path / "services" / "hub" / "service.py").is_file()
+
+
+def donor_root() -> Path | None:
+    """扫描本机其它完整部署目录，作为可复用组件的来源。"""
+    candidates: list[Path] = []
+    for key in ("DFY_REPO", "FLATFISH_HOME", "DFY_ROOT"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            candidates.append(Path(value))
+    local = detect_local_repo()
+    if local is not None:
+        candidates.append(local)
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    candidates += [
+        Path(program_files) / "FlatFish",
+        Path.home() / "dafeiyu-open",
+        Path.home() / "dafeiyu",
+    ]
+    best: tuple[int, Path] | None = None
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        if resolved == ROOT or not _is_deployment(resolved):
+            continue
+        # 同时有多个部署时，选可复用组件最多的那个，避免链到半残旧仓库
+        score = sum(1 for rel, _label in REUSE_ITEMS if (resolved / rel).exists())
+        if score and (best is None or score > best[0]):
+            best = (score, resolved)
+    return best[1] if best else None
+
+
+def _junction(target: Path, source: Path) -> bool:
+    """建目录联接：不占额外空间、不需要管理员权限。"""
+    try:
+        done = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(target), str(source)],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            creationflags=CREATE_NO_WINDOW,
+        )
+    except OSError:
+        return False
+    return done.returncode == 0 and target.exists()
+
+
+def reuse_local_components(log) -> None:
+    """把本机已有的大组件链接进部署目录，让 setup.ps1 扫描时判定已安装、不再下载。"""
+    donor = donor_root()
+    if donor is None:
+        log("本机没有可复用的完整部署，缺失组件按需下载", "dim")
+        return
+    log(f"扫描到本机已有部署：{donor}", "ok")
+    reused = 0
+    for rel, label in REUSE_ITEMS:
+        source = donor / rel
+        target = ROOT / rel
+        if not source.exists():
+            continue
+        if target.exists():
+            log(f"{label}：目标已存在，保留现有", "dim")
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if _junction(target, source):
+            log(f"{label}：复用本机已有（目录链接，不下载）", "ok")
+            reused += 1
+            continue
+        try:
+            shutil.copytree(source, target)
+            log(f"{label}：目录链接失败，已本地复制复用", "ok")
+            reused += 1
+        except OSError as error:
+            log(f"{label}：复用失败（{error}），安装时重新准备", "err")
+    env_file = donor / ".env"
+    if env_file.is_file() and not (ROOT / ".env").exists():
+        try:
+            shutil.copy2(env_file, ROOT / ".env")
+            log("本地配置 .env：已复用（不下载）", "ok")
+        except OSError:
+            pass
+    if not reused:
+        log("没有可直接复用的组件，缺失部分将下载", "dim")
+
+
 def run_setup(extra: list[str], log) -> int:
     """调用 installer/setup.ps1，把输出实时打到界面。"""
     if not SETUP_PS1.is_file():
-        raise FileNotFoundError("找不到 tools\\windows\\setup.ps1，请先「下载 / 更新仓库内容」")
+        raise FileNotFoundError(
+            f"找不到安装脚本：{SETUP_PS1}；请先在「下载 / 更新仓库内容」里同步仓库"
+        )
     command = [
         "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
         "-File", str(SETUP_PS1), *extra,
@@ -964,17 +1277,16 @@ def one_click_deploy(
     log, source: str | None = None, install: bool = True,
     scope: str | None = None, start: bool = True, profile: str = "all",
 ) -> str:
-    """一键部署：下载仓库 → 按配置安装依赖 → 检查环境 → 启动服务 → 校验端口。
+    """一键部署：自动更新代码 → 替换补丁 → 按配置安装依赖 → 检查环境 → 重启服务。
 
     profile="core" 时只装/只起核心链路（桌宠、核心四服务、AstrBot、基础插件、
     NapCat），不碰 CosyVoice、音频/视频/字幕、RAG 与微信桥；"all" 安装全部能力。
 
-    source 留空表示从 GitHub main 下载最新代码；也可以传本机仓库路径或其它 zip 地址。
+    source 留空时自动判断：本机是 git 仓库就先查远端、有新提交就快进更新，
+    否则下载 GitHub main 最新代码包；也可以传本机仓库路径或其它 zip 地址。
     显式传 scope 时覆盖 profile 的默认编号串。
     """
     core = profile == "core"
-    origin = str(source or "").strip() or REPO_ZIP
-    from_github = origin == REPO_ZIP
     log("== 0/5 先扫描本机已有组件 ==", "title")
     insts = astrbot_installs()
     if insts:
@@ -987,13 +1299,20 @@ def one_click_deploy(
             log("已有装配可直接复用；安装步骤只补依赖，不会覆盖 astrbot-win", "dim")
     else:
         log("未检测到已有 AstrBot，将按清单安装", "dim")
-    if from_github:
-        log("== 1/5 下载仓库：GitHub main 最新代码 ==", "title")
+    explicit = str(source or "").strip()
+    if explicit:
+        log(f"== 1/5 同步仓库：{explicit} ==", "title")
+        log(sync_repo(log, source=explicit), "ok")
+        updated, changed = True, set()
     else:
-        log(f"== 1/5 同步仓库：{origin} ==", "title")
-    log(sync_repo(log, source=origin), "ok")
+        log("== 1/5 检查并自动更新代码 ==", "title")
+        updated, changed = update_repo(log)
+
+    log("== 1.5/5 复用本机已装组件 ==", "title")
+    reuse_local_components(log)
 
     warnings: list[str] = []
+    steps: list[str] = []
     if install:
         if core:
             scope = CORE_STEPS
@@ -1001,16 +1320,27 @@ def one_click_deploy(
         else:
             scope = scope or ALL_STEPS
             log("全部署：安装全部能力（含 CosyVoice，约 3GB）", "dim")
-        if not scope:
-            raise RuntimeError("config/features.json 里没有任何启用的能力")
-        log("== 2/5 安装选定依赖 ==", "title")
-        setup_args = ["-Select", scope, "-Yes"]
-        if core:
-            setup_args.append("-Core")
-        log(f"$ setup.ps1 {' '.join(setup_args)}", "dim")
-        if run_setup(setup_args, log) != 0:
-            warnings.append(f"依赖安装未全部成功（-Select {scope}）")
-            log("依赖安装未全部成功，继续检查环境并启动可用服务 …", "err")
+        steps = [s.strip() for s in str(scope or "").split(",") if s.strip()]
+        pet_pkg = Path.home() / ".dsh" / "profiles" / "web" / "node_modules" / "dsh-pet"
+        pet_ver = _package_version(pet_pkg)
+        source_ver = _pet_source_version()
+        if "8" in steps and pet_pkg.is_dir() and pet_ver and pet_ver == source_ver:
+            steps = [s for s in steps if s != "8"]
+            log(f"桌宠 {pet_ver} 已是最新：跳过重复下载，部署末尾只替换 patches", "dim")
+        elif "8" in steps:
+            log("桌宠需要安装/更新：本步会下载依赖包并替换补丁", "dim")
+        if not steps:
+            log("== 2/5 安装依赖：没有需要安装的项 ==", "dim")
+        else:
+            scope = ",".join(steps)
+            log("== 2/5 安装选定依赖 ==", "title")
+            setup_args = ["-Select", scope, "-Yes"]
+            if core:
+                setup_args.append("-Core")
+            log(f"$ setup.ps1 {' '.join(setup_args)}", "dim")
+            if run_setup(setup_args, log) != 0:
+                warnings.append(f"依赖安装未全部成功（-Select {scope}）")
+                log("依赖安装未全部成功，继续检查环境并启动可用服务 …", "err")
     else:
         log("== 2/5 安装依赖：已跳过（--no-install）==", "dim")
 
@@ -1018,6 +1348,9 @@ def one_click_deploy(
     if run_setup(["-Check"], log) != 0:
         warnings.append("环境仍有缺口")
         log("环境仍有缺口，见上方清单；继续启动可用服务 …", "err")
+
+    log("== 3.5/5 替换补丁 ==", "title")
+    pet_patched, plugin_patched = apply_patches(log)
 
     if not start:
         log("== 4/5 启动服务：已跳过（--no-start）==", "dim")
@@ -1044,10 +1377,32 @@ def one_click_deploy(
             START_ORDER.index(m.get("name")) if m.get("name") in START_ORDER else len(START_ORDER),
         )
     )
+    # 更新过代码或换过插件/补丁的服务，先停再起，确保跑的是新版本。
+    restart_names = affected_services(changed) if updated else set()
+    if "4" in steps:
+        restart_names.add("astrbot")
+    if pet_patched:
+        restart_names.add("dsh")
+    if plugin_patched:
+        restart_names.add("astrbot")
+    restart_names &= {m.get("name") for m in manifests}
+    if restart_names:
+        log("受影响服务将重启：" + "、".join(sorted(restart_names)), "dim")
+
     failed: list[str] = []
     for manifest in manifests:
         name = manifest.get("name", "?")
         try:
+            if (
+                name in restart_names
+                and isinstance(manifest.get("port"), int)
+                and port_alive(manifest["port"])
+            ):
+                stopped, stop_message = stop_service(manifest)
+                if stopped:
+                    log(f"重启 {name}：{stop_message}", "dim")
+                else:
+                    log(f"重启前停止 {name} 失败：{stop_message}", "err")
             ok, message = start_service(manifest)
         except Exception as error:  # noqa: BLE001 - 单个服务失败不影响其余
             ok, message = False, str(error)
@@ -1060,16 +1415,29 @@ def one_click_deploy(
         (m.get("name"), m.get("port")) for m in manifests
         if isinstance(m.get("port"), int)
     ]
-    down = [f"{n}({p})" for n, p in ports if not port_alive(p)]
-    if down:
+    # node 服务（dsh / napcat）起来后还要加载依赖，端口会比进程慢十几秒，这里等一会儿再判定
+    deadline = time.time() + 30
+    while True:
+        down = [f"{n}({p})" for n, p in ports if not port_alive(p)]
+        if not down or time.time() >= deadline:
+            break
+        log("端口还在加载：" + "、".join(down) + "，稍等 …", "dim")
+        time.sleep(3)
+    # 可选能力（NapCat 要 QQ 登录才有 OneBot 端口、桌宠宿主等）没起来不算部署失败，只提示
+    optional_names = {m.get("name") for m in manifests if m.get("optional")}
+    hard_failed = [n for n in failed if n not in optional_names]
+    hard_down = [d for d in down if d.split("(")[0] not in optional_names]
+    if down and hard_down:
         log("未就绪端口：" + "、".join(down), "err")
+    elif down:
+        log("可选能力未就绪（不影响部署）：" + "、".join(down), "dim")
     else:
         log(f"端口全部就绪：{len(ports)} 个", "ok")
-    if failed or down:
+    if hard_failed or hard_down:
         raise RuntimeError(
             "；".join(filter(None, [
-                f"未启动：{'、'.join(failed)}" if failed else "",
-                f"端口未就绪：{'、'.join(down)}" if down else "",
+                f"未启动：{'、'.join(hard_failed)}" if hard_failed else "",
+                f"端口未就绪：{'、'.join(hard_down)}" if hard_down else "",
             ]))
         )
     detail = f"；警告：{'；'.join(warnings)}" if warnings else ""
@@ -2108,36 +2476,28 @@ class App:
         core = profile == "core"
         title = "核心部署" if core else "全部署"
         if core:
-            question = (
+            scope_text = (
                 "核心部署 = 运行环境 + 核心四服务 + AstrBot + 基础插件 + NapCat + 桌宠。\n"
-                "不安装也不启动：CosyVoice 语音、音频/视频/字幕、RAG、微信桥。\n\n"
-                "「是」= 从 GitHub main 下载最新代码\n"
-                "「否」= 用本机仓库（含未提交改动）\n\n"
-                f"目标：{ROOT}"
+                "不安装也不启动：CosyVoice 语音、音频/视频/字幕、RAG、微信桥。\n"
             )
         else:
-            question = (
+            scope_text = (
                 "全部署 = 安装并启动全部能力：核心四服务、AstrBot、全部插件、NapCat、\n"
-                "桌宠、微信桥、CosyVoice 语音（约 3GB）、音频/视频/字幕、RAG。\n\n"
-                "「是」= 从 GitHub main 下载最新代码\n"
-                "「否」= 用本机仓库（含未提交改动）\n\n"
-                f"目标：{ROOT}"
+                "桌宠、微信桥、CosyVoice 语音（约 3GB）、音频/视频/字幕、RAG。\n"
             )
-        answer = messagebox.askyesnocancel(title, question)
-        if answer is None:
+        question = (
+            scope_text
+            + "\n点「确定」后自动完成：\n"
+            "  1. 检查并更新到最新代码（git 仓库快进；否则下载代码包）\n"
+            "  2. 扫描本机已装组件，能复用就不下载（AstrBot/NapCat/CosyVoice 等）\n"
+            "  3. 替换插件与桌宠补丁\n"
+            "  4. 只下载并安装确实缺失的依赖\n"
+            "  5. 重启受本次更新影响的服务\n\n"
+            f"目标：{ROOT}"
+        )
+        if not messagebox.askokcancel(title, question):
             return
-        source = None
-        if not answer:
-            local = detect_local_repo()
-            if local is None:
-                messagebox.showerror(
-                    title,
-                    "没有找到本机仓库（dafeiyu-open）。\n\n"
-                    "把环境变量 DFY_REPO 指向仓库目录，或选「是」从 GitHub 下载。",
-                )
-                return
-            source = str(local)
-        self._run_task(title, lambda log: one_click_deploy(log, source=source, profile=profile))
+        self._run_task(title, lambda log: one_click_deploy(log, source=None, profile=profile))
 
     def uninstall(self) -> None:
         """停止所有服务并删除部署目录；默认保留用户数据（见下）。"""
@@ -2189,20 +2549,23 @@ class App:
 
     def download_repo(self) -> None:
         source = self._task_source.get().strip() if self._task_source is not None else ""
-        origin = source or "本机仓库 / GitHub（自动）"
-        if (ROOT / ".git").is_dir():
+        if source:
             question = (
-                "当前目录是 git 仓库工作目录，\n"
-                "同步会用来源内容覆盖同名文件，未提交的改动可能丢失。\n\n仍要继续？"
+                f"同步源：{source}\n目标：{ROOT}\n\n"
+                "会用来源内容覆盖同名文件，但保留 data、venv、.env、日志与第三方组件。"
+                "\n\n继续？"
             )
+            task = lambda log: log(sync_repo(log, source=source), "ok")  # noqa: E731
         else:
             question = (
-                f"同步源：{origin}\n目标：{ROOT}\n\n"
-                "会保留 data、venv、.env、日志与第三方组件。继续？"
+                "自动检查更新：\n"
+                "· 当前目录是 git 仓库 → 只做快进拉取，本地改动不会丢\n"
+                "· 否则下载 GitHub main 最新代码包，保留运行数据\n\n继续？"
             )
+            task = update_repo  # noqa: E305
         if not messagebox.askyesno("下载 / 更新仓库内容", question):
             return
-        self._run_task("下载 / 更新仓库", lambda log: log(sync_repo(log, source=source or None), "ok"))
+        self._run_task("下载 / 更新仓库", task)
 
     def check_env(self) -> None:
         self._run_task("检查环境", lambda log: run_setup(["-Check"], log))

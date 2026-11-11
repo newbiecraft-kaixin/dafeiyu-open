@@ -21,7 +21,18 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
-$Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+function Get-RepoRoot {
+    # 脚本可能在 installer\（新布局，仓库根就是上一级），也可能在 tools\windows\（老布局，上两级）；
+    # 先按「哪一级有 services\hub\service.py」认，认不到再退回老布局的算法。
+    $dir = $PSScriptRoot
+    for ($i = 0; $i -lt 4 -and $dir; $i++) {
+        if (Test-Path (Join-Path $dir "services\hub\service.py")) { return $dir }
+        $dir = Split-Path -Parent $dir
+    }
+    return (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+}
+
+$Repo = Get-RepoRoot
 $ThirdParty = Join-Path $Repo "third_party"
 # 运行环境先扫本地：实际部署在 bwe_env，老位置 astrbot-win\venv 也兼容
 $VenvDir = @((Join-Path $Repo "bwe_env"), (Join-Path $Repo "astrbot-win\venv")) |
