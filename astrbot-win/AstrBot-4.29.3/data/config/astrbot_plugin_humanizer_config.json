@@ -2,7 +2,6 @@
   "strip_markdown": true,
   "strip_ai_tone": true,
   "strip_emoji": true,
-  "drop_period_prob": 0.75,
   "oral_noise_prob": 0.15,
   "max_sentences": 3,
   "long_bypass_chars": 150,
