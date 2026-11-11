@@ -101,3 +101,6 @@ config/migrate-journal.json
 
 # 本机自建域名的对外链接（暴露个人隧道端点），只留本地
 astrbot-win/AstrBot-4.29.3/data/config/astrbot_plugin_web_lookup_config.json
+
+# 工具生成的分享打包缓存
+.trae-html-share-packages/
