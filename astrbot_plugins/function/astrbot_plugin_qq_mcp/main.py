@@ -123,6 +123,11 @@ class QQMcp(Star):
 
         mcp = FastMCP("qq")
         mcp.settings.streamable_http_path = str(self.cfg["path"])
+        # 无状态模式：AstrBot 重启后 MCP 服务端会话全丢，而 DSH 那边的客户端
+        # 还握着旧的 Mcp-Session-Id，之后每次调用都被回「Session not found」，
+        # 表现成「机器人有工具但一个都调不动」。无状态时服务端不再校验会话，
+        # 重启前后都能直接调。
+        mcp.settings.stateless_http = True
         mcp.tool()(self.qq_send)
         mcp.tool()(self.qq_history)
         mcp.tool()(self.qq_poke)
