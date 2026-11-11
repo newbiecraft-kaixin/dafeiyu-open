@@ -880,6 +880,7 @@ REUSE_ITEMS = [
     ("bwe_env", "Python 运行环境"),
     (Path("dsh") / "node_modules", "桌宠宿主 dsh 依赖"),
     (Path("services") / "audio", "音频/字幕能力"),
+    ("cosyvoice_ref", "参考声线档案"),
 ]
 
 

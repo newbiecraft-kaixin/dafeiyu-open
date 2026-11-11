@@ -48,13 +48,32 @@ LAYER_BY_NAME = {
 PINNED = {"pet", "dsh", "io-wechat"}
 TIMEOUT = 1.8
 
-# 语音参考声线（与 dsh-dafeiyu 内置的三套音色同名）
+# 语音参考声线：直接扫 cosyvoice_ref/profiles，声线管理里新增的档案不用改代码就能用；
+# 姬子/小忆/流萤 保留历史英文 id（himeko/xiaoyi/liuying），其它声线用目录名做 id。
 _COSY_REF = find_dir(["cosyvoice_ref"]) or (Path.home() / "dafeiyu" / "cosyvoice_ref")
-VOICE_PROFILES = {
-    "himeko": _COSY_REF / "profiles" / "姬子",
-    "xiaoyi": _COSY_REF / "profiles" / "小忆",
-    "liuying": _COSY_REF / "profiles" / "流萤",
-}
-VOICE_LABELS: Dict[str, str] = {"himeko": "姬子", "xiaoyi": "小忆", "liuying": "流萤"}
+_VOICE_ALIASES = {"himeko": "姬子", "xiaoyi": "小忆", "liuying": "流萤"}
+
+
+def _scan_voice_profiles() -> tuple[Dict[str, Path], Dict[str, str]]:
+    base = _COSY_REF / "profiles"
+    alias_of = {name: alias for alias, name in _VOICE_ALIASES.items()}
+    profiles: Dict[str, Path] = {}
+    labels: Dict[str, str] = {}
+    try:
+        names = sorted(item.name for item in base.iterdir() if item.is_dir())
+    except OSError:
+        names = []
+    for name in names:
+        key = alias_of.get(name, name)
+        profiles[key] = base / name
+        labels[key] = name
+    if not profiles:  # 档案目录还没准备好时保留内置三套，界面不至于空
+        for alias, name in _VOICE_ALIASES.items():
+            profiles[alias] = base / name
+            labels[alias] = name
+    return profiles, labels
+
+
+VOICE_PROFILES, VOICE_LABELS = _scan_voice_profiles()
 
 MANIFEST_NAMES: Dict[str, str] = {}
