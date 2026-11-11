@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import math
 import time
 from datetime import datetime, timedelta, timezone
@@ -219,6 +220,53 @@ class PolicyMixin:
             self.state.pop(f"followup:{umo}", None)
         else:
             self.state[f"followup:{umo}"] = fu
+
+    async def _ai_pick_watch(self, umo: str, name: str, text: str) -> bool:
+        """让模型自己决定要不要把这个群纳入监听。
+
+        - 关掉 watch_ai_decide 就退回「被点名即收」；
+        - 群数到 watch_max_groups 就不再收（防止哪个群 @ 一下就被拉进来）；
+        - 判断结果按群缓存：SKIP 的 watch_skip_days 天内不再重复问，省 token。
+        """
+        if not bool(self.cfg.get("watch_ai_decide", True)):
+            return True
+        try:
+            cap = int(self.cfg.get("watch_max_groups", 12) or 0)
+        except (TypeError, ValueError):
+            cap = 12
+        if cap > 0 and len(self.cfg.get("watch_groups") or []) >= cap:
+            return False
+        gid = umo.rsplit(":", 1)[-1]
+        now = datetime.now().timestamp()
+        vote = self.state.get(f"watch_vote:{gid}") or {}
+        try:
+            skip_days = float(self.cfg.get("watch_skip_days", 7) or 0)
+        except (TypeError, ValueError):
+            skip_days = 7
+        if vote.get("ok") is False and now - float(vote.get("ts") or 0) < skip_days * 86400:
+            return False
+        prompt = (
+            f"你在群「{gid}」里潜水。刚才 {name or '有人'} 说：{(text or '')[:60]}\n"
+            "判断这个群值不值得你长期蹲着听（监听群里的聊天）：\n"
+            "- 像正常人群聊、话题你接得上 → WATCH\n"
+            "- 广告/水军/一次性提问/跟你无关的刷屏 → SKIP\n"
+            "只输出 WATCH 或 SKIP，不要别的字。"
+        )
+        try:
+            raw = await asyncio.wait_for(self._generate(prompt, umo), timeout=15)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                f"[human_sim] 监听判断失败，先按点名收下 {gid}: {type(e).__name__}"
+            )
+            return True
+        raw = (raw or "").strip().upper()
+        ok = "WATCH" in raw and "SKIP" not in raw
+        self.state[f"watch_vote:{gid}"] = {"ok": ok, "ts": now}
+        logger.info(
+            f"[human_sim] 自己挑了监听群 {gid}：{'收' if ok else '不收'}"
+            f"（当前 {len(self.cfg.get('watch_groups') or [])} 个）"
+        )
+        return ok
 
     def _followup_extend_for_other(self, umo: str) -> None:
         """窗口里别人说话：把窗口往后顺一点，别聊着聊着就过期。

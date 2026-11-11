@@ -77,6 +77,9 @@ DEFAULTS = {
     "followup_others_probability": 0.35,  # 窗口里别人说话时的接话概率下限（夜间也生效）
     "followup_others_max_minutes": 10,    # 别人说话顺延窗口的封顶（分钟）
     "watch_on_mention": True,           # 不在潜水池的群，被 @/点名后自动纳入监听
+    "watch_ai_decide": True,            # 收不收这个群由模型自己判断（关掉=点名即收）
+    "watch_max_groups": 12,             # 潜水池上限，防止被到处 @ 越加越多
+    "watch_skip_days": 7,               # 判过「不收」的群，几天内不再重复问
     "interject_cooldown_minutes": 45,
     "interject_per_minute": 1,    # 旧随机插话路径的每分钟上限/群
     "lurk_check_interval_minutes": 20,
