@@ -92,6 +92,9 @@ DEFAULTS = {
     ],
     "pm_active_max_unanswered": 2,       # 连续主动这么多条没人回就永久闭嘴（等他回一句才恢复）
     "pm_active_max_silence_hours": 72,   # 对方超过这么久没说话：不再主动
+    # 主动间隔优先按这个人自己的「安静间隔」定（>=5 分钟的间隔取 p75），样本不够才用上面的档位
+    "pm_active_gap_percentile": 0.75,    # 取安静间隔的哪个分位（0.5 中位 / 0.75 默认 / 0.9 更少打扰）
+    "pm_active_gap_min_minutes": 15,     # 下限：再热的会话也不会 15 分钟内主动敲
     "face_probability": 0.2,
     "sticker_probability": 0.55,
     # —— 拍一拍（全在本地按规则处理，不惊动 LLM）——

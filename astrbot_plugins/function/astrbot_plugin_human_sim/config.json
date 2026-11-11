@@ -227,5 +227,7 @@
     ]
   ],
   "pm_active_max_unanswered": 2,
-  "pm_active_max_silence_hours": 72
+  "pm_active_max_silence_hours": 72,
+  "pm_active_gap_percentile": 0.75,
+  "pm_active_gap_min_minutes": 15
 }

@@ -288,12 +288,31 @@ class ActivityMixin:
                 logger.info(f"[human_sim] 冒泡表情 -> {umo.rsplit(':', 1)[-1]}")
 
     # ---------- 主动私聊：只找最近私聊过的人，绝不打扰陌生人 ----------
-    def _pm_interval_minutes(self, count: int, span_seconds: float) -> int:
-        """按「条数 / 期间时间」算聊天速度，越快回得越勤（最快 1 分钟）；0 = 永久不主动。
+    def _pm_gap_interval(self, stamps: list[float]) -> int | None:
+        """按这个人自己的「安静间隔」定主动间隔：取窗口内间隔的 p75。
 
-        例：1 分钟内连发 5 句 → 5 条/分钟 → 1 分钟档；
-        5 条慢悠悠聊 2 小时 → 0.04 条/分钟 → 30 分钟档。
+        以前用「聊天速度 → 间隔」换算，量纲是错的：聊得越快，算出来的间隔越短，
+        于是最该被放过的人反而被敲得最勤。这里直接量「他说完一句之后隔多久才会
+        再开口」——安静间隔p75 越大，说明他本来就习惯隔很久才回来，越不该去打扰。
+        样本不足（少于 3 段安静）返回 None，回落到速度档位。
         """
+        try:
+            pct = float(self.cfg.get("pm_active_gap_percentile", 0.75))
+        except (TypeError, ValueError):
+            pct = 0.75
+        # 只统计 >=5 分钟的间隔：几秒到一两分钟的是同一段对话里的停顿，不是「人走了」
+        gaps = sorted(b - a for a, b in zip(stamps, stamps[1:]) if (b - a) >= 300)
+        if len(gaps) < 3:
+            return None
+        idx = min(len(gaps) - 1, int(len(gaps) * min(1.0, max(0.0, pct))))
+        try:
+            low = float(self.cfg.get("pm_active_gap_min_minutes", 15))
+        except (TypeError, ValueError):
+            low = 15.0
+        return max(1, int(min(1440.0, max(low, gaps[idx] / 60.0))))
+
+    def _pm_interval_minutes(self, count: int, span_seconds: float) -> int:
+        """兜底：按「条数 / 期间时间」算聊天速度定档（样本不够时才用）；0 = 永久不主动。"""
         if count <= 0:
             return 0
         if count <= 1:
@@ -343,12 +362,15 @@ class ActivityMixin:
             # 长期不回：他这么久没吭声，就别再主动了（等他再说话才恢复）
             if now - last_in > max_silence:
                 continue
-            # 连发上限：没被回应的情况下最多主动 3 次，之后永久闭嘴，直到他回一句
+            # 连发上限：没被回应的情况下最多主动这么多次，之后永久闭嘴，直到他回一句
             miss = int(self.state.get(f"pm_miss:{umo}", 0) or 0)
             if miss >= max_miss:
                 continue
             span = (stamps[-1] - stamps[0]) if len(stamps) > 1 else 0.0
-            interval = self._pm_interval_minutes(len(stamps), span)
+            # 优先按他自己的安静间隔；样本不够才回落到速度档位
+            interval = self._pm_gap_interval(stamps)
+            if interval is None:
+                interval = self._pm_interval_minutes(len(stamps), span)
             if interval <= 0:
                 continue
             # 退避：3 次机会里也逐次拉长（1 → 1.7 → 2.9 倍，最多 2 小时）
