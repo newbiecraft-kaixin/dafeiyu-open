@@ -193,9 +193,16 @@ DEFAULTS = {
         # none：一个工具都不给
         "none": [],
         # dsh：外部 agent（DSH）专属档位。它自己会读写文件、跑命令，
-        # AstrBot 的工具 schema 传过去纯属浪费上下文，默认一个都不给。
-        # 需要保留某几个就往这里加工具名。
-        "dsh": [],
+        # 但「把东西发到 QQ」这类动作只有 AstrBot 侧的工具才做得到，
+        # 全摘空会让它只会嘴上说「已经发了」。这里只留干活必需的几个。
+        "dsh": [
+            "local_file",
+            "local_exec",
+            "send_file",
+            "send_private",
+            "qq_history",
+            "recall_long_term_memory",
+        ],
     },
     # 角色档位：没有单独配置的会话按角色取档（groups/friends 里显式配置优先）
     # 页面上就选这三个下拉，好友和个人不用再逐项配工具
@@ -221,7 +228,7 @@ LEVEL_DESC = {
     "info": "只读查询组（时间/天气/联网/头像/长期记忆/空间动态，共 6 个）",
     "guest": "陌生人档（只聊天，仅时间/天气/头像，共 3 个）",
     "none": "禁用所有工具",
-    "dsh": "DSH 专属（外部 agent 自带工具，默认不传 AstrBot 工具）",
+    "dsh": "DSH 专属（外部 agent，只留本机文件/执行/发文件/私聊/查记录/记忆 6 个）",
     "custom": "自定义白名单（勾选工具）",
 }
 
