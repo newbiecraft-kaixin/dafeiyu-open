@@ -1,0 +1,5 @@
+name: astrbot_plugin_file_meta
+desc: 文件消息只解析标题与格式（如「[文件] 季度汇报（格式：pptx）」），不下载文件本体，也不触发文件内容解析
+version: v1.0.0
+author: kaixin
+repo: ""
