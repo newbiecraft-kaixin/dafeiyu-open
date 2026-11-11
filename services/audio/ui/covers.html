@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 翻唱管理</title>
+<style>
+  :root{
+    --bg:#0d0f16;--card:#151823;--line:rgba(255,255,255,.10);
+    --text:#e9edff;--muted:#8b97bd;--acc:#6f9cc0;--blue:#3c7eb0;
+    --good:#3ddc97;--bad:#ff617b;--warn:#ffc46b;
+    --layer:#5f86d8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);
+    font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(1100px 620px at 88% -12%,rgba(74,109,164,.14),transparent 62%),
+               linear-gradient(180deg,#0a0d14,#0d0f16 46%);
+    animation:pageIn .4s ease both}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px;position:relative;z-index:1}
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora i{position:absolute;border-radius:50%;filter:blur(90px)}
+  .aurora .a1{width:520px;height:520px;left:-150px;top:-170px;
+    background:rgba(74,109,164,.14);animation:drift1 24s ease-in-out infinite alternate}
+  .aurora .a2{width:640px;height:640px;right:-220px;top:14%;
+    background:rgba(84,102,160,.14);animation:drift2 30s ease-in-out infinite alternate}
+  .aurora .a3{width:480px;height:480px;left:26%;bottom:-230px;
+    background:rgba(60,126,176,.10);animation:drift3 18s ease-in-out infinite alternate}
+  @keyframes drift1{to{transform:translate(90px,70px) scale(1.12)}}
+  @keyframes drift2{to{transform:translate(-110px,90px) scale(.94)}}
+  @keyframes drift3{to{transform:translate(70px,-90px) scale(1.15)}}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
+  header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+    align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:20px;letter-spacing:.5px;
+    background:linear-gradient(120deg,#6f9cc0,#7c9ad8);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{margin:4px 0 0;color:var(--muted);font-size:13px}
+  a.back{color:var(--acc);text-decoration:none;font-size:13px}
+  a.back:hover{text-decoration:underline}
+  .path{margin-top:12px;font-family:Consolas,monospace;font-size:12px;color:#8b97bd;
+    word-break:break-all;padding:8px 12px;border-radius:9px;background:rgba(95,134,216,.06);
+    border:1px solid var(--line)}
+  .panel{margin-top:18px;padding:16px 18px;border-radius:14px;
+    background:var(--card);border:1px solid var(--line);
+    transition:border-color .18s ease}
+  .panel:hover{border-color:rgba(84,102,160,.32)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .stat{font-size:13px;color:var(--muted)}
+  .stat b{color:var(--acc)}
+  .spacer{flex:1}
+  .btn{cursor:pointer;border-radius:8px;border:1px solid rgba(95,134,216,.25);
+    background:rgba(255,255,255,.03);color:#eaf0ff;padding:7px 14px;font-size:13px;transition:.15s}
+  .btn:hover{border-color:rgba(84,102,160,.5);background:rgba(84,102,160,.10)}
+  .btn.primary{background:linear-gradient(135deg,#5f86d8,#3c7eb0);
+    border-color:transparent;color:#fff}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.tiny{padding:4px 10px;font-size:12px}
+  .btn.danger{color:#ffb3c1;border-color:rgba(255,97,123,.35)}
+  .btn.danger:hover{background:rgba(255,97,123,.15)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.on{border-color:rgba(60,126,176,.65);background:rgba(60,126,176,.15);color:#bff3fd}
+  .msg{margin-top:10px;font-size:13px;min-height:20px;color:var(--muted)}
+  .msg.err{color:var(--bad)}.msg.good{color:var(--good)}
+  .player-box{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:10px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#12151f}
+  .player-title{color:var(--acc);font-size:13px}
+  audio{height:34px;flex:1 1 320px;min-width:220px}
+  .list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:14px 16px;border-radius:10px;border:1px solid var(--line);background:#12151f;
+    transition:border-color .18s ease,background .18s ease}
+  .item:hover{border-color:rgba(84,102,160,.35);background:#1b1f2c}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+  .tag::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:#3c7eb0}
+  .tag.cover{color:#3c7eb0}
+  .tag.cover::before{background:#3c7eb0}
+  .tag.sing{color:#347c92}
+  .tag.sing::before{background:#347c92}
+  .name{font-size:13.5px;color:var(--text)}
+  .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(95,134,216,.22);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(95,134,216,.4);background-clip:content-box}
+::selection{background:rgba(60,126,176,.30)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
+  /* ===== 层级色：音频层 ===== */
+  h1::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--layer);margin-right:9px;vertical-align:-1px}
+  .item{box-shadow:inset 2px 0 0 var(--layer)}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>翻唱管理</h1>
+      <p class="sub">机器人在 QQ 里唱过的成品都在这；试听、清理都在本页完成。</p>
+    </div>
+    <a class="back" href="/">← 返回音频能力</a>
+  </header>
+
+  <div class="path" id="path">读取目录中…</div>
+
+  <div class="panel">
+    <div class="bar">
+      <span class="stat" id="stat">—</span>
+      <span class="spacer"></span>
+      <button class="btn tiny on" data-filter="all">全部</button>
+      <button class="btn tiny" data-filter="cover">翻唱</button>
+      <button class="btn tiny" data-filter="sing">唱歌</button>
+      <button class="btn" id="openDir">打开目录</button>
+      <button class="btn primary" id="refresh">刷新</button>
+    </div>
+    <div class="player-box">
+      <span class="player-title" id="nowPlaying">未选择</span>
+      <audio id="player" controls preload="none"></audio>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="list" id="list"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+const state = {items: [], filter: 'all'};
+const $ = (id) => document.getElementById(id);
+
+async function api(path, options) {
+  const response = await fetch(path, Object.assign({cache: 'no-store'}, options || {}));
+  let body = null;
+  try { body = await response.json(); } catch (err) { body = null; }
+  if (!response.ok || !body || body.ok === false) {
+    throw new Error((body && body.error) || ('请求失败（HTTP ' + response.status + '）'));
+  }
+  return body.data !== undefined ? body.data : body;
+}
+
+const fmtSize = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB'
+  : (n / 1024).toFixed(0) + ' KB';
+
+function setMsg(text, kind) {
+  const el = $('msg');
+  el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+function paint() {
+  const box = $('list');
+  const items = state.items.filter((it) => state.filter === 'all' || it.kind === state.filter);
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">这里还没有成品。先在 QQ 里让肥鱼唱一首，或点右上角刷新。</div>';
+    return;
+  }
+  box.innerHTML = items.map((it) => `
+    <div class="item" data-name="${it.name}">
+      <span class="tag ${it.kind}">${it.kind === 'cover' ? '翻唱' : '唱歌'}</span>
+      <span class="name">${it.name}</span>
+      <span class="meta">
+        <span>${it.stamp}</span>
+        <span>${fmtSize(it.size)}</span>
+        <button class="btn tiny" data-act="play">试听</button>
+        <button class="btn tiny danger" data-act="del">删除</button>
+      </span>
+    </div>`).join('');
+}
+
+async function load() {
+  setMsg('读取中…');
+  try {
+    const data = await api(API + '/covers');
+    state.items = data.items || [];
+    $('path').textContent = '存储目录：' + (data.dir || '—');
+    $('stat').innerHTML = `共 <b>${data.count}</b> 首 · 翻唱 <b>${data.cover}</b> · 唱歌 <b>${data.sing}</b> · 占用 <b>${fmtSize(data.total_size || 0)}</b>`;
+    setMsg(data.exists ? '' : '目录还没生成，先在 QQ 里唱一首吧。', data.exists ? '' : 'err');
+    paint();
+  } catch (err) {
+    setMsg('读取失败：' + err.message, 'err');
+  }
+}
+
+function play(name, stamp) {
+  const player = $('player');
+  $('nowPlaying').textContent = (name.startsWith('cover_') ? '翻唱 · ' : '唱歌 · ') + stamp;
+  player.src = API + '/covers/audio?name=' + encodeURIComponent(name);
+  player.play().catch(() => {});
+}
+
+async function del(name) {
+  if (!confirm('删除这个成品？\n' + name)) return;
+  try {
+    await api(API + '/covers?name=' + encodeURIComponent(name), {method: 'DELETE'});
+    if ($('player').src.includes(encodeURIComponent(name))) {
+      $('player').pause();
+      $('player').removeAttribute('src');
+      $('nowPlaying').textContent = '未选择';
+    }
+    setMsg('已删除 ' + name, 'good');
+    load();
+  } catch (err) {
+    setMsg('删除失败：' + err.message, 'err');
+  }
+}
+
+$('list').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button');
+  if (!btn) return;
+  const row = btn.closest('.item');
+  const name = row.dataset.name;
+  const item = state.items.find((it) => it.name === name);
+  if (btn.dataset.act === 'play') play(name, item ? item.stamp : '');
+  if (btn.dataset.act === 'del') del(name);
+});
+
+document.querySelectorAll('[data-filter]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.filter = btn.dataset.filter;
+    document.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('on', b === btn));
+    paint();
+  });
+});
+
+$('refresh').addEventListener('click', load);
+$('openDir').addEventListener('click', async () => {
+  try {
+    const data = await api(API + '/covers/open', {method: 'POST'});
+    setMsg('已在资源管理器中打开：' + data.dir, 'good');
+  } catch (err) {
+    setMsg('打开失败：' + err.message, 'err');
+  }
+});
+
+load();
+</script>
+
+</body>
+</html>

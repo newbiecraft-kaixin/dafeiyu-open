@@ -39,10 +39,10 @@ cookies.json
 *.pem
 *.key
 
-# 模型与素材（统一归 audio/）
-models/
-audio/
-!audio/cosyvoice_ref/**/*.wav
+# 模型与素材（统一归 audio/）；只忽略根目录，避免连带忽略 services/audio/
+/models/
+/audio/
+!/audio/cosyvoice_ref/**/*.wav
 # 旧平铺路径：本地用目录联接指向 audio/cosyvoice_ref，不入库
 cosyvoice_ref/
 cosyvoice_ref.legacy-empty/

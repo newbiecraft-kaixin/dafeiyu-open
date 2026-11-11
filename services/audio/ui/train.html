@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 声线管理</title>
+<style>
+:root{
+  --bg:#0d0f16;--card:#151823;--card2:#1b1f2c;
+  --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.16);
+  --text:#e9ecf5;--muted:#a7b0c6;--dim:#7d879e;
+  --acc:#5f86d8;--good:#46d39a;--warn:#f5b544;--bad:#f2637e;
+  --layer:#5f86d8;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);
+font:14px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+background:var(--bg);
+animation:pageIn .4s ease both}
+.wrap{max-width:1040px;margin:0 auto;padding:34px 24px 60px;position:relative;z-index:1}
+h1{margin:0 0 6px;font-size:23px;letter-spacing:.5px;color:var(--text)}
+.aurora{display:none}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
+.sub{margin:0 0 6px;color:var(--muted);font-size:13px}
+.opt{margin:0 0 18px;color:var(--muted);font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px;
+box-shadow:0 8px 24px rgba(0,0,0,.35);transition:border-color .18s ease}
+.card:hover{border-color:var(--line2)}
+.card h2{margin:0 0 4px;font-size:16px;font-weight:600}
+.card p.tip{margin:0 0 16px;color:var(--muted);font-size:12.5px}
+.health{border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;
+border:1px solid var(--line);background:transparent;color:var(--muted)}
+.health.ok{border-color:var(--good);color:var(--good)}
+.health.warn{border-color:var(--warn);background:transparent;color:var(--warn)}
+.dep{display:none;border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;
+border:1px solid rgba(245,181,68,.45);background:rgba(245,181,68,.05);color:var(--warn)}
+.dep.ok{border-color:rgba(70,211,154,.35);background:transparent;color:var(--good)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 18px}
+label.f{display:block;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=number],select,textarea{width:100%;padding:9px 11px;border-radius:8px;
+background:var(--card2);border:1px solid var(--line);color:var(--text);font-size:13px;outline:none}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:64px;font:inherit;line-height:1.6}
+select{appearance:none}
+/* 原生下拉列表：深底浅字，避免白底白字看不清 */
+select{color-scheme:dark}
+select option,select optgroup{background-color:#1b1f2c;color:#e9ecf5}
+select option:checked,select option:hover{background-color:#2a3048;color:#fff}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.check{display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px}
+.check input{width:16px;height:16px;accent-color:var(--acc)}
+button{font:inherit;cursor:pointer;border-radius:8px;padding:9px 18px;border:1px solid var(--line2);
+background:transparent;color:var(--text);transition:.16s ease}
+button:hover{background:var(--card2);border-color:var(--acc)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:var(--acc);border-color:transparent;color:#0d0f16;font-weight:600;padding:10px 22px}
+button.primary:hover{filter:none;background:var(--acc)}
+button.ghost{background:transparent;color:var(--muted);border-color:var(--line2);padding:5px 12px;font-size:12px}
+button.danger{background:transparent;border-color:var(--bad);color:var(--bad);padding:5px 12px;font-size:12px}
+.err{display:none;margin-top:14px;padding:10px 13px;border-radius:8px;font-size:13px;
+background:transparent;border:1px solid var(--bad);color:var(--bad);white-space:pre-wrap}
+.err.ok{border-color:var(--good);color:var(--good)}
+.jobs-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.jobs-head h2{margin:0}
+.muted{color:var(--muted);font-size:12.5px}
+.job{padding:14px 0 0;margin-top:14px;border:0;border-top:1px solid var(--line);border-radius:0;
+background:transparent;transition:border-color .18s ease}
+.job:hover{border-top-color:var(--line2)}
+.job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.job-name{font-size:15px;font-weight:600;color:var(--text)}
+.job-meta{color:var(--muted);font-size:12px;margin-top:3px;word-break:break-all}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;vertical-align:middle}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:var(--muted);--ph:transparent}
+.b-queued{color:var(--warn)}
+.b-queued::before{background:var(--warn);--ph:transparent;animation:pulse 2.4s ease-in-out infinite}
+.b-running{color:var(--good)}
+.b-running::before{background:var(--good);--ph:transparent;animation:pulse 2.4s ease-in-out infinite}
+.b-completed{color:var(--good)}
+.b-completed::before{background:var(--good)}
+.b-mode{color:var(--acc)}
+.b-mode::before{background:var(--acc)}
+.b-failed{color:var(--bad)}
+.b-failed::before{background:var(--bad)}
+.b-cancelled{color:var(--dim)}
+@keyframes pulse{
+0%,100%{box-shadow:0 0 0 0 transparent}
+50%{box-shadow:0 0 0 4px transparent}}
+.bar{margin:13px 0 4px;height:8px;border-radius:4px;background:var(--card2);overflow:hidden;
+border:1px solid var(--line)}
+.bar > i{display:block;height:100%;width:0;position:relative;overflow:hidden;
+background:var(--acc);transition:width .4s}
+.bar > i::after{content:"";position:absolute;top:0;bottom:0;left:0;width:45%;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+animation:shine 1.5s linear infinite}
+@keyframes shine{from{transform:translateX(-110%)}to{transform:translateX(330%)}}
+.bar-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.art{margin-top:10px;padding:9px 12px;border-radius:8px;background:transparent;
+border:1px solid var(--good);font-size:12.5px;color:var(--good);word-break:break-all}
+.art b{color:var(--text);font-weight:600}
+.job-err{margin-top:10px;padding:9px 12px;border-radius:8px;background:transparent;
+border:1px solid var(--bad);color:var(--bad);font-size:12.5px;white-space:pre-wrap}
+.job-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+pre.log{display:none;margin:12px 0 0;max-height:340px;overflow:auto;padding:12px 14px;border-radius:8px;
+background:var(--bg);border:1px solid var(--line2);color:var(--text);
+font:12px/1.55 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-all}
+pre.log.on{display:block}
+.empty{color:var(--muted);font-size:13px;padding:22px 0;text-align:center}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);background-clip:content-box}
+::selection{background:rgba(95,134,216,.35)}
+button{transition:.16s ease}
+button:active{transform:translateY(1px)}
+  /* ===== 活力增强层：氛围光 + 渐变描边 ===== */
+  body{
+    background:
+      radial-gradient(900px 520px at 6% -12%, rgba(95,134,216,.18), transparent 62%),
+      radial-gradient(760px 480px at 96% 2%, rgba(60,126,176,.13), transparent 62%),
+      radial-gradient(700px 520px at 50% 110%, rgba(74,109,164,.12), transparent 60%),
+      linear-gradient(180deg,#0a0d14,#0d0f16 45%,#090b11);
+    background-attachment:fixed;
+  }
+  h1{
+    background:linear-gradient(100deg,#eef1fb 8%,#9db4ff 55%,#7ff0d4 95%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .card{
+    border:1px solid transparent;
+    background:
+      linear-gradient(var(--card),var(--card)) padding-box,
+      linear-gradient(135deg,rgba(94,124,196,.52),rgba(74,120,170,.28) 45%,rgba(84,102,160,.30)) border-box;
+    box-shadow:0 10px 30px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.03);
+    transition:transform .22s ease, box-shadow .22s ease;
+  }
+  .card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 16px 44px rgba(0,0,0,.48), 0 0 26px rgba(95,134,216,.16), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  button:hover, .btn:hover{box-shadow:0 0 0 1px rgba(95,134,216,.35), 0 6px 18px rgba(95,134,216,.16);}
+  .aurora{
+    display:block; position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .aurora i{
+    position:absolute; border-radius:50%; filter:blur(90px); opacity:.5;
+    animation:auroraMove 26s ease-in-out infinite alternate;
+  }
+  .aurora .a1{width:520px;height:520px;left:-140px;top:-120px;
+    background:radial-gradient(circle,rgba(95,134,216,.55),transparent 70%)}
+  .aurora .a2{width:440px;height:440px;right:-120px;top:10%;animation-delay:-9s;
+    background:radial-gradient(circle,rgba(60,126,176,.40),transparent 70%)}
+  .aurora .a3{width:380px;height:380px;left:40%;bottom:-160px;animation-delay:-16s;
+    background:radial-gradient(circle,rgba(84,102,160,.30),transparent 70%)}
+  @keyframes auroraMove{
+    from{transform:translate3d(0,0,0) scale(1)}
+    to{transform:translate3d(60px,40px,0) scale(1.1)}
+  }
+  /* ===== 层级色：音频层 ===== */
+  h1::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--layer);margin-right:9px;vertical-align:-1px}
+  .job{box-shadow:inset 2px 0 0 var(--layer);padding-left:12px}
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{transition:none!important; animation:none!important;}
+  }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="wrap">
+  <h1>声线管理</h1>
+  <p class="sub">参考音频 + 提示文本 → 直接写入声线档案 → 立即可用于说话</p>
+  <p class="opt">可选音频扩展能力：装了就能管理声线、歌曲；不装不影响桌宠对话。</p>
+
+  <div id="health" class="health">正在检查声线档案…</div>
+  <div id="dep" class="dep"></div>
+
+  <div class="card">
+    <h2>新增声线</h2>
+    <p class="tip">选一个 1~30 秒的干净人声 wav，再填入这段音频里说的那句话。提交即写入 cosyvoice_ref/profiles，不需要训练。</p>
+    <div class="grid">
+      <div><label class="f" for="name">声线名称（必填）</label>
+        <input id="name" type="text" placeholder="例如：大肥鱼" autocomplete="off">
+      </div>
+      <div><label class="f" for="ref">参考音频路径（必填）</label>
+        <input id="ref" type="text" placeholder="C:\Users\...\voice.wav" autocomplete="off">
+      </div>
+      <div><label class="f" for="refSel">从已有参考音频快选</label>
+        <select id="refSel"><option value="">加载中…</option></select>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label class="f" for="prompt">提示文本（必填）</label>
+      <textarea id="prompt" placeholder="参考音频里说的那句话，例如：今天天气真好，我们出去走走吧。"></textarea>
+    </div>
+    <div class="row" style="margin-top:18px">
+      <button id="submitBtn" class="primary" type="button">保存声线</button>
+      <span class="muted">提交后立即写入档案目录，下一条语音即可生效。</span>
+    </div>
+    <div id="formErr" class="err"></div>
+  </div>
+
+  <div class="card">
+    <div class="jobs-head">
+      <h2>已有声线</h2>
+      <span id="voicesMeta" class="muted">正在读取…</span>
+    </div>
+    <div id="voices"><div class="empty">暂无声线</div></div>
+  </div>
+</div>
+<script>
+//SCRIPT
+function esc(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function api(path, options) {
+  const resp = await fetch(path, options);
+  let body = null;
+  try { body = await resp.json(); } catch (e) { body = null; }
+  if (!body || body.ok !== true) {
+    throw new Error((body && body.error) || ("请求失败 HTTP " + resp.status));
+  }
+  return body.data;
+}
+
+function showFormMessage(msg, good) {
+  const box = document.getElementById("formErr");
+  if (!msg) {
+    box.style.display = "none";
+    box.textContent = "";
+    box.classList.remove("ok");
+    return;
+  }
+  box.classList.toggle("ok", !!good);
+  box.textContent = msg;
+  box.style.display = "block";
+}
+
+async function loadVoiceDep() {
+  const box = document.getElementById("dep");
+  try {
+    const raw = await fetch("/voice-status", { cache: "no-store" }).then((r) => r.json());
+    const info = raw.data || raw;
+    if (info.online) {
+      box.className = "dep ok";
+      box.textContent = "语音合成（" + info.port + "）在线：保存的声线可以直接试听和使用。";
+    } else {
+      box.className = "dep";
+      box.textContent = "语音合成（" + info.port + "）未启动：声线可以保存，但试听和让肥鱼说话都用不了，请先启动语音合成。";
+    }
+  } catch (e) {
+    box.className = "dep";
+    box.textContent = "无法确认语音合成状态：" + e.message;
+  }
+  box.style.display = "block";
+}
+
+async function loadHealth() {
+  const box = document.getElementById("health");
+  try {
+    const h = await api("/health");
+    const train = h.train || {};
+    if (train.ready) {
+      box.className = "health ok";
+      box.textContent = "声线档案就绪：" + (train.profile_dir || "") +
+        "（已有 " + (train.voices || 0) + " 条声线）";
+    } else {
+      box.className = "health warn";
+      const why = (train.problems || []).join("；") || "后端信息缺失";
+      box.textContent = "声线档案目录不可用：" + why;
+    }
+  } catch (e) {
+    box.className = "health warn";
+    box.textContent = "声线档案状态读取失败：" + e.message;
+  }
+}
+
+async function loadRefs() {
+  const sel = document.getElementById("refSel");
+  try {
+    const data = await api("/train/refs");
+    const refs = data.refs || [];
+    if (!refs.length) {
+      sel.innerHTML = '<option value="">未找到参考音频</option>';
+      return;
+    }
+    let html = '<option value="">共 ' + refs.length + ' 条，点选填入路径</option>';
+    for (const r of refs) {
+      html += '<option value="' + esc(r.path) + '">' + esc(r.name) + ' — ' + esc(r.dir) + '</option>';
+    }
+    sel.innerHTML = html;
+  } catch (e) {
+    sel.innerHTML = '<option value="">参考音频读取失败</option>';
+  }
+}
+
+function renderVoice(voice) {
+  const cls = voice.mode === "broken" ? "b-failed"
+    : (voice.mode === "zero_shot" ? "b-mode" : "b-cancelled");
+  let html = '<div class="job">';
+  html += '<div class="job-top"><div><div class="job-name">' + esc(voice.name) +
+    ' <span class="badge ' + cls + '">' + esc(voice.mode_label) + "</span>" +
+    (voice.active ? ' <span class="badge b-completed">当前使用</span>' : "") + "</div>";
+  html += '<div class="job-meta">' +
+    (voice.prompt ? "提示文本：" + esc(voice.prompt) : "没有提示文本（走跨语种克隆）") +
+    "</div></div></div>";
+  html += "</div>";
+  return html;
+}
+
+async function loadVoices() {
+  const box = document.getElementById("voices");
+  const meta = document.getElementById("voicesMeta");
+  try {
+    const data = await api("/train/voices");
+    const voices = data.voices || [];
+    meta.textContent = "共 " + voices.length + " 条" +
+      (data.active ? "，当前：" + data.active : "");
+    box.innerHTML = voices.length
+      ? voices.map(renderVoice).join("")
+      : '<div class="empty">暂无声线</div>';
+  } catch (e) {
+    meta.textContent = "声线列表读取失败：" + e.message;
+  }
+}
+
+async function submitVoice() {
+  const btn = document.getElementById("submitBtn");
+  showFormMessage("");
+  const name = document.getElementById("name").value.trim();
+  const refPath = document.getElementById("ref").value.trim();
+  const prompt = document.getElementById("prompt").value.trim();
+  if (!name) { showFormMessage("请先填写声线名称"); return; }
+  if (!refPath) { showFormMessage("请填写参考音频路径"); return; }
+  if (!prompt) { showFormMessage("请填写提示文本（参考音频里说的那句话）"); return; }
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  try {
+    const voice = await api("/train/voices", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({name: name, ref_path: refPath, prompt: prompt})
+    });
+    showFormMessage("已保存声线「" + voice.name + "」，时长 " + voice.duration_s +
+      " 秒，下一条语音即可使用。", true);
+    document.getElementById("prompt").value = "";
+    await loadVoices();
+    await loadHealth();
+  } catch (e) {
+    showFormMessage(e.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "保存声线";
+  }
+}
+
+function bindEvents() {
+  document.getElementById("submitBtn").addEventListener("click", submitVoice);
+  document.getElementById("refSel").addEventListener("change", function (ev) {
+    if (ev.target.value) document.getElementById("ref").value = ev.target.value;
+  });
+}
+
+bindEvents();
+loadHealth();
+loadRefs();
+loadVoiceDep();
+loadVoices();
+</script>
+
+</body>
+</html>

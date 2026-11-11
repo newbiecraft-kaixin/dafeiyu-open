@@ -1,0 +1,35 @@
+{
+  "name": "audio",
+  "license": "Apache-2.0",
+  "kind": "capability",
+  "layer": "能力层",
+  "port": 23366,
+  "probe": "port",
+  "optional": true,
+  "responsibility": "音频能力域（可选）：声线档案（参考音频 + 提示文本，直接落盘）、歌曲库（酷狗/咪咕音源）、翻唱成品管理、语音识别与画面描述（faster-whisper + Ollama 视觉，原 subtitle 已并入同一进程）",
+  "domain": "audio",
+  "entry": "service.py",
+  "endpoints": [
+    "GET /health",
+    "GET /train/voices",
+    "POST /train/voices",
+    "GET /train/refs",
+    "GET /songs",
+    "POST /songs",
+    "GET /songs/sources",
+    "POST /songs/sources",
+    "GET /covers",
+    "DELETE /covers",
+    "POST /asr",
+    "POST /vision",
+    "GET /records"
+  ],
+  "links": {
+    "声线管理": "http://127.0.0.1:23366/ui/train",
+    "歌曲管理": "http://127.0.0.1:23366/ui/songs",
+    "翻唱管理": "http://127.0.0.1:23366/ui/covers",
+    "语音识别": "http://127.0.0.1:23405/records",
+    "语音合成": "http://127.0.0.1:8714/health"
+  },
+  "status": "active"
+}
