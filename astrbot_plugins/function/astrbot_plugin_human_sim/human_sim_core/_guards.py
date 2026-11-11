@@ -37,10 +37,17 @@ class PipelineGuardsMixin:
             key = _send_dedupe_key(event)
             now = time.time()
             prev = _DUP_SEND_LAST.get(key)
-            # 只掐「确认已经发出去过」的那一条，避免把被丢弃的唯一结果也吞掉
-            if prev and now - prev[0] <= _DUP_SEND_WINDOW and prev[1] == text:
+            # 只掐「刚放行过、且内容一字不差」的那一条；同一句在几秒内出现第二次，
+            # 基本都是同一个回复被两条事件各发了一遍，删掉后一条。
+            # 分段回复会在两条之间插入 1.2~2.8 秒延时，窗口要比它宽一点。
+            if prev and now - prev[0] <= max(_DUP_SEND_WINDOW, 6.0) and prev[1] == text:
                 logger.info("[human_sim] 同一条回复刚发过，掐掉重复的第二次")
                 event.clear_result()
+                event.stop_event()
+                return
+            # 不能等 after_message_sent 再记账：那条钩子要等整条消息（含分段延时）
+            # 发完才回调，重复的第二条会先一步进到这里，去重等于没做。
+            _DUP_SEND_LAST[key] = (now, text)
         except Exception as e:  # noqa: BLE001
             logger.debug(f"[human_sim] 重复发送去重异常: {type(e).__name__}: {e}")
 
