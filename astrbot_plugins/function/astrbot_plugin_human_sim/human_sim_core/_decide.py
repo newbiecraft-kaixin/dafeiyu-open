@@ -13,7 +13,7 @@ from astrbot.api import logger
 from astrbot.api.message_components import At, Plain
 
 from .config import CLOUD_DECIDE_PROVIDER, LOCAL_DECIDE_PROVIDER
-from .prompts import SYSTEM_PROMPT
+from .prompts import HISTORY_ASK_RE, SYSTEM_PROMPT
 from .text import (
     BALANCE_ERR_RE,
     HALLUCINATED_MEDIA_RE,
@@ -69,8 +69,13 @@ class PipelineDecideMixin:
         # 只引用、没打字的消息：text 是空的，提示词里得有个能读的说法
         spoken = text or "（没打字，只发了一条引用）"
         try:
-            hist = list(self._history.get(umo, []))[-10:]
-            context = "\n".join(hist) if hist else "（刚开始没有聊天记录）"
+            hist = list(self._history.get(umo, []))
+            # 引用旧消息 / 明说要翻记录时，最近 10 条根本不够：给全量缓冲（30 条）
+            deep = bool(quote) or bool(HISTORY_ASK_RE.search(text or ""))
+            recent = hist if deep else hist[-10:]
+            context = "\n".join(recent) if recent else "（刚开始没有聊天记录）"
+            if deep and len(recent) > 10:
+                context = "（下面是最近的全部记录，被引用的旧话可能在更早几行）\n" + context
             # 认人：历史行已带 QQ 号；主人身份只认 owner_id，别让模型见谁都喊主人
             who = self._who_label(name, sender_uid)
             # 引用单独成块：明确旧话作者，避免把别人被引用的旧话算到当前发言人头上
@@ -88,13 +93,15 @@ class PipelineDecideMixin:
                 elif self._quote_is_self(qwho, sender_uid, name):
                     quote_block = (
                         f"\n【引用】{who} 引用了 TA 自己之前的旧话：「{qtext}」\n"
-                        "（这段是 TA 自己以前说的，不是 TA 这次新说的；回应 TA 现在的话）\n"
+                        "（这段是 TA 自己以前说的，不是 TA 这次新说的；"
+                        "如果 TA 问的就是这段旧话，直接针对它答）\n"
                     )
                 else:
                     quote_block = (
                         f"\n【引用】{who} 引用了 {qwho} 之前的旧话：「{qtext}」\n"
                         f"（这段旧话是 {qwho} 说的，不是 {who} 说的，不能算到 {who} 头上；"
-                        f"要回应的是 {who} 现在的话，也别把对话对象换成 {qwho}）\n"
+                        f"要回应的是 {who} 现在的话——如果 TA 问的就是这段旧话，就直接针对它答；"
+                        f"对话对象还是 {who}，别换成 {qwho}）\n"
                     )
             followup_line = (
                 f"（{who} 刚才刚跟你聊过，现在接着说的话要接住，别当没看见、别装潜水）\n"
