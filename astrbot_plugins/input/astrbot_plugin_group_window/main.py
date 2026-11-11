@@ -160,7 +160,7 @@ class GroupWindowPlugin(Star):
                     return
             name = (event.get_sender_name() or "群友").split("#")[0][:24]
             entry = {
-                "t": datetime.now().strftime("%H:%M"),
+                "t": datetime.now().strftime("%m-%d %H:%M"),
                 "uid": uid,
                 "n": name,
                 "c": text[:300],
@@ -187,7 +187,7 @@ class GroupWindowPlugin(Star):
             if not gid or not text or text[:1] in {"/", "／"}:
                 return
             entry = {
-                "t": datetime.now().strftime("%H:%M"),
+                "t": datetime.now().strftime("%m-%d %H:%M"),
                 "uid": str(sender_id or "").strip(),
                 "n": (str(sender_name or "") or "群友").split("#")[0][:24],
                 "c": text[:300],
