@@ -10,7 +10,7 @@ import uuid
 from collections import deque
 from datetime import datetime
 from astrbot.api import logger
-from astrbot.api.message_components import At, Plain
+from astrbot.api.message_components import At, Plain, Reply
 
 from .config import CLOUD_DECIDE_PROVIDER, LOCAL_DECIDE_PROVIDER
 from .prompts import HISTORY_ASK_RE, SYSTEM_PROMPT
@@ -55,13 +55,13 @@ class PipelineDecideMixin:
     async def _decide(
         self, umo: str, name: str, text: str, directed: bool = False, mid=None,
         sender_uid: str = "", force: bool = False, hint: str = "",
-        quote: tuple[str, str] | None = None, followup: bool = False,
+        quote: tuple[str, str, str] | None = None, followup: bool = False,
     ) -> None:
         """把新消息连同最近聊天丢给模型，让它自己决定回话还是沉默。
 
         force=True 表示本地决策层已经判定「必回」——此时不再问模型要不要回，
         直接让它写内容（提示词短一截、没有 [SILENT] 这个出口），省一次推理。
-        quote=(被引用人标签, 被引用的原文)：单独成块告诉模型这段旧话是谁说的，
+        quote=(被引用人标签, 被引用的原文, 被引用消息 id)：单独成块告诉模型这段旧话是谁说的，
         避免把别人被引用的旧话算到当前发言人（尤其是主人）头上。
         followup=True：这条属于「刚找我聊过的人」的连续跟进，提示词里要说明别当没看见。
         """
@@ -80,8 +80,13 @@ class PipelineDecideMixin:
             who = self._who_label(name, sender_uid)
             # 引用单独成块：明确旧话作者，避免把别人被引用的旧话算到当前发言人头上
             quote_block = ""
+            # 出站引用气泡只认真实消息 id：拿不到 id 的旧话（翻记录翻出来的那种）不引用
+            quote_id = ""
             if quote:
-                qwho, qtext = quote
+                qwho, qtext = quote[0], quote[1]
+                quote_id = str(quote[2] if len(quote) > 2 else "").strip()
+                if not quote_id.isdigit():
+                    quote_id = ""
                 qtext = " ".join((qtext or "").split())[:80]
                 if (qwho or "").startswith("你自己") or any(
                     n and n in (qwho or "") for n in self._bot_names()
@@ -304,9 +309,16 @@ class PipelineDecideMixin:
                     delay = random.uniform(*self._reply_delay_range(umo, False))
                 await asyncio.sleep(delay)
                 chain: list = []
-                # 点名消息不@（人家叫你，你直接应就行）；普通回话低概率@
-                if not directed and random.random() < float(
-                    self.cfg.get("at_reply_probability", 0.2)
+                # 引用气泡：只挂我们真拿到 id 的那条旧消息（对方引用它来问的），
+                # 翻记录翻出来的旧话没有 id，就不挂——不知道的消息一律不引用
+                if quote_id:
+                    chain.append(Reply(id=quote_id))
+                # 点名消息不@（人家叫你，你直接应就行）；普通回话低概率@；
+                # 已经挂了引用气泡就不再@，引用和@叠在一起太吵
+                if (
+                    not directed
+                    and not quote_id
+                    and random.random() < float(self.cfg.get("at_reply_probability", 0.2))
                 ):
                     last_sender = self.state.get(f"last_sender:{umo}")
                     self_id = self.state.get(f"self_id:{umo}")

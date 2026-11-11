@@ -103,7 +103,10 @@ class SendMixin:
         if bot is not None and gid.isdigit():
             segs: list[dict] = []
             for comp in chain:
-                if isinstance(comp, Plain):
+                if isinstance(comp, Reply):
+                    # 引用气泡（OneBot V11 的 reply 段），只带被引用消息的 id
+                    segs.append({"type": "reply", "data": {"id": str(comp.id)}})
+                elif isinstance(comp, Plain):
                     segs.append({"type": "text", "data": {"text": comp.text}})
                 elif isinstance(comp, At):
                     segs.append({"type": "at", "data": {"qq": str(comp.qq)}})

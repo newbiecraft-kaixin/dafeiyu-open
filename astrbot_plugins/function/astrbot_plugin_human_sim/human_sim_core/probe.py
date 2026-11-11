@@ -549,7 +549,7 @@ class ProbeMixin:
                     "不是当前发言人新说的话，别把旧话算到 TA 头上。"
                 )
                 return
-            qwho, qtext = bits
+            qwho, qtext, _qid = bits
             req.prompt = (req.prompt or "") + (
                 f"\n\n[这条消息引用了旧消息｜原作者：{qwho}] {qtext}\n"
                 "（这是被引用的旧内容，不是当前发言人正在说的话，别把作者认错）"
@@ -701,13 +701,16 @@ class ProbeMixin:
 
     async def _quote_bits(
         self, event: AstrMessageEvent, limit: int = 60
-    ) -> tuple[str, str] | None:
-        """把消息链里的 Reply 组件翻成 (被引用人标签, 被引用的原文)。
+    ) -> tuple[str, str, str] | None:
+        """把消息链里的 Reply 组件翻成 (被引用人标签, 被引用的原文, 被引用消息 id)。
 
         message_str 里的引用占位常常只有「[引用消息]」，没有作者也没有内容，
         模型只能猜——于是把别人被引用的旧话算到当前发言人头上，或反过来认成自己说的。
         消息链的 Reply 组件带 sender_id / sender_nickname / message_str，用它才能精确归属；
         QQ 群里这些字段经常是空的（只给消息指针），那就按 id 调 get_msg 回查原消息。
+
+        第三个值是被引用那条消息的 id：只有拿到真实 id 才给，拿不到就是空串。
+        出站要不要挂引用气泡只看这个 id —— 不知道的消息一律不引用。
         """
         chain = getattr(getattr(event, "message_obj", None), "message", None) or []
         sid = str(event.get_self_id() or "")
@@ -715,6 +718,10 @@ class ProbeMixin:
             if not isinstance(c, Reply):
                 continue
             reply_chain = getattr(c, "chain", None) or []
+            # 被引用消息的 id：组件自带，或从原始消息的 [CQ:reply] 里捞
+            mid_ptr = str(getattr(c, "id", "") or "").strip()
+            if not mid_ptr.isdigit():
+                mid_ptr = self._raw_reply_id(event)
             # 被引用那条消息真正打的字在 Reply.chain 的 Plain 里；
             # message_str 可能只剩「[引用消息]」占位，或带着占位前缀，
             # 所以优先用 Plain 拼，拿不到再退回 message_str，最后去掉占位。
@@ -739,9 +746,6 @@ class ProbeMixin:
             have_uid = qid.isdigit() and qid != "0"
             # 正文或作者缺一个，就去原消息里补（群里引用常常只剩一个 id）
             if not quoted or not have_uid:
-                mid_ptr = str(getattr(c, "id", "") or "").strip()
-                if not mid_ptr:
-                    mid_ptr = self._raw_reply_id(event)
                 got = await self._fetch_quoted(event, mid_ptr)
                 quoted = quoted or (got.get("text") or "")
                 if not has_img:
@@ -767,11 +771,11 @@ class ProbeMixin:
             elif has_img:
                 quoted += "（附带一张图片）"
             if have_uid and qid == sid:
-                return f"你自己（{self._bot_names()[0]}）", quoted
+                return f"你自己（{self._bot_names()[0]}）", quoted, mid_ptr
             qnick = (qnick or "")[:12] or "群友"
             # 一律过 _who_label：昵称里带「主人」的人只是名字，不能被当成主人；
             # 没查到真实 QQ 时传空，别渲染出「昵称(0)」这种假号码
-            return self._who_label(qnick, qid if have_uid else ""), quoted
+            return self._who_label(qnick, qid if have_uid else ""), quoted, mid_ptr
         return None
 
     def _who_label(self, name: str, uid: str) -> str:
