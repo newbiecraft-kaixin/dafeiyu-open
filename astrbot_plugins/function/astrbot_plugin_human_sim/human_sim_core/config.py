@@ -73,7 +73,10 @@ DEFAULTS = {
     "followup_seconds": 60,             # 专项关注持续时长（秒）：只接被 @ 后紧接着的几句
     "followup_max_messages": 3,         # 窗口内最多为 TA 触发几次决策（防一路跟下去）
     "followup_min_gap_seconds": 10,     # 窗口内同一个人两次决策的最小间隔（防刷屏）
-    "followup_other_tolerance": 2,      # 窗口期间容忍别人插话几条，超过才退回普通概率插话
+    "followup_other_tolerance": 6,      # 窗口期间容忍别人插话几条，超过才退回普通概率插话
+    "followup_others_probability": 0.35,  # 窗口里别人说话时的接话概率下限（夜间也生效）
+    "followup_others_max_minutes": 10,    # 别人说话顺延窗口的封顶（分钟）
+    "watch_on_mention": True,           # 不在潜水池的群，被 @/点名后自动纳入监听
     "interject_cooldown_minutes": 45,
     "interject_per_minute": 1,    # 旧随机插话路径的每分钟上限/群
     "lurk_check_interval_minutes": 20,

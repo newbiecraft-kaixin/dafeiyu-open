@@ -220,6 +220,27 @@ class PolicyMixin:
         else:
             self.state[f"followup:{umo}"] = fu
 
+    def _followup_extend_for_other(self, umo: str) -> None:
+        """窗口里别人说话：把窗口往后顺一点，别聊着聊着就过期。
+
+        只顺延时长、不补次数：否则热闹群能把「专项关注」续到没完。
+        顺延上限 followup_others_max_minutes（默认 10 分钟）。
+        """
+        fu = self.state.get(f"followup:{umo}") or {}
+        if not fu:
+            return
+        now = datetime.now().timestamp()
+        try:
+            span = float(self.cfg.get("followup_seconds", 180) or 0)
+            cap = float(self.cfg.get("followup_others_max_minutes", 10) or 0) * 60
+        except (TypeError, ValueError):
+            span, cap = 180.0, 600.0
+        until = max(float(fu.get("until") or 0), now + span)
+        if cap > 0:
+            until = min(until, now + cap)
+        fu["until"] = until
+        self.state[f"followup:{umo}"] = fu
+
     def _followup_reset_others(self, umo: str, uid: str) -> None:
         """TA 自己又开口了：插话计数清零，窗口继续盯。"""
         fu = self.state.get(f"followup:{umo}") or {}

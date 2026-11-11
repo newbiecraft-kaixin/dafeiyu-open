@@ -125,7 +125,26 @@ class PipelineRecordMixin:
                 event.stop_event()
                 return
             if umo not in self.cfg["watch_groups"]:
-                return
+                # 被 @ / 点名过的群自动纳入监听：以前不在潜水池的群只处理「@它」那一句，
+                # 群里其他人接着说的一概收不到，表现为「被@完就只听那一个人」。
+                mentioned = False
+                try:
+                    mentioned = bool(getattr(event, "is_at_or_wake_command", False))
+                except Exception:  # noqa: BLE001
+                    mentioned = False
+                if not mentioned:
+                    msg_text = (event.message_str or "")
+                    mentioned = any(
+                        n and n in msg_text for n in (self.cfg.get("bot_names") or ())
+                    )
+                if not (mentioned and bool(self.cfg.get("watch_on_mention", True))):
+                    return
+                self.cfg["watch_groups"] = list(self.cfg["watch_groups"]) + [umo]
+                if self._save_watch_groups():
+                    logger.info(
+                        f"[human_sim] 被点名后自动纳入监听：{umo.rsplit(':', 1)[-1]}"
+                        f"（现在共 {len(self.cfg['watch_groups'])} 个群）"
+                    )
             gid = str(event.get_group_id() or "")
             if gid and gid == str(event.get_self_id()):
                 return  # 自己发的
@@ -427,6 +446,8 @@ class PipelineRecordMixin:
                 if directed:
                     self._followup_start(umo, sender_id)
                 followup = False
+                # 窗口开着、说话的是别人：不锁死在这一个人身上，继续正常判断接不接
+                watch_others = False
                 if not directed and self._followup_window(umo, sender_id) is not None:
                     # 窗口开着且盯的就是 TA：TA 再说的话一律交给模型自主判断
                     # 接不接（_decide(followup=True) 里模型可以自己选 [SILENT]），
@@ -439,11 +460,14 @@ class PipelineRecordMixin:
                         return
                 elif not directed and self._followup_active(umo):
                     # 窗口盯的是别人：别人的插话计数 +1（机器人自己的回声不算）；
-                    # 超过 followup_other_tolerance 条才放走窗口，退回普通概率
+                    # 超过 followup_other_tolerance 条才放走窗口，退回普通概率。
+                    # 同时顺延窗口：否则 60 秒后窗口过期，又只剩被 @ 的那一句有人理
                     if sender_id and sender_id != str(
                         self.state.get(f"self_id:{umo}") or ""
                     ):
                         self._followup_note_other(umo)
+                        self._followup_extend_for_other(umo)
+                        watch_others = self._followup_active(umo)
                 # 输入端防刷屏：按群人数自适应（大群消息本来就密）。
                 # 活跃群只降插话概率，不直接判死；只有极端斗图才完全潜水
                 flood_penalty = 1.0
@@ -482,6 +506,19 @@ class PipelineRecordMixin:
                     # 沉默越久越容易开口（最长到 100%），一发言就重置
                     p = self._ramp_probability(umo, p)
                     # 活跃群只在最后统一降权，不打断上面的加成逻辑
+                    # 窗口里别人说话：给个概率下限，夜间降频为 0 时也能接得上，
+                    # 否则表现为「被 @ 完就只听那一个人」
+                    if watch_others:
+                        try:
+                            p = max(
+                                p,
+                                float(
+                                    self.cfg.get("followup_others_probability", 0.35)
+                                    or 0
+                                ),
+                            )
+                        except (TypeError, ValueError):
+                            pass
                     p *= flood_penalty
                     if random.random() > p:
                         return
