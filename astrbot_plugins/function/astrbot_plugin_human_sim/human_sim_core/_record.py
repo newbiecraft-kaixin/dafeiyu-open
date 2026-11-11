@@ -141,7 +141,8 @@ class PipelineRecordMixin:
                     return
                 # 收不收这个群由它自己判断：不是被 @ 一下就无脑拉进潜水池，
                 # 广告群/一次性提问群不该长期蹲着听。
-                if not await self._ai_pick_watch(umo, name, event.message_str or ""):
+                sender = (event.get_sender_name() or "").split("#")[0][:12]
+                if not await self._ai_pick_watch(umo, sender, event.message_str or ""):
                     return
                 self.cfg["watch_groups"] = list(self.cfg["watch_groups"]) + [umo]
                 if self._save_watch_groups():
