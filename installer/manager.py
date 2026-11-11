@@ -490,6 +490,10 @@ def page_url(manifest: dict) -> str | None:
 SKIP_TOP = {
     "astrbot-win", "third_party", "dsh", "napcat-win", "cosyvoice_env",
     "logs", "data", ".git", ".env",
+    # 本机专属的大件/私密目录：源码包里没有，同步时也不该从本机仓库拷进去
+    # （部署时由 reuse_local_components 走目录链接复用，或按需下载）
+    "bwe_env", "backups", "tts_cache", "cosyvoice_ref",
+    ".idea", ".trae-html-share-packages",
 }
 SKIP_PARTS = {"__pycache__", "node_modules", ".git", ".venv", "venv"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".log"}
@@ -498,7 +502,7 @@ SKIP_REL = {("config", "features.json"), ("config", "migrate-journal.json")}
 
 
 def _skip(rel: Path) -> bool:
-    """同步仓库时跳过运行时产物：venv、data、日志、缓存、.env。"""
+    """同步仓库时跳过运行时产物：venv、模型、备份、日志、缓存、.env。"""
     parts = rel.parts
     if not parts or parts[0] in SKIP_TOP:
         return True
@@ -513,6 +517,11 @@ def _skip(rel: Path) -> bool:
         return True
     # CosyVoice 的虚拟环境与模型
     if len(parts) > 2 and parts[0] == "tools" and parts[1] in {"cosyvoice_env", "cosyvoice_models"}:
+        return True
+    # audio 下的模型/虚拟环境动辄几十 GB，属于本机组件，不进仓库同步
+    if len(parts) > 2 and parts[0] == "audio" and parts[1] in {
+        "cosyvoice_models", "cosyvoice_ref", "seed-vc", "seedvc_env",
+    }:
         return True
     return False
 
